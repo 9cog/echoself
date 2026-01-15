@@ -45,6 +45,7 @@ python server.py
 
 ## Features
 
+- **EchoSelf Chatbot**: Standalone web chatbot with SillyTavern-compatible character cards ([Try it online](https://9cog.github.io/echoself/chatbot/))
 - **Echo Home Map**: Navigate through different specialized rooms, each with unique functionality
 - **Memory System**: Store and retrieve information using advanced vector embeddings and semantic search
 - **AI Chat**: Interact with Deep Tree Echo's AI capabilities through a conversational interface
