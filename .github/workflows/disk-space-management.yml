@@ -1,0 +1,163 @@
+name: Disk Space Management
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        type: choice
+        options:
+          - analyze
+          - cleanup
+          - analyze-and-cleanup
+        default: 'analyze'
+      remove_android:
+        description: 'Remove Android SDK (~12G)'
+        required: false
+        type: boolean
+        default: true
+      remove_dotnet:
+        description: 'Remove .NET SDK (~4G)'
+        required: false
+        type: boolean
+        default: true
+      remove_haskell:
+        description: 'Remove Haskell toolchain (~6.4G)'
+        required: false
+        type: boolean
+        default: true
+      remove_swift:
+        description: 'Remove Swift toolchain (~3.2G)'
+        required: false
+        type: boolean
+        default: true
+      remove_toolcache:
+        description: 'Remove hosted toolcache (~5.8G)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  disk-space-management:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Disk Space - Before
+        run: |
+          echo "=== Disk Space BEFORE ==="
+          df -h
+          echo ""
+          du -sh / 2>/dev/null || true
+
+      - name: Run Disk Space Analysis
+        if: inputs.action == 'analyze' || inputs.action == 'analyze-and-cleanup'
+        run: |
+          echo "Running disk space analysis..."
+          bash scripts/analyze_disk_space.sh > disk-space-report.txt
+          cat disk-space-report.txt
+
+      - name: Selective Cleanup
+        if: inputs.action == 'cleanup' || inputs.action == 'analyze-and-cleanup'
+        env:
+          REMOVE_ANDROID: ${{ inputs.remove_android }}
+          REMOVE_DOTNET: ${{ inputs.remove_dotnet }}
+          REMOVE_HASKELL: ${{ inputs.remove_haskell }}
+          REMOVE_SWIFT: ${{ inputs.remove_swift }}
+          REMOVE_TOOLCACHE: ${{ inputs.remove_toolcache }}
+        run: |
+          echo "=== Starting Selective Disk Space Cleanup ==="
+          
+          # Using inline commands instead of the cleanup_disk_space.sh script to:
+          # 1. Avoid security risks of creating executable scripts in /tmp
+          # 2. Have more control over selective removal based on user inputs
+          # 3. Provide clearer workflow-specific error handling
+          
+          # Remove Android SDK
+          if [ "$REMOVE_ANDROID" = "true" ] && [ -d "/usr/local/lib/android" ]; then
+            echo "Removing Android SDK..."
+            BEFORE=$(du -sh /usr/local/lib/android 2>/dev/null | cut -f1 || echo "0")
+            sudo rm -rf /usr/local/lib/android
+            echo "✓ Removed Android SDK ($BEFORE)"
+          fi
+          
+          # Remove .NET SDK
+          if [ "$REMOVE_DOTNET" = "true" ] && [ -d "/usr/share/dotnet" ]; then
+            echo "Removing .NET SDK..."
+            BEFORE=$(du -sh /usr/share/dotnet 2>/dev/null | cut -f1 || echo "0")
+            sudo rm -rf /usr/share/dotnet
+            echo "✓ Removed .NET SDK ($BEFORE)"
+          fi
+          
+          # Remove Haskell toolchain
+          if [ "$REMOVE_HASKELL" = "true" ] && [ -d "/usr/local/.ghcup" ]; then
+            echo "Removing Haskell toolchain..."
+            BEFORE=$(du -sh /usr/local/.ghcup 2>/dev/null | cut -f1 || echo "0")
+            sudo rm -rf /usr/local/.ghcup
+            echo "✓ Removed Haskell toolchain ($BEFORE)"
+          fi
+          
+          # Remove Swift
+          if [ "$REMOVE_SWIFT" = "true" ] && [ -d "/usr/share/swift" ]; then
+            echo "Removing Swift..."
+            BEFORE=$(du -sh /usr/share/swift 2>/dev/null | cut -f1 || echo "0")
+            sudo rm -rf /usr/share/swift
+            echo "✓ Removed Swift ($BEFORE)"
+          fi
+          
+          # Remove hosted toolcache
+          if [ "$REMOVE_TOOLCACHE" = "true" ] && [ -d "/opt/hostedtoolcache" ]; then
+            echo "Removing hosted toolcache..."
+            BEFORE=$(du -sh /opt/hostedtoolcache 2>/dev/null | cut -f1 || echo "0")
+            sudo rm -rf /opt/hostedtoolcache
+            echo "✓ Removed hosted toolcache ($BEFORE)"
+          fi
+          
+          # Clean apt cache
+          echo "Cleaning apt cache..."
+          sudo apt-get clean
+          echo "✓ apt cache cleaned"
+          
+          echo ""
+          echo "✓ Selective cleanup complete!"
+
+      - name: Disk Space - After
+        run: |
+          echo "=== Disk Space AFTER ==="
+          df -h
+          echo ""
+
+      - name: Upload Analysis Report
+        if: inputs.action == 'analyze' || inputs.action == 'analyze-and-cleanup'
+        uses: actions/upload-artifact@v4
+        with:
+          name: disk-space-analysis-report
+          path: disk-space-report.txt
+          retention-days: 30
+
+      - name: Create Summary Comment
+        if: inputs.action == 'analyze' || inputs.action == 'analyze-and-cleanup'
+        run: |
+          echo "## Disk Space Analysis Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Analysis completed at: $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Current Disk Usage" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          df -h / >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Major Space Consumers" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          du -h -d 1 / 2>/dev/null | sort -hr | head -10 >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "See the full analysis report in the workflow artifacts." >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,9 @@
+{
+  "timestamp": "2025-09-14T18:53:40.752315",
+  "status": "evaluator_unavailable",
+  "sample_count": 5,
+  "overall_performance": {
+    "overall_score": 0.5,
+    "performance_level": "fallback"
+  }
+}

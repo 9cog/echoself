@@ -1,0 +1,105 @@
+node_modules
+
+/.cache
+.env
+build/
+public/build/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Placeholder scripts - moved to prevent accidental execution
+*_placeholder.py
+*_old.py
+train_functional.py
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.python-version
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local development
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+logs/
+evaluation_loop.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Model checkpoints and data
+*.pt
+*.pth
+*.bin
+data/*/
+out-*/
+
+# Node.js
+node_modules/
+.npm-cache/
+
+# Build outputs
+dist/
+build/
+# Test files
+nanoGPT/config/test_*.py
+nanoGPT/data/

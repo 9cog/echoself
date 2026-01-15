@@ -1,0 +1,177 @@
+{
+  "ckpt_20250929_154341_50_7cd87fd7_4f214037": {
+    "checkpoint_id": "ckpt_20250929_154341_50_7cd87fd7_4f214037",
+    "created_at": "2025-09-29T15:43:41.652257",
+    "iteration": 50,
+    "epoch": 1,
+    "train_loss": 6.322313401587256,
+    "val_loss": 5.7475576378065965,
+    "learning_rate": 0.0001,
+    "model_config": {
+      "layers": 2,
+      "hidden_size": 128,
+      "input_size": 256,
+      "output_size": 256
+    },
+    "training_config": {
+      "batch_size": 4,
+      "learning_rate": 0.0001,
+      "session": 1
+    },
+    "data_config": {
+      "data_dir": "demo-data",
+      "train_tokens": 15000,
+      "val_tokens": 3000
+    },
+    "metrics": {
+      "improvement_rate": 0.05,
+      "convergence_score": 0.8400000000000001,
+      "training_efficiency": 0.75
+    },
+    "tags": ["session_1", "demo", "progressive"],
+    "parent_checkpoint": null,
+    "notes": "Training session 1 - progressive improvement",
+    "file_size_mb": 0.2551736831665039,
+    "quality_score": 0.267741240545749
+  },
+  "ckpt_20250929_154342_200_7cd87fd7_4f214037": {
+    "checkpoint_id": "ckpt_20250929_154342_200_7cd87fd7_4f214037",
+    "created_at": "2025-09-29T15:43:42.156572",
+    "iteration": 200,
+    "epoch": 2,
+    "train_loss": 0.7965392757686487,
+    "val_loss": 0.7241266143351351,
+    "learning_rate": 5e-5,
+    "model_config": {
+      "layers": 2,
+      "hidden_size": 128,
+      "input_size": 256,
+      "output_size": 256
+    },
+    "training_config": {
+      "batch_size": 4,
+      "learning_rate": 0.0001,
+      "session": 2
+    },
+    "data_config": {
+      "data_dir": "demo-data",
+      "train_tokens": 15000,
+      "val_tokens": 3000
+    },
+    "metrics": {
+      "improvement_rate": 0.1,
+      "convergence_score": 0.88,
+      "training_efficiency": 0.7999999999999999
+    },
+    "tags": ["session_2", "demo", "progressive"],
+    "parent_checkpoint": null,
+    "notes": "Training session 2 - progressive improvement",
+    "file_size_mb": 0.25518321990966797,
+    "quality_score": 0.5840026648738538
+  },
+  "ckpt_20250929_154342_450_7cd87fd7_4f214037": {
+    "checkpoint_id": "ckpt_20250929_154342_450_7cd87fd7_4f214037",
+    "created_at": "2025-09-29T15:43:42.660677",
+    "iteration": 450,
+    "epoch": 3,
+    "train_loss": 0.03654619389460522,
+    "val_loss": 0.033223812631459286,
+    "learning_rate": 3.3333333333333335e-5,
+    "model_config": {
+      "layers": 2,
+      "hidden_size": 128,
+      "input_size": 256,
+      "output_size": 256
+    },
+    "training_config": {
+      "batch_size": 4,
+      "learning_rate": 0.0001,
+      "session": 3
+    },
+    "data_config": {
+      "data_dir": "demo-data",
+      "train_tokens": 15000,
+      "val_tokens": 3000
+    },
+    "metrics": {
+      "improvement_rate": 0.15000000000000002,
+      "convergence_score": 0.92,
+      "training_efficiency": 0.85
+    },
+    "tags": ["session_3", "demo", "progressive"],
+    "parent_checkpoint": null,
+    "notes": "Training session 3 - progressive improvement",
+    "file_size_mb": 0.25518321990966797,
+    "quality_score": 0.8694911606200884
+  },
+  "ckpt_20250929_154343_800_7cd87fd7_4f214037": {
+    "checkpoint_id": "ckpt_20250929_154343_800_7cd87fd7_4f214037",
+    "created_at": "2025-09-29T15:43:43.165234",
+    "iteration": 800,
+    "epoch": 4,
+    "train_loss": 0.0006106338815176287,
+    "val_loss": 0.0005551217104705715,
+    "learning_rate": 2.5e-5,
+    "model_config": {
+      "layers": 2,
+      "hidden_size": 128,
+      "input_size": 256,
+      "output_size": 256
+    },
+    "training_config": {
+      "batch_size": 4,
+      "learning_rate": 0.0001,
+      "session": 4
+    },
+    "data_config": {
+      "data_dir": "demo-data",
+      "train_tokens": 15000,
+      "val_tokens": 3000
+    },
+    "metrics": {
+      "improvement_rate": 0.2,
+      "convergence_score": 0.9600000000000001,
+      "training_efficiency": 0.8999999999999999
+    },
+    "tags": ["session_4", "demo", "progressive"],
+    "parent_checkpoint": null,
+    "notes": "Training session 4 - progressive improvement",
+    "file_size_mb": 0.25518321990966797,
+    "quality_score": 0.9056116303950699
+  },
+  "ckpt_20250929_154343_1250_7cd87fd7_4f214037": {
+    "checkpoint_id": "ckpt_20250929_154343_1250_7cd87fd7_4f214037",
+    "created_at": "2025-09-29T15:43:43.669484",
+    "iteration": 1250,
+    "epoch": 5,
+    "train_loss": 3.7155527057474993e-6,
+    "val_loss": 3.377775187043181e-6,
+    "learning_rate": 2e-5,
+    "model_config": {
+      "layers": 2,
+      "hidden_size": 128,
+      "input_size": 256,
+      "output_size": 256
+    },
+    "training_config": {
+      "batch_size": 4,
+      "learning_rate": 0.0001,
+      "session": 5
+    },
+    "data_config": {
+      "data_dir": "demo-data",
+      "train_tokens": 15000,
+      "val_tokens": 3000
+    },
+    "metrics": {
+      "improvement_rate": 0.25,
+      "convergence_score": 1.0,
+      "training_efficiency": 0.95
+    },
+    "tags": ["session_5", "demo", "progressive"],
+    "parent_checkpoint": null,
+    "notes": "Training session 5 - progressive improvement",
+    "file_size_mb": 0.25519275665283203,
+    "quality_score": 0.9199976355653555
+  }
+}

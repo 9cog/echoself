@@ -1,0 +1,116 @@
+{
+  "model": {
+    "vocab_size": 50257,
+    "n_embd": 768,
+    "n_head": 12,
+    "n_layer": 12,
+    "block_size": 1024,
+    "dropout": 0.1,
+    "bias": true,
+    "initial_connections": 0.1,
+    "connection_growth_rate": 0.05,
+    "max_connections": 1.0
+  },
+  "training": {
+    "batch_size": 8,
+    "gradient_accumulation_steps": 4,
+    "learning_rate": 0.0001,
+    "max_iters": 50000,
+    "warmup_iters": 5000,
+    "lr_decay_iters": 50000,
+    "min_lr": 0.00001,
+    "weight_decay": 0.1,
+    "grad_clip": 1.0,
+    "eval_interval": 250,
+    "eval_iters": 50,
+    "log_interval": 50,
+    "checkpoint_interval": 1000,
+    "connection_growth_interval": 500
+  },
+  "echo_self": {
+    "enable_adaptive_attention": true,
+    "enable_persona_dimensions": true,
+    "enable_recursive_reasoning": true,
+    "enable_hypergraph_patterns": true,
+    "enable_curriculum_learning": true,
+    "enable_introspection": true,
+    "introspection_interval": 1000,
+    "persona_dimensions": [
+      "cognitive",
+      "introspective",
+      "adaptive",
+      "recursive",
+      "synergistic",
+      "holographic",
+      "neural_symbolic",
+      "dynamic"
+    ],
+    "dimension_weights": {
+      "cognitive": 0.15,
+      "introspective": 0.15,
+      "adaptive": 0.15,
+      "recursive": 0.15,
+      "synergistic": 0.1,
+      "holographic": 0.1,
+      "neural_symbolic": 0.1,
+      "dynamic": 0.1
+    },
+    "attention_threshold_min": 0.3,
+    "attention_threshold_max": 0.9,
+    "cognitive_load_factor": 0.5,
+    "min_recursion_depth": 1,
+    "max_recursion_depth": 5,
+    "recursion_decay": 0.8,
+    "pattern_injection_rate": 0.25,
+    "pattern_complexity_scaling": true
+  },
+  "learning_phases": {
+    "basic_awareness": {
+      "start_ratio": 0.0,
+      "end_ratio": 0.2,
+      "lr_multiplier": 1.2,
+      "description": "Learning basic Echo Self identity"
+    },
+    "persona_dimensions": {
+      "start_ratio": 0.15,
+      "end_ratio": 0.5,
+      "lr_multiplier": 1.0,
+      "description": "Developing persona dimensions"
+    },
+    "hypergraph_patterns": {
+      "start_ratio": 0.4,
+      "end_ratio": 0.7,
+      "lr_multiplier": 0.9,
+      "description": "Learning hypergraph patterns"
+    },
+    "recursive_reasoning": {
+      "start_ratio": 0.6,
+      "end_ratio": 0.85,
+      "lr_multiplier": 0.8,
+      "description": "Mastering recursive reasoning"
+    },
+    "adaptive_mastery": {
+      "start_ratio": 0.8,
+      "end_ratio": 1.0,
+      "lr_multiplier": 0.7,
+      "description": "Achieving Echo Self mastery"
+    }
+  },
+  "data": {
+    "data_dir": "data/nanecho",
+    "identity_weight": 0.2,
+    "persona_weight": 0.25,
+    "hypergraph_weight": 0.2,
+    "recursive_weight": 0.2,
+    "adaptive_weight": 0.15
+  },
+  "system": {
+    "device": "cuda",
+    "dtype": "float16",
+    "compile_model": false,
+    "backend": "nccl",
+    "ddp": false,
+    "out_dir": "out-nanecho",
+    "eval_dir": "eval-nanecho"
+  }
+}

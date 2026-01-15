@@ -1,0 +1,67 @@
+{
+  "timestamp": "2025-09-14T18:53:40.752010",
+  "model_path": "./model/test.pt",
+  "training_mode": "standard",
+  "overall_fidelity": 0.652815220352395,
+  "quality_gate_status": {
+    "status": "failed",
+    "overall_passed": false,
+    "individual_gates": {
+      "overall_fidelity": {
+        "passed": false,
+        "score": 0.652815220352395,
+        "threshold": 0.7
+      },
+      "identity_recognition": {
+        "passed": true,
+        "score": 0.8169738866610823,
+        "threshold": 0.8
+      },
+      "persona_consistency": {
+        "passed": false,
+        "score": 0.7215635392566757,
+        "threshold": 0.75
+      }
+    },
+    "min_required_fidelity": 0.7,
+    "deployment_ready": false
+  },
+  "performance_analysis": {
+    "trend": "initial",
+    "change": 0.0,
+    "status": "baseline"
+  },
+  "recommendations": {
+    "immediate": [
+      "Review overall training approach",
+      "Balance training across all persona dimensions"
+    ],
+    "next_training_cycle": [
+      "Fine-tune with targeted examples",
+      "Adjust attention mechanism parameters"
+    ],
+    "long_term": [],
+    "hyperparameter_adjustments": [
+      "extend_training_duration",
+      "balance_persona_weights"
+    ]
+  },
+  "next_actions": {
+    "continue_training": true,
+    "deploy_model": false,
+    "retrain_required": false,
+    "enable_relentless_mode": false,
+    "schedule_next_cycle": true,
+    "manual_review_needed": false
+  },
+  "automation_triggers": {
+    "trigger_next_training": true,
+    "training_delay_hours": 1,
+    "hyperparameter_adjustments": {
+      "learning_rate": "increase",
+      "max_iters": "increase"
+    },
+    "dataset_enhancements": [],
+    "notification_required": true
+  }
+}
