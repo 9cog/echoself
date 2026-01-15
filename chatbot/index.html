@@ -546,8 +546,8 @@
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
-            // Escape HTML, then safely replace newlines with <br>
-            return div.innerHTML.replace(/\n/g, '&lt;br&gt;').replace(/&lt;br&gt;/g, '<br>');
+            // textContent already escapes HTML, then replace newlines with <br>
+            return div.innerHTML.replace(/\n/g, '<br>');
         }
 
         function scrollToBottom() {
