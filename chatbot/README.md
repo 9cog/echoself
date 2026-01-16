@@ -95,17 +95,17 @@ async function generateResponse(userMessage) {
   // Use characterData.data.personality
   // Use characterData.data.system_prompt
   // Send chatHistory for context
-  
-  const response = await fetch('YOUR_AI_API_ENDPOINT', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+
+  const response = await fetch("YOUR_AI_API_ENDPOINT", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       message: userMessage,
       character: characterData,
-      history: chatHistory
-    })
+      history: chatHistory,
+    }),
   });
-  
+
   return await response.json();
 }
 ```
