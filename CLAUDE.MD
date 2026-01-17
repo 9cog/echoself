@@ -120,6 +120,71 @@ threshold = 0.5 + (cognitive_load * 0.3) - (recent_activity * 0.2)
 - **Full Mode**: Complete training (12 layers, 50000 iterations)
 - **Relentless Mode**: Continuous persona reinforcement (scheduled every 4 hours)
 
+## Cumulative Training Safeguards
+
+**CRITICAL**: Training is designed to NEVER start from scratch accidentally.
+
+### Checkpoint Guardian System
+
+The project implements a multi-layer checkpoint protection system:
+
+1. **Checkpoint Restoration Priority**:
+   - `.training-progress/checkpoints/latest_checkpoint.pt` (highest priority)
+   - Downloaded artifacts from previous workflow runs
+   - GitHub Actions cache
+   - Any valid checkpoint in backup locations
+
+2. **Multi-Location Model Backup**:
+   Every training run saves checkpoints to multiple locations:
+   - `.training-progress/checkpoints/` - Committed to repository
+   - `.training-progress/cache/` - GitHub Actions cache
+   - `/tmp/nanecho-checkpoint-backup/` - Uploaded as artifact
+   - Workflow artifacts with 30-90 day retention
+
+3. **Fresh Start Protection**:
+   - `force_fresh_start` requires explicit confirmation string
+   - Data preparation failures do NOT create minimal fallback data
+   - If no checkpoint exists AND data prep fails, workflow errors out
+   - This prevents accidental loss of training progress
+
+### Backup Manifest
+
+Each checkpoint backup includes a manifest with:
+```json
+{
+  "timestamp": "20260117_143022",
+  "iteration": 5000,
+  "val_loss": 2.3456,
+  "workflow_run": "123",
+  "backup_count": 3,
+  "locations": [
+    ".training-progress/checkpoints/latest_checkpoint.pt",
+    ".training-progress/cache/ckpt.pt",
+    "artifacts"
+  ]
+}
+```
+
+### Using Checkpoint Guardian Script
+
+```bash
+# Restore best checkpoint for cumulative training
+python scripts/checkpoint_guardian.py --output-dir out-nanecho --action restore
+
+# Backup a checkpoint to multiple locations
+python scripts/checkpoint_guardian.py --output-dir out-nanecho --action backup \
+  --checkpoint out-nanecho/ckpt.pt --iteration 5000 --val-loss 2.345
+
+# Verify checkpoint availability
+python scripts/checkpoint_guardian.py --output-dir out-nanecho --action verify
+
+# Clean up old checkpoints (keeps 5 best)
+python scripts/checkpoint_guardian.py --output-dir out-nanecho --action cleanup --keep-count 5
+
+# DANGEROUS: Allow fresh start (only for first-ever training)
+python scripts/checkpoint_guardian.py --output-dir out-nanecho --action restore --allow-fresh-start
+```
+
 ## Workflow Reference
 
 ### Training Workflows

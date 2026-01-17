@@ -72,6 +72,9 @@ on:
 jobs:
   train:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
     strategy:
       fail-fast: False
       matrix:
@@ -82,6 +85,8 @@ jobs:
       uses: actions/checkout@v4
       with:
         path: echoself
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Checkout nanoGPT
       uses: actions/checkout@v4
@@ -100,6 +105,119 @@ jobs:
         python -m pip install --upgrade pip
         # Install dependencies from requirements.txt
         pip install -r ${{ github.workspace }}/echoself/requirements.txt
+
+    # ================================================================
+    # CUMULATIVE TRAINING: Restore checkpoints from previous runs
+    # CRITICAL: Training must NEVER start from scratch accidentally
+    # ================================================================
+
+    - name: Cache training checkpoints
+      uses: actions/cache@v4
+      with:
+        path: |
+          echoself/.training-progress/checkpoints
+          echoself/.training-progress/cache
+        key: nanecho-checkpoints-${{ github.ref_name }}-${{ github.run_number }}
+        restore-keys: |
+          nanecho-checkpoints-${{ github.ref_name }}-
+          nanecho-checkpoints-main-
+          nanecho-checkpoints-
+
+    - name: Download previous model artifacts
+      uses: dawidd6/action-download-artifact@v3
+      continue-on-error: true
+      with:
+        workflow: netrain.yml
+        name: deep-tree-echo-model-out-nanecho-*
+        path: echoself/.training-progress/artifacts
+        search_artifacts: true
+        if_no_artifact_found: warn
+
+    - name: Restore checkpoint for cumulative training
+      id: restore_checkpoint
+      run: |
+        cd echoself
+
+        echo "🛡️ CHECKPOINT GUARDIAN: Ensuring cumulative training"
+        echo "=================================================="
+
+        # Create checkpoint directories
+        mkdir -p .training-progress/checkpoints
+        mkdir -p .training-progress/cache
+        mkdir -p ../nanoGPT/out-nanecho-ci
+        mkdir -p ../nanoGPT/out-nanecho-full
+        mkdir -p ../nanoGPT/out-nanecho-relentless
+
+        # Search for existing checkpoints in all locations
+        CHECKPOINT_FOUND=""
+
+        # Priority 1: Check .training-progress/checkpoints
+        if [ -f ".training-progress/checkpoints/latest_checkpoint.pt" ]; then
+          CHECKPOINT_FOUND=".training-progress/checkpoints/latest_checkpoint.pt"
+          echo "✓ Found checkpoint in .training-progress/checkpoints"
+        fi
+
+        # Priority 2: Check downloaded artifacts
+        if [ -z "$CHECKPOINT_FOUND" ]; then
+          ARTIFACT_CKPT=$(find .training-progress/artifacts -name "ckpt.pt" 2>/dev/null | head -1)
+          if [ -n "$ARTIFACT_CKPT" ]; then
+            CHECKPOINT_FOUND="$ARTIFACT_CKPT"
+            echo "✓ Found checkpoint in downloaded artifacts"
+          fi
+        fi
+
+        # Priority 3: Check cache
+        if [ -z "$CHECKPOINT_FOUND" ]; then
+          if [ -f ".training-progress/cache/ckpt.pt" ]; then
+            CHECKPOINT_FOUND=".training-progress/cache/ckpt.pt"
+            echo "✓ Found checkpoint in cache"
+          fi
+        fi
+
+        if [ -n "$CHECKPOINT_FOUND" ]; then
+          echo "🏆 Best checkpoint found: $CHECKPOINT_FOUND"
+
+          # Verify checkpoint integrity
+          python -c "
+          import torch
+          import sys
+          try:
+              ckpt = torch.load('$CHECKPOINT_FOUND', map_location='cpu')
+              iter_num = ckpt.get('iter_num', 0)
+              best_loss = ckpt.get('best_val_loss', float('inf'))
+              print(f'✓ Checkpoint valid: iteration={iter_num}, best_loss={best_loss:.4f}')
+              print(f'CHECKPOINT_ITERATION={iter_num}')
+          except Exception as e:
+              print(f'✗ Checkpoint corrupted: {e}')
+              sys.exit(1)
+          " || {
+            echo "❌ Checkpoint verification failed!"
+            echo "⚠️ Searching for backup checkpoints..."
+            CHECKPOINT_FOUND=""
+          }
+
+          if [ -n "$CHECKPOINT_FOUND" ]; then
+            # Copy to all output directories for training
+            cp "$CHECKPOINT_FOUND" ../nanoGPT/out-nanecho-ci/ckpt.pt 2>/dev/null || true
+            cp "$CHECKPOINT_FOUND" ../nanoGPT/out-nanecho-full/ckpt.pt 2>/dev/null || true
+            cp "$CHECKPOINT_FOUND" ../nanoGPT/out-nanecho-relentless/ckpt.pt 2>/dev/null || true
+
+            echo "checkpoint_restored=true" >> $GITHUB_OUTPUT
+            echo "checkpoint_path=$CHECKPOINT_FOUND" >> $GITHUB_OUTPUT
+            echo "✅ Checkpoint restored for cumulative training"
+          fi
+        fi
+
+        if [ -z "$CHECKPOINT_FOUND" ]; then
+          echo ""
+          echo "⚠️ NO CHECKPOINT FOUND - This appears to be the first training run"
+          echo "   If this is NOT the first run, check:"
+          echo "   1. Previous workflow artifacts"
+          echo "   2. .training-progress/checkpoints directory"
+          echo "   3. GitHub Actions cache"
+          echo ""
+          echo "checkpoint_restored=false" >> $GITHUB_OUTPUT
+        fi
 
     - name: Determine training parameters
       id: params
@@ -236,39 +354,27 @@ jobs:
             echo "   1. tiktoken cannot download GPT-2 vocabulary (internet connectivity)"
             echo "   2. Insufficient Echo Self content in source files"
             echo "   3. Pattern matching not finding expected content"
-            
-            # Create minimal fallback data to prevent validation failure
-            echo "🔧 Creating minimal fallback dataset to prevent complete failure..."
-            python -c "
-            import os
-            import numpy as np
-            
-            # Create minimal training data
-            os.makedirs('data/nanecho', exist_ok=True)
-            minimal_data = np.array([1, 2, 3, 4, 5] * 200, dtype=np.uint16)  # 1000 tokens
-            train_data = minimal_data[:800]
-            val_data = minimal_data[800:]
-            
-            train_data.tofile('data/nanecho/train.bin')
-            val_data.tofile('data/nanecho/val.bin')
-            
-            # Create metadata
-            import json
-            metadata = {
-                'train_tokens': len(train_data),
-                'val_tokens': len(val_data),
-                'echo_depth': 7,
-                'persona_weight': 0.95,
-                'fallback_mode': True,
-                'warning': 'This is minimal fallback data - real preparation failed'
-            }
-            with open('data/nanecho/metadata.json', 'w') as f:
-                json.dump(metadata, f, indent=2)
-            
-            print('⚠️ Created minimal fallback dataset (1000 tokens)')
-            print('   This allows the workflow to continue but may result in poor training')
-            "
-            echo "⚠️ Fallback dataset created - workflow will continue with warnings"
+            echo ""
+            echo "🛡️ CHECKPOINT GUARDIAN POLICY: NO FRESH START ALLOWED"
+            echo "=================================================="
+            echo "Data preparation failed but we will NOT create minimal fallback data."
+            echo "Creating minimal data would effectively start training from scratch,"
+            echo "which violates our cumulative training policy."
+            echo ""
+            echo "If a previous checkpoint exists, training can still continue"
+            echo "using that checkpoint's data configuration."
+            echo ""
+
+            # Check if we have a checkpoint - if yes, we can still proceed
+            if [ "${{ steps.restore_checkpoint.outputs.checkpoint_restored }}" = "true" ]; then
+              echo "✓ Previous checkpoint exists - training can continue cumulatively"
+              echo "   Using existing model weights and cached data configuration"
+            else
+              echo "❌ CRITICAL: No checkpoint AND no valid data"
+              echo "   This workflow cannot proceed without risking fresh start"
+              echo "   Please investigate and fix the data preparation issues"
+              exit 1
+            fi
           fi
         fi
         
@@ -425,6 +531,127 @@ jobs:
         else
           echo "✅ Checkpoint file verified at ${{ steps.params.outputs.output_dir }}/ckpt.pt"
           ls -la "${{ steps.params.outputs.output_dir }}/ckpt.pt"
+        fi
+
+    # ================================================================
+    # MULTI-LOCATION MODEL BACKUP
+    # CRITICAL: Ensure model can NEVER be lost
+    # ================================================================
+
+    - name: Backup model to multiple locations
+      run: |
+        cd nanoGPT
+        CHECKPOINT="${{ steps.params.outputs.output_dir }}/ckpt.pt"
+        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+        echo "🛡️ MULTI-LOCATION MODEL BACKUP"
+        echo "=============================="
+
+        # Create backup directories
+        mkdir -p ../echoself/.training-progress/checkpoints
+        mkdir -p ../echoself/.training-progress/cache
+        mkdir -p /tmp/nanecho-checkpoint-backup
+
+        # Get checkpoint metadata
+        ITER_NUM=$(python -c "
+        import torch
+        ckpt = torch.load('$CHECKPOINT', map_location='cpu')
+        print(ckpt.get('iter_num', 0))
+        " 2>/dev/null || echo "0")
+
+        VAL_LOSS=$(python -c "
+        import torch
+        ckpt = torch.load('$CHECKPOINT', map_location='cpu')
+        print(f'{ckpt.get(\"best_val_loss\", 999.0):.4f}')
+        " 2>/dev/null || echo "999.0")
+
+        echo "📊 Checkpoint: iteration=$ITER_NUM, val_loss=$VAL_LOSS"
+
+        BACKUP_COUNT=0
+
+        # Backup 1: .training-progress/checkpoints (committed to repo)
+        cp "$CHECKPOINT" "../echoself/.training-progress/checkpoints/latest_checkpoint.pt" && {
+          cp "$CHECKPOINT" "../echoself/.training-progress/checkpoints/checkpoint_iter${ITER_NUM}_${TIMESTAMP}.pt"
+          echo "✓ Backed up to .training-progress/checkpoints"
+          BACKUP_COUNT=$((BACKUP_COUNT + 1))
+        } || echo "⚠️ Failed to backup to .training-progress/checkpoints"
+
+        # Backup 2: .training-progress/cache (GitHub Actions cache)
+        cp "$CHECKPOINT" "../echoself/.training-progress/cache/ckpt.pt" && {
+          echo "✓ Backed up to .training-progress/cache"
+          BACKUP_COUNT=$((BACKUP_COUNT + 1))
+        } || echo "⚠️ Failed to backup to .training-progress/cache"
+
+        # Backup 3: /tmp (temporary, for artifact upload)
+        cp "$CHECKPOINT" "/tmp/nanecho-checkpoint-backup/ckpt.pt" && {
+          echo "✓ Backed up to /tmp/nanecho-checkpoint-backup"
+          BACKUP_COUNT=$((BACKUP_COUNT + 1))
+        } || echo "⚠️ Failed to backup to /tmp"
+
+        # Create backup manifest
+        cat > "../echoself/.training-progress/checkpoints/backup_manifest.json" << EOF
+        {
+          "timestamp": "$TIMESTAMP",
+          "iteration": $ITER_NUM,
+          "val_loss": $VAL_LOSS,
+          "output_dir": "${{ steps.params.outputs.output_dir }}",
+          "workflow_run": "${{ github.run_number }}",
+          "commit": "${{ github.sha }}",
+          "backup_count": $BACKUP_COUNT,
+          "locations": [
+            ".training-progress/checkpoints/latest_checkpoint.pt",
+            ".training-progress/cache/ckpt.pt",
+            "artifacts (via actions/upload-artifact)"
+          ]
+        }
+        EOF
+
+        echo ""
+        if [ $BACKUP_COUNT -ge 2 ]; then
+          echo "✅ Model backed up to $BACKUP_COUNT locations (SAFE)"
+        else
+          echo "⚠️ WARNING: Only $BACKUP_COUNT backup(s) succeeded!"
+          echo "   Recommended minimum: 2 redundant backups"
+        fi
+
+    - name: Configure Git for checkpoint commit
+      run: |
+        cd echoself
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+
+    - name: Commit checkpoints to repository
+      run: |
+        cd echoself
+
+        echo "📤 Committing checkpoints to repository for permanent storage..."
+
+        # Add checkpoint files
+        git add .training-progress/ -f
+
+        # Check if there are changes to commit
+        if git diff --staged --quiet; then
+          echo "✅ No new checkpoints to commit"
+        else
+          # Commit with detailed message
+          git commit -m "chore: backup training checkpoint (run ${{ github.run_number }})" \
+                     -m "Iteration: $(cat .training-progress/checkpoints/backup_manifest.json | grep iteration | head -1)" \
+                     -m "Val Loss: $(cat .training-progress/checkpoints/backup_manifest.json | grep val_loss | head -1)"
+
+          # Push with retry logic
+          BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          echo "Pushing to branch: $BRANCH_NAME"
+
+          for i in 1 2 3 4; do
+            if git push origin HEAD:$BRANCH_NAME 2>&1; then
+              echo "✅ Checkpoints committed and pushed successfully"
+              break
+            else
+              echo "⚠️ Push attempt $i failed, retrying..."
+              sleep $((i * 2))
+              git pull --rebase origin $BRANCH_NAME 2>&1 || true
+            fi
+          done
         fi
 
 #    - name: Test Deep Tree Echo representation without system prompts

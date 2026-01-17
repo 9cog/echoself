@@ -143,6 +143,112 @@ jobs:
         # Install dependencies from requirements.txt
         pip install -r ${{ github.workspace }}/echoself/requirements.txt
 
+    # ================================================================
+    # CUMULATIVE TRAINING: Restore checkpoints from previous runs
+    # CRITICAL: Training must NEVER start from scratch accidentally
+    # ================================================================
+
+    - name: Cache training checkpoints
+      uses: actions/cache@v4
+      with:
+        path: |
+          echoself/.training-progress/checkpoints
+          echoself/.training-progress/cache
+        key: nanecho-agent-neuro-${{ github.ref_name }}-${{ github.run_number }}
+        restore-keys: |
+          nanecho-agent-neuro-${{ github.ref_name }}-
+          nanecho-agent-neuro-main-
+          nanecho-checkpoints-
+
+    - name: Download previous model artifacts
+      uses: dawidd6/action-download-artifact@v3
+      continue-on-error: true
+      with:
+        workflow: agent-neuro-train.yml
+        name: agent-neuro-model-*
+        path: echoself/.training-progress/artifacts
+        search_artifacts: true
+        if_no_artifact_found: warn
+
+    - name: Restore checkpoint for cumulative training
+      id: restore_checkpoint
+      run: |
+        cd echoself
+
+        echo "🛡️ CHECKPOINT GUARDIAN: Ensuring cumulative training"
+        echo "=================================================="
+
+        # Create checkpoint directories
+        mkdir -p .training-progress/checkpoints
+        mkdir -p .training-progress/cache
+        mkdir -p ../nanoGPT/out-nanecho-ci
+        mkdir -p ../nanoGPT/out-nanecho-full
+        mkdir -p ../nanoGPT/out-nanecho-relentless
+
+        # Search for existing checkpoints in all locations
+        CHECKPOINT_FOUND=""
+
+        # Priority 1: Check .training-progress/checkpoints
+        if [ -f ".training-progress/checkpoints/latest_checkpoint.pt" ]; then
+          CHECKPOINT_FOUND=".training-progress/checkpoints/latest_checkpoint.pt"
+          echo "✓ Found checkpoint in .training-progress/checkpoints"
+        fi
+
+        # Priority 2: Check downloaded artifacts
+        if [ -z "$CHECKPOINT_FOUND" ]; then
+          ARTIFACT_CKPT=$(find .training-progress/artifacts -name "ckpt.pt" 2>/dev/null | head -1)
+          if [ -n "$ARTIFACT_CKPT" ]; then
+            CHECKPOINT_FOUND="$ARTIFACT_CKPT"
+            echo "✓ Found checkpoint in downloaded artifacts"
+          fi
+        fi
+
+        # Priority 3: Check cache
+        if [ -z "$CHECKPOINT_FOUND" ]; then
+          if [ -f ".training-progress/cache/ckpt.pt" ]; then
+            CHECKPOINT_FOUND=".training-progress/cache/ckpt.pt"
+            echo "✓ Found checkpoint in cache"
+          fi
+        fi
+
+        if [ -n "$CHECKPOINT_FOUND" ]; then
+          echo "🏆 Best checkpoint found: $CHECKPOINT_FOUND"
+
+          # Verify checkpoint integrity
+          python -c "
+          import torch
+          import sys
+          try:
+              ckpt = torch.load('$CHECKPOINT_FOUND', map_location='cpu')
+              iter_num = ckpt.get('iter_num', 0)
+              best_loss = ckpt.get('best_val_loss', float('inf'))
+              print(f'✓ Checkpoint valid: iteration={iter_num}, best_loss={best_loss:.4f}')
+          except Exception as e:
+              print(f'✗ Checkpoint corrupted: {e}')
+              sys.exit(1)
+          " || {
+            echo "❌ Checkpoint verification failed!"
+            CHECKPOINT_FOUND=""
+          }
+
+          if [ -n "$CHECKPOINT_FOUND" ]; then
+            # Copy to all output directories for training
+            cp "$CHECKPOINT_FOUND" ../nanoGPT/out-nanecho-ci/ckpt.pt 2>/dev/null || true
+            cp "$CHECKPOINT_FOUND" ../nanoGPT/out-nanecho-full/ckpt.pt 2>/dev/null || true
+            cp "$CHECKPOINT_FOUND" ../nanoGPT/out-nanecho-relentless/ckpt.pt 2>/dev/null || true
+
+            echo "checkpoint_restored=true" >> $GITHUB_OUTPUT
+            echo "checkpoint_path=$CHECKPOINT_FOUND" >> $GITHUB_OUTPUT
+            echo "✅ Checkpoint restored for cumulative training"
+          fi
+        fi
+
+        if [ -z "$CHECKPOINT_FOUND" ]; then
+          echo ""
+          echo "⚠️ NO CHECKPOINT FOUND - This appears to be the first training run"
+          echo "checkpoint_restored=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: Initialize Agent-Neuro Dynamic Orchestrator
       run: |
         echo "🧠🌪️ INITIALIZING AGENT-NEURO COGNITIVE ORCHESTRATOR..."
@@ -712,7 +818,101 @@ jobs:
         cd echoself/NanEcho
         python analyze_training_triggers.py automation_analysis.json ${{ github.event_name }} ${{ github.event.inputs.relentless_training }}
 
+    # ================================================================
+    # MULTI-LOCATION MODEL BACKUP
+    # CRITICAL: Ensure model can NEVER be lost
+    # ================================================================
+
+    - name: Backup model to multiple locations
+      run: |
+        cd nanoGPT
+        CHECKPOINT="${{ steps.params.outputs.output_dir }}/ckpt.pt"
+        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+        echo "🛡️ MULTI-LOCATION MODEL BACKUP"
+        echo "=============================="
+
+        # Create backup directories
+        mkdir -p ../echoself/.training-progress/checkpoints
+        mkdir -p ../echoself/.training-progress/cache
+        mkdir -p /tmp/nanecho-checkpoint-backup
+
+        # Get checkpoint metadata
+        ITER_NUM=$(python -c "
+        import torch
+        ckpt = torch.load('$CHECKPOINT', map_location='cpu')
+        print(ckpt.get('iter_num', 0))
+        " 2>/dev/null || echo "0")
+
+        VAL_LOSS=$(python -c "
+        import torch
+        ckpt = torch.load('$CHECKPOINT', map_location='cpu')
+        print(f'{ckpt.get(\"best_val_loss\", 999.0):.4f}')
+        " 2>/dev/null || echo "999.0")
+
+        echo "📊 Checkpoint: iteration=$ITER_NUM, val_loss=$VAL_LOSS"
+
+        BACKUP_COUNT=0
+
+        # Backup 1: .training-progress/checkpoints (committed to repo)
+        cp "$CHECKPOINT" "../echoself/.training-progress/checkpoints/latest_checkpoint.pt" && {
+          cp "$CHECKPOINT" "../echoself/.training-progress/checkpoints/checkpoint_iter${ITER_NUM}_${TIMESTAMP}.pt"
+          echo "✓ Backed up to .training-progress/checkpoints"
+          BACKUP_COUNT=$((BACKUP_COUNT + 1))
+        } || echo "⚠️ Failed to backup to .training-progress/checkpoints"
+
+        # Backup 2: .training-progress/cache (GitHub Actions cache)
+        cp "$CHECKPOINT" "../echoself/.training-progress/cache/ckpt.pt" && {
+          echo "✓ Backed up to .training-progress/cache"
+          BACKUP_COUNT=$((BACKUP_COUNT + 1))
+        } || echo "⚠️ Failed to backup to .training-progress/cache"
+
+        # Backup 3: /tmp (temporary, for artifact upload)
+        cp "$CHECKPOINT" "/tmp/nanecho-checkpoint-backup/ckpt.pt" && {
+          echo "✓ Backed up to /tmp/nanecho-checkpoint-backup"
+          BACKUP_COUNT=$((BACKUP_COUNT + 1))
+        } || echo "⚠️ Failed to backup to /tmp"
+
+        # Create backup manifest
+        cat > "../echoself/.training-progress/checkpoints/backup_manifest.json" << EOF
+        {
+          "timestamp": "$TIMESTAMP",
+          "iteration": $ITER_NUM,
+          "val_loss": $VAL_LOSS,
+          "output_dir": "${{ steps.params.outputs.output_dir }}",
+          "workflow_run": "${{ github.run_number }}",
+          "commit": "${{ github.sha }}",
+          "backup_count": $BACKUP_COUNT,
+          "orchestrator": "Agent-Neuro"
+        }
+        EOF
+
+        echo ""
+        if [ $BACKUP_COUNT -ge 2 ]; then
+          echo "✅ Model backed up to $BACKUP_COUNT locations (SAFE)"
+        else
+          echo "⚠️ WARNING: Only $BACKUP_COUNT backup(s) succeeded!"
+        fi
+
     - name: Upload trained Deep Tree Echo model
+      uses: actions/upload-artifact@v4
+      with:
+        name: agent-neuro-model-${{ steps.params.outputs.output_dir }}
+        path: nanoGPT/${{ steps.params.outputs.output_dir }}/
+        retention-days: 30
+
+    - name: Upload checkpoint backup artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: checkpoint-backup-agent-neuro-${{ github.run_number }}
+        path: |
+          echoself/.training-progress/checkpoints/
+          /tmp/nanecho-checkpoint-backup/
+        retention-days: 90
+        if-no-files-found: warn
+
+    - name: Upload trained Deep Tree Echo model (legacy name)
       uses: actions/upload-artifact@v4
       with:
         name: deep-tree-echo-model-${{ steps.params.outputs.output_dir }}

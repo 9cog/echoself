@@ -38,10 +38,15 @@ on:
         default: '1000'
         type: string
       force_fresh_start:
-        description: 'Force fresh start (ignore cached checkpoints)'
+        description: 'DANGEROUS: Force fresh start - ONLY use if you understand this deletes all training progress'
         required: False
         default: 'false'
         type: boolean
+      confirm_fresh_start:
+        description: 'Type "I CONFIRM FRESH START" to enable force_fresh_start (required safety check)'
+        required: False
+        default: ''
+        type: string
       max_checkpoints:
         description: 'Maximum cached checkpoints to keep'
         required: False
@@ -81,6 +86,48 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r ${{ github.workspace }}/echoself/requirements.txt
 
+    # ================================================================
+    # CUMULATIVE TRAINING SAFETY CHECK
+    # ================================================================
+
+    - name: Validate fresh start request (if any)
+      id: safety_check
+      run: |
+        echo "🛡️ CHECKPOINT GUARDIAN: Safety validation"
+        echo "=========================================="
+
+        FORCE_FRESH="${{ github.event.inputs.force_fresh_start || 'false' }}"
+        CONFIRM="${{ github.event.inputs.confirm_fresh_start || '' }}"
+
+        if [[ "$FORCE_FRESH" == "true" ]]; then
+          if [[ "$CONFIRM" != "I CONFIRM FRESH START" ]]; then
+            echo "❌ SAFETY CHECK FAILED"
+            echo ""
+            echo "You requested force_fresh_start=true but did not provide the"
+            echo "required confirmation string."
+            echo ""
+            echo "To force a fresh start (which DELETES all training progress):"
+            echo "  1. Set force_fresh_start: true"
+            echo "  2. Set confirm_fresh_start: 'I CONFIRM FRESH START'"
+            echo ""
+            echo "This safety check exists because fresh starts:"
+            echo "  - Delete ALL cumulative training progress"
+            echo "  - Cannot be undone"
+            echo "  - Should only be used in extreme circumstances"
+            echo ""
+            echo "Defaulting to CUMULATIVE training mode (safe)."
+            echo "allow_fresh_start=false" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ WARNING: Fresh start CONFIRMED by user"
+            echo "   All previous checkpoints will be ignored"
+            echo "   This action cannot be undone"
+            echo "allow_fresh_start=true" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "✓ Cumulative training mode (default, safe)"
+          echo "allow_fresh_start=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: Determine training parameters
       id: params
       run: |
@@ -117,8 +164,8 @@ jobs:
           echo "cache_key=full" >> $GITHUB_OUTPUT
         fi
         
-        # Cache settings
-        echo "force_fresh_start=${{ github.event.inputs.force_fresh_start || 'false' }}" >> $GITHUB_OUTPUT
+        # Cache settings - use safety_check output, not raw input
+        echo "force_fresh_start=${{ steps.safety_check.outputs.allow_fresh_start }}" >> $GITHUB_OUTPUT
         echo "max_checkpoints=${{ github.event.inputs.max_checkpoints || '10' }}" >> $GITHUB_OUTPUT
         echo "max_cache_size_gb=${{ github.event.inputs.max_cache_size_gb || '5.0' }}" >> $GITHUB_OUTPUT
 
@@ -358,6 +405,60 @@ jobs:
         EOFPYTHON
         python /tmp/create_summary.py
 
+    # ================================================================
+    # MULTI-LOCATION MODEL BACKUP
+    # CRITICAL: Ensure model can NEVER be lost
+    # ================================================================
+
+    - name: Backup model to multiple locations
+      run: |
+        cd echoself
+        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+        echo "🛡️ MULTI-LOCATION MODEL BACKUP"
+        echo "=============================="
+
+        # Create backup directories
+        mkdir -p .training-progress/checkpoints
+        mkdir -p /tmp/nanecho-checkpoint-backup
+
+        BACKUP_COUNT=0
+
+        # Find the best checkpoint to backup
+        BEST_CKPT=""
+        if [ -f "${{ steps.params.outputs.output_dir }}/best_model_export.pt" ]; then
+          BEST_CKPT="${{ steps.params.outputs.output_dir }}/best_model_export.pt"
+        elif [ -f "${{ steps.params.outputs.output_dir }}/cache/checkpoints/latest.pt" ]; then
+          BEST_CKPT="${{ steps.params.outputs.output_dir }}/cache/checkpoints/latest.pt"
+        fi
+
+        if [ -n "$BEST_CKPT" ] && [ -f "$BEST_CKPT" ]; then
+          echo "📦 Best checkpoint: $BEST_CKPT"
+
+          # Backup 1: .training-progress/checkpoints (committed to repo)
+          cp "$BEST_CKPT" ".training-progress/checkpoints/latest_checkpoint.pt" && {
+            cp "$BEST_CKPT" ".training-progress/checkpoints/checkpoint_${TIMESTAMP}.pt"
+            echo "✓ Backed up to .training-progress/checkpoints"
+            BACKUP_COUNT=$((BACKUP_COUNT + 1))
+          } || echo "⚠️ Failed to backup to .training-progress/checkpoints"
+
+          # Backup 2: /tmp (for additional artifact upload)
+          cp "$BEST_CKPT" "/tmp/nanecho-checkpoint-backup/best_model.pt" && {
+            echo "✓ Backed up to /tmp/nanecho-checkpoint-backup"
+            BACKUP_COUNT=$((BACKUP_COUNT + 1))
+          } || echo "⚠️ Failed to backup to /tmp"
+
+          echo ""
+          if [ $BACKUP_COUNT -ge 2 ]; then
+            echo "✅ Model backed up to $BACKUP_COUNT locations (SAFE)"
+          else
+            echo "⚠️ WARNING: Only $BACKUP_COUNT backup(s) succeeded!"
+          fi
+        else
+          echo "⚠️ No best checkpoint found to backup"
+          ls -la ${{ steps.params.outputs.output_dir }}/ || true
+        fi
+
     - name: Upload cached training artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -365,6 +466,17 @@ jobs:
         path: |
           echoself/${{ steps.params.outputs.output_dir }}/
         retention-days: 30
+
+    - name: Upload checkpoint backup artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: checkpoint-backup-${{ github.run_number }}
+        path: |
+          echoself/.training-progress/checkpoints/
+          /tmp/nanecho-checkpoint-backup/
+        retention-days: 90
+        if-no-files-found: warn
 
     - name: Upload training summary
       uses: actions/upload-artifact@v4
