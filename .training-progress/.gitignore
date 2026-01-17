@@ -1,7 +1,5 @@
-# Exclude large model checkpoint files
-*.pt
-*.pth
-*.bin
+# Model checkpoints - now tracked via Git LFS
+# (*.pt, *.pth, *.bin are handled by root .gitattributes for LFS)
 
 # Keep important metadata and summaries
 !**/metadata.json

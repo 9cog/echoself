@@ -86,10 +86,8 @@ evaluation_loop.log
 *.tmp
 *.temp
 
-# Model checkpoints and data
-*.pt
-*.pth
-*.bin
+# Model checkpoints - now tracked via Git LFS
+# (*.pt, *.pth, *.bin are handled by .gitattributes for LFS)
 data/*/
 out-*/
 
