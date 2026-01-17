@@ -48,7 +48,7 @@ export class EchoLaylaService {
   private inferenceConfig: InferenceConfig = DEFAULT_INFERENCE_CONFIG;
   private privacySettings: PrivacySettings = DEFAULT_PRIVACY_SETTINGS;
   private tasks: Map<string, AutomationTask> = new Map();
-  private aiAdapter: AIAdapter;
+  private aiAdapter!: AIAdapter;
 
   /**
    * Initialize the service

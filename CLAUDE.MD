@@ -11,6 +11,7 @@ This file provides essential context for Claude Code when working with the EchoS
 - **Echo State Networks**: Temporal pattern recognition and adaptive learning
 - **Hypergraph Pattern Encoding**: Neural-symbolic cognitive associations
 - **Toroidal Dual-Persona Processing**: Interdependent cognitive streams
+- **EchoLayla**: Character-based AI assistant integration
 
 ## Quick Reference
 
@@ -25,13 +26,18 @@ This file provides essential context for Claude Code when working with the EchoS
 ├── src/services/         # Core TypeScript services
 │   ├── deepTreeEchoService.ts
 │   ├── toroidalCognitiveService.ts
-│   └── adaptiveFeedbackService.ts
+│   ├── adaptiveFeedbackService.ts
+│   └── feedback/             # Hypergraph feedback system
+├── app/                  # Remix web application
+│   ├── routes/               # Application routes
+│   └── services/             # App-level services (echolayla, etc.)
 ├── .github/
-│   ├── workflows/        # 10 CI/CD workflows
+│   ├── workflows/        # 12 CI/CD workflows
 │   └── agents/           # 80+ agent personality definitions
 ├── echo/                 # Echo State Network modules
-├── app/                  # Remix web application
-└── .training-progress/   # Training session logs
+├── chatbot/              # Standalone web chatbot
+├── .training-progress/   # Training session logs
+└── .maintenance-logs/    # Automated maintenance reports
 ```
 
 ### Essential Commands
@@ -39,21 +45,42 @@ This file provides essential context for Claude Code when working with the EchoS
 ```bash
 # Development
 npm run dev              # Start development server
-npm run build            # Production build
+npm run build            # Production build (verified: ~7s)
 npm start                # Run production server
+
+# Code Quality
+npm run lint             # ESLint check (13 warnings acceptable)
+npm run lint:fix         # Auto-fix ESLint issues
+npm run format           # Prettier formatting
+npm run format:check     # Check formatting
+npm run typecheck        # TypeScript compilation
 
 # Training (NanEcho)
 cd NanEcho
 python prepare_nanecho.py --echo_depth=5 --persona_weight=0.9
 python server.py         # Start inference server
 
-# Code Quality
-npm run lint             # ESLint check
-npm run format           # Prettier formatting
-deno lint               # Deno linting (for .ts files)
+# Dependency Management
+npm run audit:deps       # Run dependency audit
+npm audit                # Check for vulnerabilities
+```
 
-# Testing
-npm test                 # Run test suite
+### Repair Sequence
+
+When the project needs repair (e.g., after clone or dependency issues):
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Verify lint (should show 13 warnings, 0 errors)
+npm run lint
+
+# 3. Verify TypeScript compilation (should pass)
+npm run typecheck
+
+# 4. Verify build (should complete in ~7s)
+npm run build
 ```
 
 ### Configuration Files
@@ -64,6 +91,9 @@ npm test                 # Run test suite
 | `package.json`        | Node.js dependencies           |
 | `pyproject.toml`      | Python package config          |
 | `.env.example`        | Environment variables template |
+| `.eslintrc.cjs`       | ESLint configuration (legacy)  |
+| `tsconfig.json`       | TypeScript configuration       |
+| `vite.config.ts`      | Vite bundler configuration     |
 
 ## Architecture Concepts
 
@@ -99,6 +129,9 @@ threshold = 0.5 + (cognitive_load * 0.3) - (recent_activity * 0.2)
 | `netrain.yml`                   | Primary NanEcho training        |
 | `agent-neuro-train.yml`         | Agent-Neuro supervised training |
 | `netrain-cached.yml`            | Cached/incremental training     |
+| `nctrain.yml`                   | NanCog training                 |
+| `ncrun.yml`                     | NanCog run/inference            |
+| `nerun.yml`                     | NanEcho run/inference           |
 | `test-training-persistence.yml` | Training persistence tests      |
 
 ### Quality Workflows
@@ -108,8 +141,36 @@ threshold = 0.5 + (cognitive_load * 0.3) - (recent_activity * 0.2)
 | `automated-quality.yml`     | Linting, formatting, security |
 | `deno.yml`                  | Deno-specific checks          |
 | `disk-space-management.yml` | CI disk management            |
+| `deploy-chatbot.yml`        | Deploy standalone chatbot     |
+
+## Current Project State
+
+### Quality Metrics (as of last repair)
+
+- **TypeScript**: Zero errors (clean compilation)
+- **ESLint**: 13 warnings (acceptable technical debt - `any` types for external APIs)
+- **Build**: Successful (~7s)
+- **Security**: 35 vulnerabilities (mostly dev-only, monitored)
+
+### Known Acceptable Warnings
+
+The 13 ESLint warnings are intentional `any` types in:
+- `hypergraphSchemeCore.ts` (6 instances) - Dynamic cognitive patterns
+- `mem0aiService.ts` (3 instances) - OpenAI SDK compatibility
+- `toroidalCognitiveService.ts` (2 instances) - Flexible cognitive typing
+- `adaptiveFeedbackService.ts` (1 instance) - Feedback system
+- `tests.ts` (1 instance) - Test fixtures
 
 ## Common Issues & Solutions
+
+### ESLint Flat Config Error
+
+If you see "Invalid option '--ignore-path'" error:
+```bash
+# The fix is already in package.json (ESLINT_USE_FLAT_CONFIG=false)
+# If not, run:
+ESLINT_USE_FLAT_CONFIG=false npm run lint
+```
 
 ### tiktoken Network Failures
 
@@ -122,7 +183,6 @@ enc = tiktoken.get_encoding('gpt2')
 ### Insufficient Training Data
 
 Increase parameters:
-
 ```bash
 python prepare_nanecho.py --echo_depth=7 --persona_weight=0.95
 ```
@@ -130,6 +190,13 @@ python prepare_nanecho.py --echo_depth=7 --persona_weight=0.95
 ### Git Push Conflicts in CI
 
 Workflows use 4-layer fallback: pull-rebase → retry → force-lease → backup-branch
+
+### TypeScript Definite Assignment
+
+If you see "has no initializer" errors for properties initialized in `initialize()` methods, use the definite assignment assertion:
+```typescript
+private property!: Type;  // Note the ! operator
+```
 
 ## Environment Variables
 
@@ -156,6 +223,7 @@ OPENAI_API_KEY=your_openai_key  # Optional
 2. Use TypeScript strict mode
 3. Follow existing hypergraph pattern encoding conventions
 4. Maintain persona dimension consistency
+5. Use `!` definite assignment for properties initialized in `initialize()` methods
 
 ### When Modifying Workflows
 
@@ -170,7 +238,7 @@ OPENAI_API_KEY=your_openai_key  # Optional
 
 - TypeScript: Zero errors required
 - ESLint: 13 warnings acceptable (documented)
-- Security: 8 dev-only vulnerabilities tracked
+- Security: Dev-only vulnerabilities tracked
 - Formatting: Prettier enforced
 
 ### Maintenance Logs
@@ -185,10 +253,11 @@ All automated changes logged in `.maintenance-logs/`:
 
 Primary agents in `.github/agents/`:
 
-- **deep-tree-echo.md** - Primary persona
+- **DEEP_TREE_ECHO.md** - Primary persona
+- **NANECHO.md** - GPT-2 trained persona
 - **agent-neuro.md** - Chaotic cognitive VTuber supervisor
-- **marduk.md** - AI scientist personality
-- **echolayla.md** - Character-based AI integration
+- **Marduk-ML-AI-Workbench.md** - AI scientist personality
+- **AUTOGNOSIS.md** - Self-knowledge system
 
 ## Cognitive Architecture Principles
 
@@ -218,9 +287,18 @@ cd NanEcho && python prepare_nanecho.py --echo_depth=3
 
 # Build verification
 npm run build
+
+# Full quality check
+npm run lint && npm run typecheck && npm run build
 ```
 
 ## Troubleshooting
+
+### Dependencies Not Installed
+
+```bash
+npm install
+```
 
 ### Training Data Not Found
 
@@ -233,6 +311,7 @@ npm run build
 1. Run `npm run typecheck`
 2. Check `.eslintrc.cjs` for rules
 3. Some `any` types required for OpenAI SDK
+4. Use `!` for properties with delayed initialization
 
 ### Workflow Failures
 
@@ -240,6 +319,13 @@ npm run build
 2. Review GitHub Actions artifacts
 3. Check for disk space issues on runners
 
+### Build Failures
+
+1. Ensure `npm install` has been run
+2. Check for TypeScript errors first
+3. Review Remix/Vite warnings (most are informational)
+
 ---
 
+_Last updated: 2026-01-17_
 _This CLAUDE.MD provides essential context for AI-assisted development. For detailed documentation, see the specific README files in each subdirectory._
