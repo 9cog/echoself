@@ -129,6 +129,7 @@ threshold = 0.5 + (cognitive_load * 0.3) - (recent_activity * 0.2)
 The project implements a multi-layer checkpoint protection system:
 
 1. **Checkpoint Restoration Priority**:
+
    - `.training-progress/checkpoints/latest_checkpoint.pt` (highest priority)
    - Downloaded artifacts from previous workflow runs
    - GitHub Actions cache
@@ -136,6 +137,7 @@ The project implements a multi-layer checkpoint protection system:
 
 2. **Multi-Location Model Backup**:
    Every training run saves checkpoints to multiple locations:
+
    - `.training-progress/checkpoints/` - Committed to repository
    - `.training-progress/cache/` - GitHub Actions cache
    - `/tmp/nanecho-checkpoint-backup/` - Uploaded as artifact
@@ -150,6 +152,7 @@ The project implements a multi-layer checkpoint protection system:
 ### Backup Manifest
 
 Each checkpoint backup includes a manifest with:
+
 ```json
 {
   "timestamp": "20260117_143022",
@@ -220,6 +223,7 @@ python scripts/checkpoint_guardian.py --output-dir out-nanecho --action restore 
 ### Known Acceptable Warnings
 
 The 13 ESLint warnings are intentional `any` types in:
+
 - `hypergraphSchemeCore.ts` (6 instances) - Dynamic cognitive patterns
 - `mem0aiService.ts` (3 instances) - OpenAI SDK compatibility
 - `toroidalCognitiveService.ts` (2 instances) - Flexible cognitive typing
@@ -231,6 +235,7 @@ The 13 ESLint warnings are intentional `any` types in:
 ### ESLint Flat Config Error
 
 If you see "Invalid option '--ignore-path'" error:
+
 ```bash
 # The fix is already in package.json (ESLINT_USE_FLAT_CONFIG=false)
 # If not, run:
@@ -248,6 +253,7 @@ enc = tiktoken.get_encoding('gpt2')
 ### Insufficient Training Data
 
 Increase parameters:
+
 ```bash
 python prepare_nanecho.py --echo_depth=7 --persona_weight=0.95
 ```
@@ -259,6 +265,7 @@ Workflows use 4-layer fallback: pull-rebase → retry → force-lease → backup
 ### TypeScript Definite Assignment
 
 If you see "has no initializer" errors for properties initialized in `initialize()` methods, use the definite assignment assertion:
+
 ```typescript
 private property!: Type;  // Note the ! operator
 ```
