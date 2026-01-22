@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-01-21 02:44:12 UTC
+# Dependency Audit Report - 2026-01-22 02:41:53 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-01-21T02:44:10.633Z",
+  "timestamp": "2026-01-22T02:41:51.603Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -185,6 +185,44 @@ node_modules/estree-util-value-to-estree
   Depends on vulnerable versions of estree-util-value-to-estree
   node_modules/remark-mdx-frontmatter
 
+lodash  4.0.0 - 4.17.21
+Severity: moderate
+Lodash has Prototype Pollution Vulnerability in `_.unset` and `_.omit` functions - https://github.com/advisories/GHSA-xxjr-mmjv-4gpg
+fix available via `npm audit fix`
+node_modules/lodash
+
+lodash-es  4.0.0 - 4.17.22
+Severity: moderate
+Lodash has Prototype Pollution Vulnerability in `_.unset` and `_.omit` functions - https://github.com/advisories/GHSA-xxjr-mmjv-4gpg
+fix available via `npm audit fix --force`
+Will install mermaid@10.9.5, which is a breaking change
+node_modules/lodash-es
+  @chevrotain/cst-dts-gen  >=11.0.0
+  Depends on vulnerable versions of @chevrotain/gast
+  Depends on vulnerable versions of lodash-es
+  node_modules/@chevrotain/cst-dts-gen
+  @chevrotain/gast  >=11.0.0
+  Depends on vulnerable versions of lodash-es
+  node_modules/@chevrotain/gast
+  chevrotain  >=11.0.0
+  Depends on vulnerable versions of @chevrotain/cst-dts-gen
+  Depends on vulnerable versions of @chevrotain/gast
+  Depends on vulnerable versions of lodash-es
+  node_modules/chevrotain
+    chevrotain-allstar  >=0.3.0
+    Depends on vulnerable versions of chevrotain
+    node_modules/chevrotain-allstar
+    langium  >=2.0.0-next.239179f
+    Depends on vulnerable versions of chevrotain
+    Depends on vulnerable versions of chevrotain-allstar
+    node_modules/langium
+      @mermaid-js/parser  *
+      Depends on vulnerable versions of langium
+      node_modules/@mermaid-js/parser
+        mermaid  >=11.0.0-alpha.1
+        Depends on vulnerable versions of @mermaid-js/parser
+        node_modules/mermaid
+
 qs  <6.14.1
 Severity: high
 qs's arrayLimit bypass in its bracket notation allows DoS via memory exhaustion - https://github.com/advisories/GHSA-6rw7-vpxm-498p
@@ -222,7 +260,7 @@ Valibot has a ReDoS vulnerability in `EMOJI_REGEX` - https://github.com/advisori
 fix available via `npm audit fix`
 node_modules/valibot
 
-23 vulnerabilities (2 low, 6 moderate, 12 high, 3 critical)
+32 vulnerabilities (2 low, 15 moderate, 12 high, 3 critical)
 
 To address issues that do not require attention, run:
   npm audit fix
