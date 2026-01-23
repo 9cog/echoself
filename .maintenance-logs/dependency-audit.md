@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-01-22 02:41:53 UTC
+# Dependency Audit Report - 2026-01-23 02:38:53 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-01-22T02:41:51.603Z",
+  "timestamp": "2026-01-23T02:38:51.813Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -250,6 +250,7 @@ node_modules/tar
   node_modules/cacache
 
 undici  <6.23.0
+Severity: moderate
 Undici has an unbounded decompression chain in HTTP responses on Node.js Fetch API via Content-Encoding leads to resource exhaustion - https://github.com/advisories/GHSA-g9mf-h72j-4rw9
 fix available via `npm audit fix`
 node_modules/undici
@@ -260,7 +261,7 @@ Valibot has a ReDoS vulnerability in `EMOJI_REGEX` - https://github.com/advisori
 fix available via `npm audit fix`
 node_modules/valibot
 
-32 vulnerabilities (2 low, 15 moderate, 12 high, 3 critical)
+32 vulnerabilities (1 low, 16 moderate, 12 high, 3 critical)
 
 To address issues that do not require attention, run:
   npm audit fix
