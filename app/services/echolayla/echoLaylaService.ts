@@ -56,9 +56,6 @@ export class EchoLaylaService {
   async initialize(): Promise<void> {
     console.log("[EchoLayla] Initializing service...");
 
-    // Initialize AI adapter
-    this.aiAdapter = getDefaultAdapter();
-
     // Load saved settings from localStorage if available
     if (typeof window !== "undefined") {
       this.loadSettings();
