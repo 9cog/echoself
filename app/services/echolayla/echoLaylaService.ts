@@ -48,16 +48,13 @@ export class EchoLaylaService {
   private inferenceConfig: InferenceConfig = DEFAULT_INFERENCE_CONFIG;
   private privacySettings: PrivacySettings = DEFAULT_PRIVACY_SETTINGS;
   private tasks: Map<string, AutomationTask> = new Map();
-  private aiAdapter!: AIAdapter;
+  private aiAdapter: AIAdapter = getDefaultAdapter();
 
   /**
    * Initialize the service
    */
   async initialize(): Promise<void> {
     console.log("[EchoLayla] Initializing service...");
-
-    // Initialize AI adapter
-    this.aiAdapter = getDefaultAdapter();
 
     // Load saved settings from localStorage if available
     if (typeof window !== "undefined") {
