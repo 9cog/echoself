@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-01-27 02:43:14 UTC
+# Dependency Audit Report - 2026-01-28 02:40:35 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-01-27T02:43:11.988Z",
+  "timestamp": "2026-01-28T02:40:33.556Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -209,7 +209,7 @@ node_modules/lodash-es
   Depends on vulnerable versions of @chevrotain/gast
   Depends on vulnerable versions of lodash-es
   node_modules/chevrotain
-    langium  >=2.1.0
+    langium  2.1.0 - 4.1.3
     Depends on vulnerable versions of chevrotain
     node_modules/langium
       @mermaid-js/parser  *
