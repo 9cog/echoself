@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-01-28 02:40:35 UTC
+# Dependency Audit Report - 2026-01-29 02:53:07 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-01-28T02:40:33.556Z",
+  "timestamp": "2026-01-29T02:53:05.681Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -233,10 +233,11 @@ node_modules/qs
     node_modules/express
 
 
-tar  <=7.5.3
+tar  <=7.5.6
 Severity: high
 node-tar is Vulnerable to Arbitrary File Overwrite and Symlink Poisoning via Insufficient Path Sanitization - https://github.com/advisories/GHSA-8qq5-rm4j-mr97
 Race Condition in node-tar Path Reservations via Unicode Ligature Collisions on macOS APFS - https://github.com/advisories/GHSA-r6q2-hw4h-h46w
+node-tar Vulnerable to Arbitrary File Creation/Overwrite via Hardlink Path Traversal - https://github.com/advisories/GHSA-34x7-hfp2-rc4v
 fix available via `npm audit fix`
 node_modules/@tailwindcss/oxide/node_modules/tar
 node_modules/@tailwindcss/postcss/node_modules/tar
