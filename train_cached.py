@@ -104,7 +104,7 @@ class CachedNanEchoTrainer(NanEchoTrainer):
         # Try to load checkpoints in order of quality, never give up if cache exists
         for i, checkpoint_id in enumerate(compatible_checkpoints):
             try:
-                print(f"🔄 Attempting to resume from checkpoint {i+1}/{len(compatible_checkpoints)}: {checkpoint_id}")
+                print(f"🔄 Attempting to resume from checkpoint {i + 1}/{len(compatible_checkpoints)}: {checkpoint_id}")
                 
                 checkpoint_data, metadata = self.cache.load_checkpoint(
                     checkpoint_id,

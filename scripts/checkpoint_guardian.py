@@ -113,26 +113,25 @@ class CheckpointGuardian:
     def _verify_checkpoint(self, checkpoint_path: Path, expected_checksum: Optional[str] = None) -> bool:
         """Verify checkpoint file integrity.
         
-        NOTE: This method now prioritizes checkpoint availability over strict validation.
-        When cache is restored, we NEVER fail verification - we continue with checkpoints
-        even if they have issues. Warnings are logged but training proceeds.
+        NOTE: This method prioritizes checkpoint availability over strict validation.
+        It returns False only for files that are completely unusable (non-existent, empty,
+        or completely unloadable). For files with minor issues (checksum mismatches,
+        missing optional keys), it returns True with warnings to allow retry logic to handle them.
         """
         if not checkpoint_path.exists():
             return False
 
         # Check file size (must be non-zero)
         if checkpoint_path.stat().st_size == 0:
-            print(f"⚠️ WARNING: Checkpoint {checkpoint_path} is empty - but continuing anyway")
-            # Still return True to allow continuation with checkpoint
-            return True
+            print(f"⚠️ WARNING: Checkpoint {checkpoint_path} is empty - skipping")
+            return False
 
-        # Verify checksum if provided
+        # Verify checksum if provided (warning only, don't fail)
         if expected_checksum:
             actual_checksum = self._compute_checksum(checkpoint_path)
             if actual_checksum != expected_checksum:
-                print(f"⚠️ WARNING: Checksum mismatch for {checkpoint_path} - but continuing anyway")
-                # Log warning but don't fail - continue with checkpoint
-                pass
+                print(f"⚠️ WARNING: Checksum mismatch for {checkpoint_path} - but will try to use it")
+                # Log warning but don't fail - let the actual load attempt determine usability
 
         # Try to load with torch to verify it's valid
         try:
@@ -143,14 +142,14 @@ class CheckpointGuardian:
                 # Check for alternative formats
                 if 'model_state_dict' in checkpoint or 'state_dict' in checkpoint:
                     return True
-                print(f"⚠️ WARNING: Checkpoint {checkpoint_path} missing some required keys - but continuing anyway")
+                print(f"⚠️ WARNING: Checkpoint {checkpoint_path} missing some required keys - but may still be usable")
                 # Don't fail verification - allow continuation
             return True
         except Exception as e:
-            print(f"⚠️ WARNING: Failed to load checkpoint {checkpoint_path}: {e}")
-            print(f"   Continuing anyway - cache restoration never fails verification")
-            # Return True to allow continuation despite load failure
-            return True
+            print(f"⚠️ WARNING: Cannot load checkpoint {checkpoint_path}: {e}")
+            print(f"   This checkpoint appears corrupted - skipping to try others")
+            # Return False for completely unloadable files so we skip them early
+            return False
 
     def find_best_checkpoint(self) -> Optional[Path]:
         """
