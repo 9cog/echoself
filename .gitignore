@@ -103,3 +103,6 @@ build/
 # Test files
 nanoGPT/config/test_*.py
 nanoGPT/data/
+
+# Generated reports
+cognitive_analysis_report.json
