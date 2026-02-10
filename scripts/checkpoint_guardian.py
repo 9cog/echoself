@@ -130,7 +130,7 @@ class CheckpointGuardian:
         if expected_checksum:
             actual_checksum = self._compute_checksum(checkpoint_path)
             if actual_checksum != expected_checksum:
-                print(f"⚠️ WARNING: Checksum mismatch for {checkpoint_path} - but will try to use it")
+                print(f"⚠️ WARNING: Checksum mismatch for {checkpoint_path} - attempting to load anyway")
                 # Log warning but don't fail - let the actual load attempt determine usability
 
         # Try to load with torch to verify it's valid
@@ -153,8 +153,9 @@ class CheckpointGuardian:
             return True
         except Exception as e:
             print(f"⚠️ WARNING: Cannot load checkpoint {checkpoint_path}: {e}")
-            print(f"   This checkpoint appears corrupted - skipping to try others")
-            # Return False for completely unloadable files so we skip them early
+            print(f"   This checkpoint appears corrupted and unusable")
+            # Return False for completely unloadable files - signals caller to skip this
+            # and try the next checkpoint (retry logic is in train_cached.py)
             return False
 
     def find_best_checkpoint(self) -> Optional[Path]:

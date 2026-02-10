@@ -20,7 +20,7 @@ def test_checkpoint_guardian_changes():
     checks = [
         ('prioritizes checkpoint availability over strict validation' in content.lower(), 
          "Lenient verification comment"),
-        ('WARNING' in content and 'will try to use it' in content.lower(),
+        ('WARNING' in content and 'attempting to load anyway' in content.lower(),
          "Warning messages for lenient verification"),
         ('return True' in content.split('def _verify_checkpoint')[1].split('def find_best_checkpoint')[0],
          "Returns True for usable checkpoints"),

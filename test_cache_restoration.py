@@ -170,7 +170,7 @@ def test_no_fallback_to_fresh():
         "Lenient verification philosophy not found"
     print("✅ Lenient verification philosophy found")
     
-    assert 'WARNING' in guardian_content and 'will try to use it' in guardian_content.lower(), \
+    assert 'WARNING' in guardian_content and 'attempting to load anyway' in guardian_content.lower(), \
         "Warning messages for lenient behavior not found"
     print("✅ Warning messages for lenient behavior found")
     
