@@ -89,8 +89,8 @@ class CognitiveAnalyzer:
         activity_adjustment = 0.20
         
         return (base_threshold + 
-                (self.cognitive_load * load_factor) - 
-                (self.recent_activity * activity_adjustment))
+                (self.cognitive_load * load_factor) + 
+                (-(self.recent_activity * activity_adjustment)))
     
     def scan_repository(self, threshold: float = None) -> List[Tuple[str, float]]:
         """

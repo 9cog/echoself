@@ -100,7 +100,7 @@
         (activity-adjustment 0.20))
     (+ base-threshold
        (* current-load load-factor)
-       (- activity-adjustment recent-activity))))
+       (- (* recent-activity activity-adjustment)))))
 
 ; ------------------------------------------------------
 ; Attention-Based Filtering

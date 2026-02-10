@@ -86,14 +86,14 @@
       (lambda (path statinfo flag)
         (case flag
           ((regular)
-           (set! result (cons path result)))
+           (set! result (cons path result))
+           #t)
           ((directory)
-           (when (or (string-match "/\\." path)
-                     (string-match "node_modules" path)
-                     (string-match "__pycache__" path))
-             #f))  ; Skip hidden dirs
-          (else #t))
-        #t))
+           ; Skip hidden directories and build artifacts
+           (not (or (string-match "/\\." path)
+                    (string-match "node_modules" path)
+                    (string-match "__pycache__" path))))
+          (else #t))))
     (reverse result)))
 
 ; ------------------------------------------------------
