@@ -52,6 +52,7 @@ python server.py
 - **Workshop**: Access development tools and creative coding environments (Arena as Workspace)
 - **Visualization Studio**: Transform abstract data into insightful visual representations
 - **🔄 Adaptive Feedback Loop**: Autonomous hypergraph-encoded cognitive enhancement system
+- **🧬 Hypergraph Encoding System**: Scheme-based repository introspection with adaptive attention allocation ([Documentation](echo/hypergraph/README.md))
 
 ## Architecture
 
@@ -147,6 +148,28 @@ The Adaptive Feedback Loop implements a hypergraph-encoded cognitive enhancement
 - **Copilot Integration**: Mocked interface with clear extension points for AI-assisted model improvements
 
 See [`src/services/feedback/README.md`](src/services/feedback/README.md) for detailed documentation and cognitive flowchart.
+
+### 🧬 Hypergraph Encoding System
+
+The Deep Tree Echo Hypergraph Encoding System provides Scheme-based repository introspection and cognitive pattern recognition:
+
+- **Semantic Salience**: Intelligent file importance scoring (0.0-1.0)
+- **Adaptive Attention**: Dynamic threshold adjustment based on cognitive state
+- **Repository Analysis**: Recursive traversal with 50KB file size limits
+- **Prompt Templates**: Neural-symbolic reasoning integration for AI systems
+- **Python Bridge**: Seamless integration with Python components
+
+**Quick Start:**
+
+```python
+from echo.hypergraph_bridge import HypergraphBridge
+
+bridge = HypergraphBridge()
+files = bridge.get_repository_files(threshold=0.75)
+prompt = bridge.create_cognitive_prompt("Analyze patterns", 0.3, 0.7)
+```
+
+See [`echo/hypergraph/README.md`](echo/hypergraph/README.md) for complete documentation, architecture diagrams, and examples.
 
 ## Getting Started
 
