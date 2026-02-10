@@ -134,9 +134,10 @@ def main():
             print("  ✅ Clear logging at each step for debugging")
             print("  ✅ Only falls back to fresh if NO checkpoints work")
             print("\nKey Changes:")
-            print("  • checkpoint_guardian._verify_checkpoint() always returns True")
+            print("  • checkpoint_guardian._verify_checkpoint() returns True for usable checkpoints")
+            print("  • checkpoint_guardian._verify_checkpoint() returns False for unusable files")
             print("  • train_cached._attempt_resume_from_cache() tries all checkpoints")
-            print("  • Warnings logged but training never blocked by verification")
+            print("  • Warnings logged, training continues with available checkpoints")
             return 0
         else:
             print("\n❌ SOME VERIFICATION CHECKS FAILED")

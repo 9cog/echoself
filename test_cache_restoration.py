@@ -35,27 +35,29 @@ def test_checkpoint_verification_leniency():
     try:
         guardian = CheckpointGuardian(output_dir=str(test_dir), allow_fresh_start=False)
         
-        # Test 1: Empty file (should pass with warning)
+        # Test 1: Empty file (should FAIL - unusable)
         empty_file = test_dir / "empty.pt"
         empty_file.touch()
         result = guardian._verify_checkpoint(empty_file)
-        assert result == True, "Empty file should pass verification (with warning)"
-        print("✅ Empty file verification: PASS (lenient as expected)")
+        assert result == False, "Empty file should fail verification (unusable)"
+        print("✅ Empty file verification: FAIL (unusable file correctly rejected)")
         
-        # Test 2: Invalid checkpoint (should pass with warning)
+        # Test 2: Invalid checkpoint (should FAIL - corrupted/unloadable)
         invalid_file = test_dir / "invalid.pt"
         with open(invalid_file, 'wb') as f:
             f.write(b"not a valid checkpoint")
         result = guardian._verify_checkpoint(invalid_file)
-        assert result == True, "Invalid file should pass verification (with warning)"
-        print("✅ Invalid file verification: PASS (lenient as expected)")
+        assert result == False, "Invalid file should fail verification (corrupted)"
+        print("✅ Invalid file verification: FAIL (corrupted file correctly rejected)")
         
-        # Test 3: Non-existent file (should fail - file doesn't exist)
+        # Test 3: Non-existent file (should FAIL - file doesn't exist)
         result = guardian._verify_checkpoint(test_dir / "nonexistent.pt")
         assert result == False, "Non-existent file should fail"
-        print("✅ Non-existent file verification: FAIL (expected)")
+        print("✅ Non-existent file verification: FAIL (non-existent correctly rejected)")
         
         print("\n✅ ALL VERIFICATION TESTS PASSED")
+        print("   Verification correctly rejects unusable files (empty, corrupted, non-existent)")
+        print("   But allows files with minor issues (e.g., checksum mismatches) with warnings")
         return True
         
     finally:
@@ -164,15 +166,16 @@ def test_no_fallback_to_fresh():
     with open('scripts/checkpoint_guardian.py', 'r') as f:
         guardian_content = f.read()
     
-    assert 'cache restoration never fails verification' in guardian_content.lower(), \
-        "Lenient verification comment not found"
-    print("✅ Lenient verification documentation found")
+    assert 'prioritizes checkpoint availability over strict validation' in guardian_content.lower(), \
+        "Lenient verification philosophy not found"
+    print("✅ Lenient verification philosophy found")
     
-    assert 'WARNING' in guardian_content and 'continuing anyway' in guardian_content.lower(), \
-        "Warning messages for lenient verification not found"
-    print("✅ Warning messages for lenient verification found")
+    assert 'WARNING' in guardian_content and 'will try to use it' in guardian_content.lower(), \
+        "Warning messages for lenient behavior not found"
+    print("✅ Warning messages for lenient behavior found")
     
     print("\n✅ ALL DOCUMENTATION TESTS PASSED")
+    print("   Smart verification: rejects unusable files, warns about minor issues")
     return True
 
 

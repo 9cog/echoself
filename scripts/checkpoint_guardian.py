@@ -134,6 +134,12 @@ class CheckpointGuardian:
                 # Log warning but don't fail - let the actual load attempt determine usability
 
         # Try to load with torch to verify it's valid
+        # NOTE: weights_only=False is required because checkpoint files contain
+        # optimizer states, scheduler states, and other training metadata that
+        # require arbitrary Python object deserialization. This is safe because:
+        # 1. Checkpoints are created by the same training system
+        # 2. Checkpoints are stored in controlled locations (not user uploads)
+        # 3. The multi-checkpoint retry logic provides redundancy
         try:
             import torch
             checkpoint = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
