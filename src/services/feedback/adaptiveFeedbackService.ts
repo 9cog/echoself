@@ -759,8 +759,8 @@ ${request.requirements.map(req => `// - ${req}`).join("\n")}
   /**
    * Manually trigger feedback loop (for testing/immediate execution)
    */
-  public async triggerFeedbackLoop(): Promise<void> {
-    return await this.executeFeedbackLoop();
+  public triggerFeedbackLoop(): Promise<void> {
+    return this.executeFeedbackLoop();
   }
 
   /**
