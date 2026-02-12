@@ -25,5 +25,6 @@
     "semiColons": true,
     "singleQuote": false,
     "proseWrap": "preserve"
-  }
+  },
+  "_comment": "Linting rules excluded for gradual migration. TODO: Re-enable rules incrementally: no-sloppy-imports (requires .ts extensions), jsx-button-has-type (130 instances), no-explicit-any (22 instances), require-await (30+ instances), no-unused-vars (7 instances), no-window (2 instances)"
 }
