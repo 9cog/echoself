@@ -101,48 +101,53 @@ class CachedNanEchoTrainer(NanEchoTrainer):
             print("📝 No compatible checkpoints found - starting fresh training")
             return False
         
-        # Load the best compatible checkpoint
-        best_checkpoint_id = compatible_checkpoints[0]
-        try:
-            print(f"🔄 Attempting to resume from checkpoint: {best_checkpoint_id}")
-            
-            checkpoint_data, metadata = self.cache.load_checkpoint(
-                best_checkpoint_id,
-                model=self.model,
-                optimizer=self.optimizer,
-                device=self.config.device
-            )
-            
-            # Update training state
-            self.starting_iteration = metadata.iteration
-            self.starting_epoch = metadata.epoch
-            self.best_loss = metadata.val_loss
-            self.resumed_from_checkpoint = True
-            
-            # Restore model iteration for progressive features
-            self.model.current_iteration = checkpoint_data.get('current_iteration', metadata.iteration)
-            
-            # Restore connection ratio if applicable - this should now be automatic via state_dict
-            if hasattr(self.model, 'connection_ratio'):
-                # Connection ratio should be restored from the model state dict,
-                # but we can double-check and restore from saved value if needed
-                saved_ratio = checkpoint_data.get('connection_ratio', None)
-                if saved_ratio is not None and abs(self.model.connection_ratio - saved_ratio) > 0.01:
-                    print(f"⚠️  Connection ratio mismatch, adjusting: {self.model.connection_ratio:.3f} -> {saved_ratio:.3f}")
-                    self.model.connection_ratio = saved_ratio
-            
-            print(f"✅ Successfully resumed from checkpoint!")
-            print(f"   Starting iteration: {self.starting_iteration:,}")
-            print(f"   Starting epoch: {self.starting_epoch}")
-            print(f"   Previous best loss: {self.best_loss:.4f}")
-            print(f"   Connection ratio: {getattr(self.model, 'connection_ratio', 'N/A')}")
-            
-            return True
-            
-        except Exception as e:
-            print(f"⚠️  Failed to resume from checkpoint {best_checkpoint_id}: {e}")
-            print("📝 Falling back to fresh training")
-            return False
+        # Try to load checkpoints in order of quality, never give up if cache exists
+        for i, checkpoint_id in enumerate(compatible_checkpoints):
+            try:
+                print(f"🔄 Attempting to resume from checkpoint {i + 1}/{len(compatible_checkpoints)}: {checkpoint_id}")
+                
+                checkpoint_data, metadata = self.cache.load_checkpoint(
+                    checkpoint_id,
+                    model=self.model,
+                    optimizer=self.optimizer,
+                    device=self.config.device
+                )
+                
+                # Update training state
+                self.starting_iteration = metadata.iteration
+                self.starting_epoch = metadata.epoch
+                self.best_loss = metadata.val_loss
+                self.resumed_from_checkpoint = True
+                
+                # Restore model iteration for progressive features
+                self.model.current_iteration = checkpoint_data.get('current_iteration', metadata.iteration)
+                
+                # Restore connection ratio if applicable - this should now be automatic via state_dict
+                if hasattr(self.model, 'connection_ratio'):
+                    # Connection ratio should be restored from the model state dict,
+                    # but we can double-check and restore from saved value if needed
+                    saved_ratio = checkpoint_data.get('connection_ratio', None)
+                    if saved_ratio is not None and abs(self.model.connection_ratio - saved_ratio) > 0.01:
+                        print(f"⚠️  Connection ratio mismatch, adjusting: {self.model.connection_ratio:.3f} -> {saved_ratio:.3f}")
+                        self.model.connection_ratio = saved_ratio
+                
+                print(f"✅ Successfully resumed from checkpoint!")
+                print(f"   Starting iteration: {self.starting_iteration:,}")
+                print(f"   Starting epoch: {self.starting_epoch}")
+                print(f"   Previous best loss: {self.best_loss:.4f}")
+                print(f"   Connection ratio: {getattr(self.model, 'connection_ratio', 'N/A')}")
+                
+                return True
+                
+            except Exception as e:
+                print(f"⚠️  Failed to resume from checkpoint {checkpoint_id}: {e}")
+                if i < len(compatible_checkpoints) - 1:
+                    print(f"🔄 Trying next checkpoint...")
+                    continue
+                else:
+                    print(f"⚠️  All {len(compatible_checkpoints)} checkpoint(s) failed to load")
+                    print("📝 Starting fresh training as last resort")
+                    return False
     
     def _create_checkpoint_tags(self, iteration: int, metrics: Dict[str, float]) -> list:
         """Create tags for checkpoint categorization."""
