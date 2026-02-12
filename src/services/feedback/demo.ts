@@ -7,6 +7,8 @@
 import {
   initializeAdaptiveFeedbackSystem,
   AdaptiveFeedbackService,
+  type CommunityFeedback,
+  type ProjectModel,
 } from "./index";
 import process from "node:process";
 
@@ -156,8 +158,8 @@ export function ExampleReactComponent() {
     const service = AdaptiveFeedbackService.getInstance();
 
     return {
-      addFeedback: (feedback: any) => service.addCommunityFeedback(feedback), // eslint-disable-line @typescript-eslint/no-explicit-any -- Mock demo interface
-      registerModel: (model: any) => service.registerProjectModel(model), // eslint-disable-line @typescript-eslint/no-explicit-any -- Mock demo interface
+      addFeedback: (feedback: CommunityFeedback) => service.addCommunityFeedback(feedback),
+      registerModel: (model: ProjectModel) => service.registerProjectModel(model),
       getStatus: () => service.getSystemStatus(),
       triggerFeedbackLoop: () => service.triggerFeedbackLoop(),
     };

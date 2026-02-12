@@ -51,6 +51,15 @@ export interface CopilotResponse {
   confidence: number;
 }
 
+interface BroadcastMessage {
+  type: string;
+  modelId: string;
+  version: string;
+  timestamp: Date;
+  improvements: string[];
+  salienceScore: number;
+}
+
 export interface AdaptiveThresholds {
   cognitiveLoad: number;
   recentActivity: number;
@@ -267,7 +276,7 @@ export class AdaptiveFeedbackService {
   /**
    * Collect salient project models based on attention allocation
    */
-  private async collectSalientModels(): Promise<ProjectModel[]> {
+  private collectSalientModels(): ProjectModel[] {
     // Get attention-filtered nodes from hypergraph
     const attentionNodes = this.hypergraphCore.getAttentionFilteredNodes(
       this.adaptiveThresholds.attentionThreshold
@@ -545,9 +554,9 @@ ${request.requirements.map(req => `// - ${req}`).join("\n")}
   /**
    * Integrate Copilot upgrades into local repository
    */
-  private async integrateUpgrades(
+  private integrateUpgrades(
     responses: CopilotResponse[]
-  ): Promise<ProjectModel[]> {
+  ): ProjectModel[] {
     console.log(`🔧 Integrating ${responses.length} Copilot upgrades...`);
 
     const integratedModels: ProjectModel[] = [];
@@ -642,7 +651,7 @@ ${request.requirements.map(req => `// - ${req}`).join("\n")}
   /**
    * Send broadcast to community node (mocked)
    */
-  private async sendBroadcast(nodeId: string, message: any): Promise<void> {
+  private async sendBroadcast(nodeId: string, message: BroadcastMessage): Promise<void> {
     // Mock implementation - replace with real community broadcasting
     await new Promise(resolve => setTimeout(resolve, 100));
     console.log(
@@ -751,7 +760,7 @@ ${request.requirements.map(req => `// - ${req}`).join("\n")}
    * Manually trigger feedback loop (for testing/immediate execution)
    */
   public async triggerFeedbackLoop(): Promise<void> {
-    return this.executeFeedbackLoop();
+    return await this.executeFeedbackLoop();
   }
 
   /**

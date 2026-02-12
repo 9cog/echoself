@@ -444,6 +444,7 @@ const Terminal = () => {
 
       // Add to our output string, removing terminal control sequences
       // This is a simple approach and might not catch all control sequences
+      // deno-lint-ignore no-control-regex
       const ansiRegex = new RegExp("\\x1b\\[[0-9;]*[a-zA-Z]", "g");
       const cleanData = strData.replace(ansiRegex, "");
       output += cleanData;
@@ -471,7 +472,7 @@ const Terminal = () => {
     return cleanOutput;
   };
 
-  const processCommand = async (command: string) => {
+  const processCommand = (command: string) => {
     if (!xtermRef.current) return;
 
     const term = xtermRef.current;
