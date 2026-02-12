@@ -33,18 +33,15 @@ const MemoryContext = createContext<MemoryContextType>({
   },
   updateMemory: async () => {
     throw new Error("MemoryProvider not initialized");
-    return null;
   },
   deleteMemory: async () => {
     throw new Error("MemoryProvider not initialized");
   },
   getMemory: async () => {
     throw new Error("MemoryProvider not initialized");
-    return null;
   },
   searchMemories: async () => {
     throw new Error("MemoryProvider not initialized");
-    return [];
   },
   loading: true,
 });
