@@ -158,7 +158,7 @@ export function ExampleReactComponent() {
     const service = AdaptiveFeedbackService.getInstance();
 
     return {
-      addFeedback: (feedback: CommunityFeedback) => service.addCommunityFeedback(feedback),
+      addFeedback: (feedback: Omit<CommunityFeedback, "id" | "timestamp">) => service.addCommunityFeedback(feedback),
       registerModel: (model: ProjectModel) => service.registerProjectModel(model),
       getStatus: () => service.getSystemStatus(),
       triggerFeedbackLoop: () => service.triggerFeedbackLoop(),
