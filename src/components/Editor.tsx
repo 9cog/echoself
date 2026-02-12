@@ -390,7 +390,7 @@ const Editor = () => {
             theme={appTheme as "light" | "dark"}
             height="100%"
             width="100%"
-            lineNumbers={true}
+            lineNumbers
           />
         )}
       </div>
