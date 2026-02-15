@@ -1099,26 +1099,26 @@ jobs:
                   fi
                   
                   # Create manifest with git info
-                  cat > "$ARTIFACT_DIR/RECOVERY_MANIFEST.txt" << MANIFEST
-CRITICAL: Git push failed - Training progress saved as artifact
-
-Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-Branch: $BRANCH_NAME
-Commit: $(git rev-parse HEAD)
-
-RECOVERY INSTRUCTIONS:
-1. Download this artifact from the workflow run
-2. Extract the files
-3. Manually commit and push the files to the repository:
-   cd /path/to/repo
-   cp -r /path/to/artifact/* .training-progress/
-   git add .training-progress/
-   git commit -m "Recovered training progress from artifact"
-   git push
-
-FILES SAVED:
-$(ls -la "$ARTIFACT_DIR/" 2>/dev/null || echo "No files")
-MANIFEST
+                  {
+                    echo "CRITICAL: Git push failed - Training progress saved as artifact"
+                    echo ""
+                    echo "Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+                    echo "Branch: $BRANCH_NAME"
+                    echo "Commit: $(git rev-parse HEAD)"
+                    echo ""
+                    echo "RECOVERY INSTRUCTIONS:"
+                    echo "Step 1 - Download this artifact from the workflow run"
+                    echo "Step 2 - Extract the files"
+                    echo "Step 3 - Manually commit and push the files to the repository"
+                    echo "   cd /path/to/repo"
+                    echo "   cp -r /path/to/artifact/* .training-progress/"
+                    echo "   git add .training-progress/"
+                    echo "   git commit -m 'Recovered training progress from artifact'"
+                    echo "   git push"
+                    echo ""
+                    echo "FILES SAVED:"
+                    ls -la "$ARTIFACT_DIR/" 2>/dev/null || echo "No files"
+                  } > "$ARTIFACT_DIR/RECOVERY_MANIFEST.txt"
                   
                   echo "📦 Training progress saved to: $ARTIFACT_DIR"
                   echo "⚠️ THIS IS A CRITICAL FAILURE - Manual recovery required!"
