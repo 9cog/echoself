@@ -1,24 +1,29 @@
 # Cache Restoration Safety Enhancement - Implementation Summary
 
 ## Problem Statement
+
 "if it restores the cache never ever ever let it start from scratch don't ever fail verification just continue with checkpoints"
 
 ## Solution Implemented
 
 ### Core Principle
+
 **When cache is restored, the system NEVER falls back to starting from scratch unnecessarily. Instead, it implements a smart retry strategy that attempts all available checkpoints before considering a fresh start.**
 
 ## Changes Made
 
 ### 1. `scripts/checkpoint_guardian.py`
+
 **Smart Lenient Verification**
 
 #### Before
+
 - Verification would return False for any issues
 - Blocked training on minor problems
 - No distinction between unusable vs. minor issues
 
 #### After
+
 - Returns False ONLY for completely unusable files:
   - Non-existent files
   - Empty files (0 bytes)
@@ -31,10 +36,11 @@
 - Security: Documented rationale for `weights_only=False`
 
 **Key Code Changes:**
+
 ```python
 def _verify_checkpoint(self, checkpoint_path: Path, expected_checksum: Optional[str] = None) -> bool:
     """Verify checkpoint file integrity.
-    
+
     NOTE: This method prioritizes checkpoint availability over strict validation.
     It returns False only for files that are completely unusable (non-existent, empty,
     or completely unloadable). For files with minor issues (checksum mismatches,
@@ -43,14 +49,17 @@ def _verify_checkpoint(self, checkpoint_path: Path, expected_checksum: Optional[
 ```
 
 ### 2. `train_cached.py`
+
 **Comprehensive Retry Logic**
 
 #### Before
+
 - Tried only the best checkpoint
 - Immediately fell back to fresh training on failure
 - Single point of failure
 
 #### After
+
 - Iterates through ALL compatible checkpoints
 - Tries each checkpoint in quality order
 - Only falls back to fresh if ALL checkpoints fail
@@ -58,6 +67,7 @@ def _verify_checkpoint(self, checkpoint_path: Path, expected_checksum: Optional[
 - Better error handling
 
 **Key Code Changes:**
+
 ```python
 # Try to load checkpoints in order of quality, never give up if cache exists
 for i, checkpoint_id in enumerate(compatible_checkpoints):
@@ -83,7 +93,7 @@ for i, checkpoint_id in enumerate(compatible_checkpoints):
    └─→ find_best_checkpoint() scans all backup locations
        └─→ Checks: .training-progress/checkpoints, cache, /tmp, artifacts
 
-2. Verification Phase  
+2. Verification Phase
    └─→ _verify_checkpoint() filters out completely broken files
        ├─→ Returns False: non-existent, empty, corrupted
        └─→ Returns True: minor issues (with warnings)
@@ -97,7 +107,7 @@ for i, checkpoint_id in enumerate(compatible_checkpoints):
        │   └─→ Success? ✓ Resume training
        │   └─→ Failed? → Try Checkpoint 2
        ├─→ Checkpoint 2 → Try to load
-       │   └─→ Success? ✓ Resume training  
+       │   └─→ Success? ✓ Resume training
        │   └─→ Failed? → Try Checkpoint 3
        └─→ ... repeat for all checkpoints ...
            └─→ All failed? → Fresh start (last resort only)
@@ -110,7 +120,9 @@ for i, checkpoint_id in enumerate(compatible_checkpoints):
 ## Testing
 
 ### Test Coverage
+
 1. **test_cache_restoration_simple.py** - Code structure verification
+
    - Confirms lenient verification is in place
    - Confirms retry loop structure exists
    - Confirms documentation is accurate
@@ -122,6 +134,7 @@ for i, checkpoint_id in enumerate(compatible_checkpoints):
    - Validates checkpoint retry logic
 
 ### Test Results
+
 ```
 ✅ Checkpoint guardian has lenient verification
 ✅ Train cached has retry logic for all checkpoints
@@ -133,13 +146,16 @@ for i, checkpoint_id in enumerate(compatible_checkpoints):
 ## Security Analysis
 
 ### CodeQL Results
+
 - ✅ No security vulnerabilities detected
 - ✅ All issues addressed with proper documentation
 
 ### Security Trade-offs
+
 **Decision: Prioritize data continuity over validation strictness**
 
 **Justification:**
+
 - Training progress loss is more costly than continuing with warnings
 - Multiple checkpoints provide redundancy
 - Completely unusable files are still filtered out
@@ -148,6 +164,7 @@ for i, checkpoint_id in enumerate(compatible_checkpoints):
 - Checkpoints are from trusted sources (self-generated during training)
 
 **Mitigation:**
+
 - Smart verification filters out completely broken files early
 - Retry logic ensures best working checkpoint is found
 - Clear warnings logged for all issues
@@ -156,12 +173,14 @@ for i, checkpoint_id in enumerate(compatible_checkpoints):
 ## Benefits
 
 ### Before This Change
+
 ❌ Single checkpoint failure → fresh start (loss of all progress)
 ❌ Minor issues (checksum mismatch) → training blocked
 ❌ No retry mechanism
 ❌ Progress loss common
 
 ### After This Change
+
 ✅ Multiple checkpoints tried automatically
 ✅ Minor issues → warnings but training continues
 ✅ Comprehensive retry strategy
@@ -172,14 +191,16 @@ for i, checkpoint_id in enumerate(compatible_checkpoints):
 ## Example Scenarios
 
 ### Scenario 1: Best checkpoint has checksum mismatch
+
 ```
 Before: Training blocked, fails verification
-After: 
+After:
   ⚠️ WARNING: Checksum mismatch - attempting to load anyway
   ✅ Loaded successfully, training continues from checkpoint
 ```
 
 ### Scenario 2: Best checkpoint is corrupted
+
 ```
 Before: Training starts fresh, all progress lost
 After:
@@ -189,6 +210,7 @@ After:
 ```
 
 ### Scenario 3: All checkpoints are corrupted (rare)
+
 ```
 Both:
   ⚠️ All checkpoints failed
@@ -203,12 +225,14 @@ Both:
 ✅ **"just continue with checkpoints"** - Retries all available checkpoints
 
 ## Files Modified
+
 - `scripts/checkpoint_guardian.py` - Smart verification logic
 - `train_cached.py` - Comprehensive retry logic
 - `test_cache_restoration_simple.py` - Code structure tests
 - `test_cache_restoration.py` - Behavioral tests
 
 ## Commits
+
 1. Initial plan and structure
 2. Core implementation of retry logic and lenient verification
 3. Added comprehensive tests
@@ -217,7 +241,9 @@ Both:
 6. Improved message clarity
 
 ## Conclusion
+
 The implementation successfully addresses the requirement to "never start from scratch when cache is restored" by implementing a smart, multi-layered approach that:
+
 1. Filters out only truly unusable files
 2. Retries all available checkpoints
 3. Logs clear warnings for debugging

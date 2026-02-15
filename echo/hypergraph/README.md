@@ -17,10 +17,10 @@ graph TD
     G --> H[String Serialization]
     H --> I[Prompt Templates]
     I --> J[Cognitive Processing]
-    
+
     K[Cognitive Load] --> C
     L[Recent Activity] --> C
-    
+
     style F fill:#f9f,stroke:#333,stroke-width:4px
     style I fill:#bbf,stroke:#333,stroke-width:2px
 ```
@@ -38,6 +38,7 @@ Defines the fundamental hypergraph data structures:
   - `links`: Connections to other nodes
 
 **Key Functions:**
+
 - `make-hypergraph-node` - Create new nodes
 - `hypergraph-node-*` - Accessor functions
 - `hypergraph-node?` - Type checking
@@ -47,6 +48,7 @@ Defines the fundamental hypergraph data structures:
 Implements adaptive attention mechanisms inspired by cognitive science:
 
 - **Semantic Salience**: Multi-factor scoring system that evaluates file importance based on:
+
   - Core directories (AtomSpace, core, hypergraph, model)
   - File types (.scm, .py, .md)
   - Documentation (README files)
@@ -59,6 +61,7 @@ Implements adaptive attention mechanisms inspired by cognitive science:
   - Explicit configuration
 
 **Key Functions:**
+
 - `semantic-salience` - Calculate file importance (0.0 to 1.0)
 - `adaptive-attention` - Compute dynamic threshold
 - `filter-by-attention` - Filter files by threshold
@@ -68,14 +71,16 @@ Implements adaptive attention mechanisms inspired by cognitive science:
 Provides recursive repository traversal and file processing:
 
 - **Recursive Traversal**: Walks directory trees while respecting:
-  - Hidden directories (.git, .*)
-  - Build artifacts (node_modules, __pycache__)
+
+  - Hidden directories (.git, .\*)
+  - Build artifacts (node_modules, **pycache**)
   - File size constraints (50KB default)
 
 - **Safe File Reading**: Protected file access with error handling
 - **Hypergraph Assembly**: Converts file system to hypergraph representation
 
 **Key Functions:**
+
 - `repo-file-list` - Get filtered file list
 - `safe-read-file` - Read files with constraints
 - `assemble-hypergraph-input` - Build hypergraph from files
@@ -90,6 +95,7 @@ Bridges hypergraph encoding with AI prompt generation:
 - **Cognitive Prompts**: High-level interface with adaptive attention
 
 **Key Functions:**
+
 - `prompt-template` - Basic template formatting
 - `inject-repo-input-into-prompt` - Inject repository context
 - `create-cognitive-prompt` - Full cognitive prompt with adaptation
@@ -101,7 +107,7 @@ Bridges hypergraph encoding with AI prompt generation:
 ```scheme
 (use-modules (opencog hypergraph))
 
-(define node (make-hypergraph-node 
+(define node (make-hypergraph-node
                "my-file.scm"
                'file
                "(define hello 'world)"
@@ -153,7 +159,7 @@ Bridges hypergraph encoding with AI prompt generation:
 
 ```scheme
 ; Generate adaptive prompt
-(define prompt 
+(define prompt
   (create-cognitive-prompt
     "./echo/hypergraph"           ; Root directory
     0.3                           ; Cognitive load (30%)
