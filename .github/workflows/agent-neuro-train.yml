@@ -161,7 +161,7 @@ jobs:
           nanecho-checkpoints-
 
     - name: Download previous model artifacts
-      uses: dawidd6/action-download-artifact@v3
+      uses: dawidd6/action-download-artifact@v6
       continue-on-error: true
       with:
         workflow: agent-neuro-train.yml
