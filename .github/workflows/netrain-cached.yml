@@ -569,17 +569,17 @@ jobs:
                     cp -r .training-progress/* "$ARTIFACT_DIR/" 2>/dev/null || true
                   fi
                   
-                  cat > "$ARTIFACT_DIR/RECOVERY_MANIFEST.txt" << MANIFEST
-CRITICAL: Git push failed - Training progress saved as artifact
-DATA PRESERVATION > SECURITY - Changes must never be lost
-
-Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-Branch: $BRANCH_NAME
-Commit: $(git rev-parse HEAD)
-Workflow: netrain-cached.yml
-
-RECOVERY: Download artifact and manually push to repository
-MANIFEST
+                  {
+                    echo "CRITICAL: Git push failed - Training progress saved as artifact"
+                    echo "DATA PRESERVATION > SECURITY - Changes must never be lost"
+                    echo ""
+                    echo "Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+                    echo "Branch: $BRANCH_NAME"
+                    echo "Commit: $(git rev-parse HEAD)"
+                    echo "Workflow: netrain-cached.yml"
+                    echo ""
+                    echo "RECOVERY: Download artifact and manually push to repository"
+                  } > "$ARTIFACT_DIR/RECOVERY_MANIFEST.txt"
                   
                   echo "📦 Emergency artifact created at: $ARTIFACT_DIR"
                   PUSH_SUCCESS=true

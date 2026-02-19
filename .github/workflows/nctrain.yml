@@ -170,40 +170,8 @@ jobs:
         cd nanoGPT
         # Backup original train.py
         cp train.py train.py.backup
-        # Apply the data validation fix to prevent torch.randint error
-        python -c "
-        import re
-        
-        # Read the original train.py file
-        with open('train.py', 'r') as f:
-            content = f.read()
-        
-        # Find the get_batch function and add validation
-        # Look for the problematic line: ix = torch.randint(len(data) - block_size, (batch_size,))
-        pattern = r'(\s+)ix = torch\.randint\(len\(data\) - block_size, \(batch_size,\)\)'
-        
-        def add_validation(match):
-            indent = match.group(1)
-            replacement = f'''{indent}# Data size validation to prevent torch.randint error
-{indent}if len(data) <= block_size:
-{indent}    raise ValueError(
-{indent}        f\"Insufficient data for batch generation: \"
-{indent}        f\"len(data)={{len(data)}}, block_size={{block_size}}. \"
-{indent}        f\"Dataset must be larger than block_size. \"
-{indent}        f\"Consider reducing block_size to {{len(data) - 1}} or generating more training data.\"
-{indent}    )
-{indent}ix = torch.randint(len(data) - block_size, (batch_size,))'''
-            return replacement
-        
-        # Apply the fix
-        fixed_content = re.sub(pattern, add_validation, content)
-        
-        # Write the fixed version
-        with open('train.py', 'w') as f:
-            f.write(fixed_content)
-        
-        print('✅ Applied data validation fix to nanoGPT train.py')
-        "
+        # Create and run a Python script to apply the fix using inline Python (single line to avoid YAML parsing issues)
+        python3 -c "import re; content = open('train.py', 'r').read(); pattern = r'(\s+)ix = torch\.randint\(len\(data\) - block_size, \(batch_size,\)\)'; fixed_content = re.sub(pattern, lambda m: m.group(1) + '# Data size validation to prevent torch.randint error\n' + m.group(1) + 'if len(data) <= block_size:\n' + m.group(1) + '    raise ValueError(f\"Insufficient data for batch generation: len(data)={{len(data)}}, block_size={{block_size}}. Dataset must be larger than block_size. Consider reducing block_size to {{len(data) - 1}} or generating more training data.\")\n' + m.group(1) + 'ix = torch.randint(len(data) - block_size, (batch_size,))', content); open('train.py', 'w').write(fixed_content); print('✅ Applied data validation fix to nanoGPT train.py')"
 
     - name: Train NanoCog model
       run: |

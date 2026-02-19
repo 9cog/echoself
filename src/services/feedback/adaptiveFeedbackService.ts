@@ -554,9 +554,7 @@ ${request.requirements.map(req => `// - ${req}`).join("\n")}
   /**
    * Integrate Copilot upgrades into local repository
    */
-  private integrateUpgrades(
-    responses: CopilotResponse[]
-  ): ProjectModel[] {
+  private integrateUpgrades(responses: CopilotResponse[]): ProjectModel[] {
     console.log(`🔧 Integrating ${responses.length} Copilot upgrades...`);
 
     const integratedModels: ProjectModel[] = [];
@@ -651,7 +649,10 @@ ${request.requirements.map(req => `// - ${req}`).join("\n")}
   /**
    * Send broadcast to community node (mocked)
    */
-  private async sendBroadcast(nodeId: string, message: BroadcastMessage): Promise<void> {
+  private async sendBroadcast(
+    nodeId: string,
+    message: BroadcastMessage
+  ): Promise<void> {
     // Mock implementation - replace with real community broadcasting
     await new Promise(resolve => setTimeout(resolve, 100));
     console.log(

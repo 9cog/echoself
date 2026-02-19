@@ -96,7 +96,7 @@ jobs:
         fi
 
     - name: Download nanecho model artifact
-      uses: dawidd6/action-download-artifact@v2
+      uses: dawidd6/action-download-artifact@v6
       with:
         workflow: netrain.yml
         name: ${{ steps.model.outputs.artifact_name }}
