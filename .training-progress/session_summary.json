@@ -3,10 +3,10 @@
   "persona_enforced": "Deep Tree Echo",
   "session_log": [
     {
-      "timestamp": "2026-02-19T09:40:34.730919",
+      "timestamp": "2026-02-19T12:32:14.624395",
       "phase": "session_complete",
       "config": {
-        "relentless_mode": "False",
+        "relentless_mode": "True",
         "deep_tree_echo_enforced": "true",
         "training_status": "completed",
         "model_output_dir": "out-nanecho-ci"
