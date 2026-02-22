@@ -1,0 +1,333 @@
+name: Deploy to HuggingFace Hub
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_workflow:
+        description: 'Source training workflow (netrain-cached or netrain)'
+        required: true
+        default: 'netrain-cached'
+        type: choice
+        options:
+          - netrain-cached
+          - netrain
+      training_type:
+        description: 'Training type to deploy (ci, scheduled, or full)'
+        required: true
+        default: 'scheduled'
+        type: choice
+        options:
+          - ci
+          - scheduled
+          - full
+      repo_id:
+        description: 'HuggingFace repository ID'
+        required: true
+        default: '9cog/echoself-nanecho'
+        type: string
+      upload_datasets:
+        description: 'Upload training datasets'
+        required: false
+        default: true
+        type: boolean
+      create_release:
+        description: 'Create a release tag'
+        required: false
+        default: false
+        type: boolean
+  
+  # Can also be triggered after successful training
+  workflow_run:
+    workflows: ["Train NanEcho Model with Caching - Deep Tree Echo Persona"]
+    types:
+      - completed
+    branches: [main, master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Only deploy if workflow_run was successful, or if manually triggered
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for release tagging
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install torch numpy tiktoken transformers huggingface_hub
+    
+    - name: Determine checkpoint source
+      id: checkpoint
+      run: |
+        echo "🔍 Determining checkpoint source..."
+        
+        # Set defaults based on trigger type
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          SOURCE_WORKFLOW="${{ github.event.inputs.source_workflow }}"
+          TRAINING_TYPE="${{ github.event.inputs.training_type }}"
+        else
+          # Triggered by workflow_run - use scheduled mode
+          SOURCE_WORKFLOW="netrain-cached"
+          TRAINING_TYPE="scheduled"
+        fi
+        
+        echo "source_workflow=$SOURCE_WORKFLOW" >> $GITHUB_OUTPUT
+        echo "training_type=$TRAINING_TYPE" >> $GITHUB_OUTPUT
+        
+        # Determine output directory based on training type
+        if [[ "$SOURCE_WORKFLOW" == "netrain-cached" ]]; then
+          OUTPUT_DIR=".training-progress/nanecho-cached-${TRAINING_TYPE}"
+        else
+          OUTPUT_DIR="out-nanecho-${TRAINING_TYPE}"
+        fi
+        
+        echo "output_dir=$OUTPUT_DIR" >> $GITHUB_OUTPUT
+        echo "📁 Checkpoint directory: $OUTPUT_DIR"
+    
+    - name: Restore checkpoint from git
+      id: git_checkpoint
+      run: |
+        echo "📦 Checking for checkpoint in git repository..."
+        
+        # Check .training-progress/checkpoints for committed checkpoints
+        if [ -f ".training-progress/checkpoints/latest_checkpoint.pt" ]; then
+          echo "✅ Found checkpoint in .training-progress/checkpoints/"
+          mkdir -p checkpoint-source
+          cp .training-progress/checkpoints/latest_checkpoint.pt checkpoint-source/model.pt
+          echo "found=true" >> $GITHUB_OUTPUT
+          echo "path=checkpoint-source/model.pt" >> $GITHUB_OUTPUT
+        else
+          echo "⚠️ No checkpoint found in git repository"
+          echo "found=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Download checkpoint from artifacts
+      if: steps.git_checkpoint.outputs.found != 'true'
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        workflow: ${{ steps.checkpoint.outputs.source_workflow }}.yml
+        name: checkpoint-backup-*
+        name_is_regexp: true
+        path: checkpoint-source
+        if_no_artifact_found: warn
+      continue-on-error: true
+    
+    - name: Locate best checkpoint
+      id: locate
+      run: |
+        echo "🔍 Locating best checkpoint..."
+        
+        CHECKPOINT_PATH=""
+        
+        # Priority 1: Git checkpoint
+        if [ -f "checkpoint-source/model.pt" ]; then
+          CHECKPOINT_PATH="checkpoint-source/model.pt"
+          echo "✅ Using checkpoint from git"
+        
+        # Priority 2: Downloaded artifact checkpoint
+        elif [ -f "checkpoint-source/.training-progress/checkpoints/latest_checkpoint.pt" ]; then
+          CHECKPOINT_PATH="checkpoint-source/.training-progress/checkpoints/latest_checkpoint.pt"
+          echo "✅ Using checkpoint from artifacts (.training-progress)"
+        
+        elif [ -f "checkpoint-source/best_model.pt" ]; then
+          CHECKPOINT_PATH="checkpoint-source/best_model.pt"
+          echo "✅ Using checkpoint from artifacts (best_model.pt)"
+        
+        # Priority 3: Check output directory from current training
+        elif [ -f "${{ steps.checkpoint.outputs.output_dir }}/best_model_export.pt" ]; then
+          CHECKPOINT_PATH="${{ steps.checkpoint.outputs.output_dir }}/best_model_export.pt"
+          echo "✅ Using checkpoint from output directory"
+        
+        # Priority 4: Check cache directory
+        elif [ -f "${{ steps.checkpoint.outputs.output_dir }}/cache/checkpoints/latest.pt" ]; then
+          CHECKPOINT_PATH="${{ steps.checkpoint.outputs.output_dir }}/cache/checkpoints/latest.pt"
+          echo "✅ Using checkpoint from cache"
+        fi
+        
+        if [ -z "$CHECKPOINT_PATH" ]; then
+          echo "❌ ERROR: No checkpoint found!"
+          echo "Searched locations:"
+          echo "  - checkpoint-source/model.pt"
+          echo "  - checkpoint-source/.training-progress/checkpoints/"
+          echo "  - ${{ steps.checkpoint.outputs.output_dir }}/best_model_export.pt"
+          echo "  - ${{ steps.checkpoint.outputs.output_dir }}/cache/checkpoints/latest.pt"
+          exit 1
+        fi
+        
+        echo "checkpoint_path=$CHECKPOINT_PATH" >> $GITHUB_OUTPUT
+        echo "📍 Checkpoint location: $CHECKPOINT_PATH"
+        ls -lh "$CHECKPOINT_PATH"
+    
+    - name: Convert to HuggingFace format
+      run: |
+        echo "🔄 Converting checkpoint to HuggingFace format..."
+        
+        python NanEcho/convert_to_huggingface.py \
+          --checkpoint "${{ steps.locate.outputs.checkpoint_path }}" \
+          --output-dir hf-model
+        
+        echo "✅ Conversion complete"
+        echo "📊 HuggingFace model contents:"
+        ls -lh hf-model/
+    
+    - name: Prepare datasets for upload
+      if: github.event.inputs.upload_datasets == 'true' || github.event_name == 'workflow_run'
+      run: |
+        echo "📦 Preparing datasets..."
+        
+        mkdir -p hf-model/datasets
+        
+        # Copy training data if available
+        if [ -d "data/nanecho" ]; then
+          cp -r data/nanecho/* hf-model/datasets/ || echo "⚠️ No data to copy"
+          echo "✅ Copied training datasets"
+        else
+          echo "⚠️ No datasets found in data/nanecho"
+        fi
+        
+        # Create dataset card
+        cat > hf-model/datasets/README.md << 'EOF'
+# EchoSelf Training Datasets
+
+This directory contains the training datasets used to train the EchoSelf NanEcho model.
+
+## Files
+
+- `train.bin` - Training data (tokenized)
+- `val.bin` - Validation data (tokenized)
+- `metadata.json` - Dataset metadata and configuration
+
+## Dataset Description
+
+The datasets contain tokenized text from:
+- Echo Self cognitive architecture documentation
+- Persona dimension examples
+- Hypergraph reasoning patterns
+- Recursive introspection samples
+
+## Tokenization
+
+The data is tokenized using tiktoken (GPT-2 tokenizer) and stored as binary files
+containing uint16 token IDs.
+
+## Usage
+
+```python
+import numpy as np
+
+# Load training data
+train_data = np.fromfile('train.bin', dtype=np.uint16)
+val_data = np.fromfile('val.bin', dtype=np.uint16)
+
+# Load metadata
+import json
+with open('metadata.json', 'r') as f:
+    metadata = json.load(f)
+```
+EOF
+        
+        echo "✅ Dataset preparation complete"
+    
+    - name: Upload to HuggingFace Hub
+      env:
+        HF_TOKEN: ${{ secrets.HFESELF }}
+      run: |
+        echo "🚀 Uploading to HuggingFace Hub..."
+        
+        if [ -z "$HF_TOKEN" ]; then
+          echo "❌ ERROR: HFESELF secret not configured!"
+          echo ""
+          echo "To configure:"
+          echo "  1. Go to https://huggingface.co/settings/tokens"
+          echo "  2. Create a token with 'write' permissions"
+          echo "  3. Add it as a secret named 'HFESELF' in GitHub repository settings"
+          exit 1
+        fi
+        
+        # Login to HuggingFace
+        huggingface-cli login --token "$HF_TOKEN"
+        
+        # Determine repo ID
+        REPO_ID="${{ github.event.inputs.repo_id || '9cog/echoself-nanecho' }}"
+        
+        echo "📤 Uploading to $REPO_ID"
+        
+        # Upload the model
+        huggingface-cli upload "$REPO_ID" hf-model/ . \
+          --commit-message "Deploy EchoSelf NanEcho model (workflow run ${{ github.run_number }})" \
+          --repo-type model
+        
+        echo "✅ Upload complete!"
+        echo ""
+        echo "🎉 Model deployed to: https://huggingface.co/$REPO_ID"
+    
+    - name: Create release tag
+      if: github.event.inputs.create_release == 'true'
+      run: |
+        echo "🏷️ Creating release tag..."
+        
+        # Configure git
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+        
+        # Create tag with timestamp
+        TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+        TAG_NAME="hf-deploy-${TIMESTAMP}"
+        
+        # Load checkpoint metadata for tag message
+        METADATA_MSG="HuggingFace deployment"
+        if [ -f "hf-model/training_metadata.json" ]; then
+          QUALITY=$(jq -r '.quality_score // "N/A"' hf-model/training_metadata.json)
+          LOSS=$(jq -r '.val_loss // "N/A"' hf-model/training_metadata.json)
+          ITER=$(jq -r '.iteration // "N/A"' hf-model/training_metadata.json)
+          METADATA_MSG="Quality: $QUALITY, Loss: $LOSS, Iteration: $ITER"
+        fi
+        
+        git tag -a "$TAG_NAME" -m "HuggingFace deployment: $TAG_NAME" -m "$METADATA_MSG"
+        git push origin "$TAG_NAME"
+        
+        echo "✅ Created tag: $TAG_NAME"
+    
+    - name: Create deployment summary
+      if: always()
+      run: |
+        echo "📝 Deployment Summary"
+        echo "===================="
+        echo ""
+        echo "**Repository**: ${{ github.event.inputs.repo_id || '9cog/echoself-nanecho' }}"
+        echo "**Workflow Run**: ${{ github.run_number }}"
+        echo "**Timestamp**: $(date -u)"
+        echo ""
+        
+        if [ -f "hf-model/training_metadata.json" ]; then
+          echo "**Training Metadata**:"
+          cat hf-model/training_metadata.json | jq '.'
+        fi
+        
+        echo ""
+        echo "**Model URL**: https://huggingface.co/${{ github.event.inputs.repo_id || '9cog/echoself-nanecho' }}"
+        
+    - name: Upload deployment artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: hf-deployment-${{ github.run_number }}
+        path: |
+          hf-model/
+          !hf-model/pytorch_model.bin
+        retention-days: 30
