@@ -1,0 +1,43 @@
+{
+  "echo_state_property": 0.08631666245153581,
+  "mse_train": 0.005974945526396591,
+  "mse_test": 0.021781501130613924,
+  "nrmse": 1.4809679256050734,
+  "online_improvement": 1.7216828873548646,
+  "attention_weights": [
+    0.23566424493449667,
+    0.5560829858390409,
+    0.20825276922646235
+  ],
+  "echobeat_modes": {
+    "0": "perceive",
+    "1": "simulate",
+    "2": "simulate"
+  },
+  "introspection_depth_0": {
+    "mean": 0.003899643851106794,
+    "variance": 0.004853516386810939,
+    "entropy": 0.3620418556487726,
+    "divergence": 0.556404831482364,
+    "activation_ratio": 0.0
+  },
+  "introspection_depth_1": {
+    "mean": 0.1839905562508832,
+    "variance": 0.05324589871545359,
+    "entropy": 0.31660782209365973,
+    "divergence": 0.556404831482364,
+    "activation_ratio": 0.1953125
+  },
+  "introspection_depth_2": {
+    "mean": 0.259319410082961,
+    "variance": 0.028483638715318997,
+    "entropy": 0.445018100126608,
+    "divergence": 0.556404831482364,
+    "activation_ratio": 0.1953125
+  },
+  "membrane_permeability": [
+    0.4999999950000001,
+    0.4999999950000001,
+    0.4999999950000001
+  ]
+}
