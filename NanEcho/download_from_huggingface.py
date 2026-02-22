@@ -91,6 +91,18 @@ def convert_to_nanecho_format(
     """
     print("🔄 Converting to NanEcho checkpoint format...")
     
+    # Validate that essential components exist
+    required_keys = ['transformer.wte.weight', 'transformer.wpe.weight', 'transformer.ln_f.weight']
+    missing_keys = [key for key in required_keys if key not in hf_state]
+    
+    if missing_keys:
+        raise ValueError(
+            f"❌ Incompatible model: Missing required GPT-2 components: {missing_keys}\n"
+            f"   Expected a GPT-2 style model with nanoGPT/NanEcho architecture.\n"
+            f"   Please ensure the HuggingFace model is a GPT-2 variant.\n"
+            f"   See NanEcho/HUGGINGFACE_README.md for supported model types."
+        )
+    
     # HuggingFace and NanEcho use compatible naming (both based on GPT-2)
     # so we can use the state dict mostly as-is
     nanecho_state = {}

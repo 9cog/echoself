@@ -71,7 +71,7 @@ on:
       download_from_hf:
         description: 'Download initial model from HuggingFace Hub before training'
         required: False
-        default: 'false'
+        default: false
         type: boolean
       hf_repo_id:
         description: 'HuggingFace repository ID to download from'
@@ -115,9 +115,6 @@ jobs:
         python -m pip install --upgrade pip
         # Install dependencies from requirements.txt
         pip install -r ${{ github.workspace }}/echoself/requirements.txt
-        
-        # Install HuggingFace Hub for model downloads
-        pip install huggingface_hub
 
     # ================================================================
     # HUGGINGFACE MODEL DOWNLOAD (OPTIONAL)
@@ -130,6 +127,9 @@ jobs:
         HF_TOKEN: ${{ secrets.HFESELF }}
       run: |
         cd echoself
+        
+        # Install HuggingFace Hub for model downloads
+        pip install huggingface_hub
         
         echo "📥 Downloading model from HuggingFace Hub..."
         echo "Repository: ${{ github.event.inputs.hf_repo_id }}"
