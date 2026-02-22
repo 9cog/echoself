@@ -118,7 +118,7 @@ jobs:
     
     - name: Download checkpoint from artifacts
       if: steps.git_checkpoint.outputs.found != 'true'
-      uses: dawidd6/action-download-artifact@v2
+      uses: dawidd6/action-download-artifact@v6
       with:
         workflow: ${{ steps.checkpoint.outputs.source_workflow }}.yml
         name: checkpoint-backup-*
