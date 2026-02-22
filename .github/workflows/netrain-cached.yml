@@ -348,7 +348,16 @@ jobs:
           --max_cache_size_gb ${{ steps.params.outputs.max_cache_size_gb }} \
           ${{ steps.params.outputs.force_fresh_start == 'true' && '--force_fresh_start' || '' }}
 
+    # ================================================================
+    # POST-TRAINING ANALYSIS & BACKUP
+    # ALL steps below use 'if: always()' to ensure backup can NEVER
+    # be bypassed by any upstream failure. Training data preservation
+    # is the highest priority without exception.
+    # ================================================================
+
     - name: Analyze training progress
+      if: always()
+      continue-on-error: true
       run: |
         cd echoself
         
@@ -377,6 +386,8 @@ jobs:
         python /tmp/analyze_progress.py
 
     - name: Test model generation
+      if: always()
+      continue-on-error: true
       run: |
         cd echoself
         
@@ -385,11 +396,25 @@ jobs:
           echo "✅ Best model export found"
           ls -la ${{ steps.params.outputs.output_dir }}/best_model_export.pt
           
-          # Show model info
+          # Show model info — use weights_only=False for numpy compatibility (PyTorch 2.6+)
           cat << 'EOFPYTHON' > /tmp/test_model.py
         import torch
+        import numpy
         
-        export_data = torch.load('${{ steps.params.outputs.output_dir }}/best_model_export.pt', map_location='cpu')
+        # Allow numpy scalar types for PyTorch 2.6+ compatibility
+        try:
+            torch.serialization.add_safe_globals([numpy._core.multiarray.scalar, numpy.dtype, numpy.ndarray])
+        except (AttributeError, TypeError):
+            pass  # Older PyTorch versions don't need this
+        
+        try:
+            export_data = torch.load('${{ steps.params.outputs.output_dir }}/best_model_export.pt', map_location='cpu', weights_only=False)
+        except Exception as e:
+            print(f'⚠️ Could not fully load model for inspection: {e}')
+            print('   This does NOT affect backup — checkpoint file exists and will be backed up.')
+            import sys
+            sys.exit(0)
+        
         print('📦 Exported Model Info:')
         print(f'   Checkpoint ID: {export_data["metadata"]["checkpoint_id"]}')
         print(f'   Quality Score: {export_data["metadata"]["quality_score"]:.3f}')
@@ -399,12 +424,14 @@ jobs:
         EOFPYTHON
           python /tmp/test_model.py
         else
-          echo "⚠️ No best model export found"
+          echo "⚠️ No best model export found (this is informational only — backup will still run)"
           echo "Available files:"
-          ls -la ${{ steps.params.outputs.output_dir }}/
+          ls -la ${{ steps.params.outputs.output_dir }}/ || true
         fi
 
     - name: Create training summary
+      if: always()
+      continue-on-error: true
       run: |
         cd echoself
         
@@ -465,65 +492,181 @@ jobs:
     # ================================================================
 
     - name: Backup model to multiple locations
+      if: always()
       run: |
         cd echoself
         TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-        echo "🛡️ MULTI-LOCATION MODEL BACKUP"
-        echo "=============================="
+        echo "🛡️ EMERGENCY MULTI-LOCATION MODEL BACKUP"
+        echo "==========================================="
+        echo "⚠️ This step runs UNCONDITIONALLY (if: always())"
+        echo "   Backup is the #1 priority — nothing can bypass this."
+        echo ""
 
         # Create backup directories
         mkdir -p .training-progress/checkpoints
         mkdir -p /tmp/nanecho-checkpoint-backup
+        mkdir -p /tmp/nanecho-emergency-sweep
 
         BACKUP_COUNT=0
+        TOTAL_FILES_BACKED_UP=0
 
-        # Find the best checkpoint to backup
+        # ============================================================
+        # PHASE 1: Find the best checkpoint to backup (priority order)
+        # ============================================================
         BEST_CKPT=""
+        echo "🔍 Phase 1: Searching for best checkpoint..."
+
+        # Priority 1: Best model export
         if [ -f "${{ steps.params.outputs.output_dir }}/best_model_export.pt" ]; then
           BEST_CKPT="${{ steps.params.outputs.output_dir }}/best_model_export.pt"
-        elif [ -f "${{ steps.params.outputs.output_dir }}/cache/checkpoints/latest.pt" ]; then
+          echo "   Found: best_model_export.pt"
+        fi
+
+        # Priority 2: Latest cache checkpoint
+        if [ -z "$BEST_CKPT" ] && [ -f "${{ steps.params.outputs.output_dir }}/cache/checkpoints/latest.pt" ]; then
           BEST_CKPT="${{ steps.params.outputs.output_dir }}/cache/checkpoints/latest.pt"
+          echo "   Found: cache/checkpoints/latest.pt"
+        fi
+
+        # Priority 3: Any .pt file in the output directory (sorted by size, largest first)
+        if [ -z "$BEST_CKPT" ]; then
+          BEST_CKPT=$(find "${{ steps.params.outputs.output_dir }}" -name '*.pt' -type f -printf '%s %p\n' 2>/dev/null | sort -rn | head -1 | awk '{print $2}')
+          if [ -n "$BEST_CKPT" ]; then
+            echo "   Found via sweep: $BEST_CKPT"
+          fi
+        fi
+
+        # Priority 4: Any .pt file ANYWHERE in the workspace
+        if [ -z "$BEST_CKPT" ]; then
+          BEST_CKPT=$(find . -name '*.pt' -type f -printf '%s %p\n' 2>/dev/null | sort -rn | head -1 | awk '{print $2}')
+          if [ -n "$BEST_CKPT" ]; then
+            echo "   Found via full workspace sweep: $BEST_CKPT"
+          fi
         fi
 
         if [ -n "$BEST_CKPT" ] && [ -f "$BEST_CKPT" ]; then
-          echo "📦 Best checkpoint: $BEST_CKPT"
+          CKPT_SIZE=$(stat -c%s "$BEST_CKPT" 2>/dev/null || echo 0)
+          echo ""
+          echo "📦 Best checkpoint: $BEST_CKPT ($(numfmt --to=iec $CKPT_SIZE 2>/dev/null || echo ${CKPT_SIZE}B))"
 
           # Backup 1: .training-progress/checkpoints (committed to repo)
-          cp "$BEST_CKPT" ".training-progress/checkpoints/latest_checkpoint.pt" && {
-            cp "$BEST_CKPT" ".training-progress/checkpoints/checkpoint_${TIMESTAMP}.pt"
-            echo "✓ Backed up to .training-progress/checkpoints"
+          cp "$BEST_CKPT" ".training-progress/checkpoints/latest_checkpoint.pt" 2>/dev/null && {
+            cp "$BEST_CKPT" ".training-progress/checkpoints/checkpoint_${TIMESTAMP}.pt" 2>/dev/null || true
+            echo "   ✓ Location 1: .training-progress/checkpoints/"
             BACKUP_COUNT=$((BACKUP_COUNT + 1))
-          } || echo "⚠️ Failed to backup to .training-progress/checkpoints"
+          } || echo "   ⚠️ Failed to backup to .training-progress/checkpoints"
 
-          # Backup 2: /tmp (for additional artifact upload)
-          cp "$BEST_CKPT" "/tmp/nanecho-checkpoint-backup/best_model.pt" && {
-            echo "✓ Backed up to /tmp/nanecho-checkpoint-backup"
+          # Backup 2: /tmp for artifact upload
+          cp "$BEST_CKPT" "/tmp/nanecho-checkpoint-backup/best_model.pt" 2>/dev/null && {
+            echo "   ✓ Location 2: /tmp/nanecho-checkpoint-backup/"
             BACKUP_COUNT=$((BACKUP_COUNT + 1))
-          } || echo "⚠️ Failed to backup to /tmp"
+          } || echo "   ⚠️ Failed to backup to /tmp/nanecho-checkpoint-backup"
 
-          echo ""
-          if [ $BACKUP_COUNT -ge 2 ]; then
-            echo "✅ Model backed up to $BACKUP_COUNT locations (SAFE)"
-          else
-            echo "⚠️ WARNING: Only $BACKUP_COUNT backup(s) succeeded!"
-          fi
+          # Backup 3: Emergency sweep directory (redundant safety net)
+          cp "$BEST_CKPT" "/tmp/nanecho-emergency-sweep/best_model.pt" 2>/dev/null && {
+            echo "   ✓ Location 3: /tmp/nanecho-emergency-sweep/"
+            BACKUP_COUNT=$((BACKUP_COUNT + 1))
+          } || echo "   ⚠️ Failed to backup to /tmp/nanecho-emergency-sweep"
         else
-          echo "⚠️ No best checkpoint found to backup"
-          ls -la ${{ steps.params.outputs.output_dir }}/ || true
+          echo "⚠️ No .pt checkpoint files found anywhere"
         fi
 
+        # ============================================================
+        # PHASE 2: Emergency sweep — backup ALL .pt files found
+        # Even partial/damaged files are backed up for recovery
+        # ============================================================
+        echo ""
+        echo "🔍 Phase 2: Emergency sweep — backing up ALL .pt files..."
+
+        find . -name '*.pt' -type f 2>/dev/null | while read -r ptfile; do
+          BASENAME=$(basename "$ptfile")
+          DIRPATH=$(dirname "$ptfile" | tr '/' '_' | sed 's/^_\.//')
+          DEST="/tmp/nanecho-emergency-sweep/${DIRPATH}__${BASENAME}"
+          if cp "$ptfile" "$DEST" 2>/dev/null; then
+            FILE_SIZE=$(stat -c%s "$ptfile" 2>/dev/null || echo '?')
+            echo "   ✓ Swept: $ptfile (${FILE_SIZE} bytes)"
+            TOTAL_FILES_BACKED_UP=$((TOTAL_FILES_BACKED_UP + 1))
+          fi
+        done
+
+        # Also sweep cache metadata files (critical for checkpoint restoration)
+        find . -name 'metadata.json' -path '*/cache/*' -type f 2>/dev/null | while read -r metafile; do
+          BASENAME=$(basename "$metafile")
+          DIRPATH=$(dirname "$metafile" | tr '/' '_' | sed 's/^_\.//')
+          DEST="/tmp/nanecho-emergency-sweep/${DIRPATH}__${BASENAME}"
+          cp "$metafile" "$DEST" 2>/dev/null && echo "   ✓ Swept metadata: $metafile" || true
+        done
+
+        # Also sweep training summary if it exists
+        find . -name 'training_summary.json' -type f 2>/dev/null | while read -r sumfile; do
+          cp "$sumfile" "/tmp/nanecho-emergency-sweep/training_summary.json" 2>/dev/null || true
+        done
+
+        # Also sweep introspection history if it exists
+        find . -name 'introspection_history.json' -type f 2>/dev/null | while read -r introfile; do
+          cp "$introfile" "/tmp/nanecho-emergency-sweep/introspection_history.json" 2>/dev/null || true
+        done
+
+        # ============================================================
+        # PHASE 3: Create backup manifest
+        # ============================================================
+        echo ""
+        echo "📋 Phase 3: Creating backup manifest..."
+
+        MANIFEST_FILE=".training-progress/checkpoints/backup_manifest.json"
+        cat > "$MANIFEST_FILE" << EOFMANIFEST
+        {
+          "timestamp": "${TIMESTAMP}",
+          "workflow_run": "${{ github.run_number }}",
+          "run_id": "${{ github.run_id }}",
+          "output_dir": "${{ steps.params.outputs.output_dir }}",
+          "best_checkpoint": "${BEST_CKPT:-none}",
+          "backup_locations": $BACKUP_COUNT,
+          "total_files_swept": $TOTAL_FILES_BACKED_UP,
+          "commit": "${{ github.sha }}",
+          "triggered_by": "${{ github.event_name }}",
+          "backup_policy": "UNCONDITIONAL — if: always() — nothing can bypass this step"
+        }
+        EOFMANIFEST
+
+        echo ""
+        echo "════════════════════════════════════════════"
+        if [ $BACKUP_COUNT -ge 2 ]; then
+          echo "✅ BACKUP COMPLETE: $BACKUP_COUNT locations secured"
+        elif [ $BACKUP_COUNT -ge 1 ]; then
+          echo "⚠️ PARTIAL BACKUP: $BACKUP_COUNT location(s) — check logs"
+        else
+          echo "❌ NO BEST CHECKPOINT FOUND — but emergency sweep completed"
+        fi
+        echo "   Total files swept: $TOTAL_FILES_BACKED_UP"
+        echo "════════════════════════════════════════════"
+
+        # List everything in emergency sweep
+        echo ""
+        echo "📦 Emergency sweep contents:"
+        ls -lah /tmp/nanecho-emergency-sweep/ 2>/dev/null || echo "   (empty)"
+        echo ""
+        echo "📦 Checkpoint backup contents:"
+        ls -lah /tmp/nanecho-checkpoint-backup/ 2>/dev/null || echo "   (empty)"
+        echo ""
+        echo "📦 Training progress checkpoints:"
+        ls -lah .training-progress/checkpoints/ 2>/dev/null || echo "   (empty)"
+
     - name: Upload cached training artifacts
+      if: always()
+      continue-on-error: true
       uses: actions/upload-artifact@v4
       with:
         name: nanecho-cached-training-${{ steps.params.outputs.output_dir }}
         path: |
           echoself/${{ steps.params.outputs.output_dir }}/
         retention-days: 30
+        if-no-files-found: warn
 
     - name: Upload checkpoint backup artifact
-      uses: actions/upload-artifact@v4
       if: always()
+      uses: actions/upload-artifact@v4
       with:
         name: checkpoint-backup-${{ github.run_number }}
         path: |
@@ -532,20 +675,37 @@ jobs:
         retention-days: 90
         if-no-files-found: warn
 
+    - name: Upload emergency sweep artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: emergency-sweep-${{ github.run_number }}
+        path: |
+          /tmp/nanecho-emergency-sweep/
+        retention-days: 90
+        if-no-files-found: warn
+
     - name: Upload training summary
+      if: always()
+      continue-on-error: true
       uses: actions/upload-artifact@v4
       with:
         name: training-summary-${{ steps.params.outputs.output_dir }}
         path: echoself/${{ steps.params.outputs.output_dir }}/training_summary.json
         retention-days: 30
+        if-no-files-found: warn
     
     - name: Configure Git
+      if: always()
+      continue-on-error: true
       run: |
         cd echoself
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
     
     - name: Commit and push training progress
+      if: always()
+      continue-on-error: true
       run: |
         cd echoself
         
