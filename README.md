@@ -203,6 +203,47 @@ npm start
 - **AI Integration**: OpenAI API
 - **Vector Storage**: Supabase Vector Extension
 
+## NanEcho Model Training & Deployment
+
+EchoSelf includes **NanEcho**, a GPT-2-based transformer model trained specifically on Deep Tree Echo cognitive architecture patterns. The system supports continuous incremental training and deployment to HuggingFace Hub.
+
+### 🚀 Training Workflows
+
+- **`netrain-cached.yml`**: Incremental training with checkpoint caching (every 6 hours)
+- **`netrain.yml`**: Full training with relentless persona reinforcement (every 4 hours)
+- **Checkpoint Guardian**: Multi-location backup system ensures training progress is never lost
+
+### 🤗 HuggingFace Integration
+
+Deploy trained models to HuggingFace Hub for sharing and version control:
+
+```bash
+# Deploy to HuggingFace
+gh workflow run deploy-huggingface.yml \
+  -f source_workflow=netrain-cached \
+  -f training_type=full \
+  -f create_release=true
+
+# Train from HuggingFace model
+gh workflow run netrain-cached.yml \
+  -f download_from_hf=true \
+  -f hf_repo_id=9cog/echoself-nanecho
+```
+
+**Features:**
+- ✅ Automatic model conversion to HuggingFace GPT-2 format
+- ✅ Dataset upload alongside models
+- ✅ Comprehensive model cards with training metadata
+- ✅ Download models for incremental training
+- ✅ Continuous improvement cycle: train → deploy → download → train
+
+**Setup:**
+1. Create HuggingFace token at https://huggingface.co/settings/tokens
+2. Add token as GitHub secret `HFESELF`
+3. Create model repository at https://huggingface.co/new
+
+See [`NanEcho/HUGGINGFACE_README.md`](NanEcho/HUGGINGFACE_README.md) for complete documentation.
+
 ## Automated Code Quality & Dependency Management
 
 EchoSelf implements a "forever" automated solution for recurring TypeScript errors and dependency chaos, embodying distributed cognition between the codebase and CI/CD systems. This recursive, self-healing approach enables the codebase to co-evolve with automated tooling, requiring human intervention only for novel or ambiguous cases.

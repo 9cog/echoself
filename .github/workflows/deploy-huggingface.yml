@@ -201,45 +201,15 @@ jobs:
         fi
         
         # Create dataset card
-        cat > hf-model/datasets/README.md << 'EOF'
-# EchoSelf Training Datasets
-
-This directory contains the training datasets used to train the EchoSelf NanEcho model.
-
-## Files
-
-- `train.bin` - Training data (tokenized)
-- `val.bin` - Validation data (tokenized)
-- `metadata.json` - Dataset metadata and configuration
-
-## Dataset Description
-
-The datasets contain tokenized text from:
-- Echo Self cognitive architecture documentation
-- Persona dimension examples
-- Hypergraph reasoning patterns
-- Recursive introspection samples
-
-## Tokenization
-
-The data is tokenized using tiktoken (GPT-2 tokenizer) and stored as binary files
-containing uint16 token IDs.
-
-## Usage
-
-```python
-import numpy as np
-
-# Load training data
-train_data = np.fromfile('train.bin', dtype=np.uint16)
-val_data = np.fromfile('val.bin', dtype=np.uint16)
-
-# Load metadata
-import json
-with open('metadata.json', 'r') as f:
-    metadata = json.load(f)
-```
-EOF
+        echo "# EchoSelf Training Datasets" > hf-model/datasets/README.md
+        echo "" >> hf-model/datasets/README.md
+        echo "This directory contains the training datasets used to train the EchoSelf NanEcho model." >> hf-model/datasets/README.md
+        echo "" >> hf-model/datasets/README.md
+        echo "## Files" >> hf-model/datasets/README.md
+        echo "" >> hf-model/datasets/README.md
+        echo "- train.bin - Training data (tokenized)" >> hf-model/datasets/README.md
+        echo "- val.bin - Validation data (tokenized)" >> hf-model/datasets/README.md
+        echo "- metadata.json - Dataset metadata and configuration" >> hf-model/datasets/README.md
         
         echo "✅ Dataset preparation complete"
     
