@@ -63,9 +63,9 @@ on:
         default: false
         type: boolean
       hf_repo_id:
-        description: 'HuggingFace repository ID to download from'
+        description: 'HuggingFace repository ID to download from (uses HFMODEL secret if empty)'
         required: False
-        default: '9cog/echoself-nanecho'
+        default: ''
         type: string
 
 jobs:
@@ -99,24 +99,38 @@ jobs:
     # ================================================================
     # HUGGINGFACE MODEL DOWNLOAD (OPTIONAL)
     # Download pre-trained model from HuggingFace Hub to continue training
+    # Uses HFMODEL secret for repo ID if not explicitly provided
     # ================================================================
 
     - name: Download model from HuggingFace Hub
       if: github.event.inputs.download_from_hf == 'true'
       env:
         HF_TOKEN: ${{ secrets.HFESELF }}
+        HF_MODEL_URL: ${{ secrets.HFMODEL }}
       run: |
         cd echoself
         
         # Install HuggingFace Hub for model downloads
         pip install huggingface_hub
         
+        # Determine repo ID - use input if provided, otherwise use HFMODEL secret
+        INPUT_REPO_ID="${{ github.event.inputs.hf_repo_id }}"
+        if [ -n "$INPUT_REPO_ID" ]; then
+          REPO_ID="$INPUT_REPO_ID"
+        elif [ -n "$HF_MODEL_URL" ]; then
+          REPO_ID="$HF_MODEL_URL"
+        else
+          echo "❌ ERROR: No HuggingFace repository ID provided!"
+          echo "Either provide hf_repo_id input or configure HFMODEL secret"
+          exit 1
+        fi
+        
         echo "📥 Downloading model from HuggingFace Hub..."
-        echo "Repository: ${{ github.event.inputs.hf_repo_id }}"
+        echo "Repository: $REPO_ID"
         
         # Download and convert model
         python NanEcho/download_from_huggingface.py \
-          --repo-id "${{ github.event.inputs.hf_repo_id }}" \
+          --repo-id "$REPO_ID" \
           --output-checkpoint ".training-progress/checkpoints/hf_init.pt" \
           --token "${HF_TOKEN}" \
           --cache-dir /tmp/hf-download
