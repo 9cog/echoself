@@ -126,7 +126,7 @@ jobs:
       if: github.event.inputs.download_from_hf == 'true'
       env:
         HF_TOKEN: ${{ secrets.HFESELF }}
-        HF_MODEL_URL: ${{ secrets.HFMODEL }}
+        HF_MODEL_REPO: ${{ secrets.HFMODEL }}
       run: |
         cd echoself
         
@@ -137,8 +137,8 @@ jobs:
         INPUT_REPO_ID="${{ github.event.inputs.hf_repo_id }}"
         if [ -n "$INPUT_REPO_ID" ]; then
           REPO_ID="$INPUT_REPO_ID"
-        elif [ -n "$HF_MODEL_URL" ]; then
-          REPO_ID="$HF_MODEL_URL"
+        elif [ -n "$HF_MODEL_REPO" ]; then
+          REPO_ID="$HF_MODEL_REPO"
         else
           echo "❌ ERROR: No HuggingFace repository ID provided!"
           echo "Either provide hf_repo_id input or configure HFMODEL secret"

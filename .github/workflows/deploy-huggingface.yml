@@ -216,7 +216,7 @@ jobs:
     - name: Upload to HuggingFace Hub
       env:
         HF_TOKEN: ${{ secrets.HFESELF }}
-        HF_MODEL_URL: ${{ secrets.HFMODEL }}
+        HF_MODEL_REPO: ${{ secrets.HFMODEL }}
       run: |
         echo "🚀 Uploading to HuggingFace Hub..."
         
@@ -237,8 +237,8 @@ jobs:
         INPUT_REPO_ID="${{ github.event.inputs.repo_id }}"
         if [ -n "$INPUT_REPO_ID" ]; then
           REPO_ID="$INPUT_REPO_ID"
-        elif [ -n "$HF_MODEL_URL" ]; then
-          REPO_ID="$HF_MODEL_URL"
+        elif [ -n "$HF_MODEL_REPO" ]; then
+          REPO_ID="$HF_MODEL_REPO"
         else
           echo "❌ ERROR: No HuggingFace repository ID provided!"
           echo "Either provide repo_id input or configure HFMODEL secret"
@@ -286,16 +286,24 @@ jobs:
     - name: Create deployment summary
       if: always()
       env:
-        HF_MODEL_URL: ${{ secrets.HFMODEL }}
+        HF_MODEL_REPO: ${{ secrets.HFMODEL }}
       run: |
         # Determine repo ID for summary - use input if provided, otherwise use HFMODEL secret
+        # Note: If neither is configured, the upload step will have already failed
         INPUT_REPO_ID="${{ github.event.inputs.repo_id }}"
         if [ -n "$INPUT_REPO_ID" ]; then
           REPO_ID="$INPUT_REPO_ID"
-        elif [ -n "$HF_MODEL_URL" ]; then
-          REPO_ID="$HF_MODEL_URL"
+        elif [ -n "$HF_MODEL_REPO" ]; then
+          REPO_ID="$HF_MODEL_REPO"
         else
-          REPO_ID="(not configured)"
+          # This case means upload failed - show error in summary
+          echo "⚠️ Deployment Summary (FAILED - No repository configured)"
+          echo "================================================"
+          echo ""
+          echo "**Error**: Neither repo_id input nor HFMODEL secret was configured"
+          echo "**Workflow Run**: ${{ github.run_number }}"
+          echo "**Timestamp**: $(date -u)"
+          exit 0
         fi
         
         echo "📝 Deployment Summary"
