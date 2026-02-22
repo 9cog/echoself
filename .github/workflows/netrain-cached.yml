@@ -57,6 +57,16 @@ on:
         required: False
         default: '5.0'
         type: string
+      download_from_hf:
+        description: 'Download initial model from HuggingFace Hub before training'
+        required: False
+        default: false
+        type: boolean
+      hf_repo_id:
+        description: 'HuggingFace repository ID to download from'
+        required: False
+        default: '9cog/echoself-nanecho'
+        type: string
 
 jobs:
   train:
@@ -85,6 +95,36 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r ${{ github.workspace }}/echoself/requirements.txt
+
+    # ================================================================
+    # HUGGINGFACE MODEL DOWNLOAD (OPTIONAL)
+    # Download pre-trained model from HuggingFace Hub to continue training
+    # ================================================================
+
+    - name: Download model from HuggingFace Hub
+      if: github.event.inputs.download_from_hf == 'true'
+      env:
+        HF_TOKEN: ${{ secrets.HFESELF }}
+      run: |
+        cd echoself
+        
+        # Install HuggingFace Hub for model downloads
+        pip install huggingface_hub
+        
+        echo "📥 Downloading model from HuggingFace Hub..."
+        echo "Repository: ${{ github.event.inputs.hf_repo_id }}"
+        
+        # Download and convert model
+        python NanEcho/download_from_huggingface.py \
+          --repo-id "${{ github.event.inputs.hf_repo_id }}" \
+          --output-checkpoint ".training-progress/checkpoints/hf_init.pt" \
+          --token "${HF_TOKEN}" \
+          --cache-dir /tmp/hf-download
+        
+        echo "✅ Model downloaded and converted to NanEcho format"
+        echo "📍 Checkpoint saved to: .training-progress/checkpoints/hf_init.pt"
+        
+        # The checkpoint will be automatically discovered by the training cache system
 
     # ================================================================
     # CUMULATIVE TRAINING SAFETY CHECK
