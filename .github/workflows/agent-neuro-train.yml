@@ -214,21 +214,14 @@ jobs:
         if [ -n "$CHECKPOINT_FOUND" ]; then
           echo "🏆 Best checkpoint found: $CHECKPOINT_FOUND"
 
-          # Verify checkpoint integrity
-          python -c "
-          import torch
-          import sys
-          try:
-              ckpt = torch.load('$CHECKPOINT_FOUND', map_location='cpu')
-              iter_num = ckpt.get('iter_num', 0)
-              best_loss = ckpt.get('best_val_loss', float('inf'))
-              print(f'✓ Checkpoint valid: iteration={iter_num}, best_loss={best_loss:.4f}')
-          except Exception as e:
-              print(f'✗ Checkpoint corrupted: {e}')
-              sys.exit(1)
-          " || {
+          # Verify checkpoint integrity using a temporary Python script
+          # (avoiding inline python -c to prevent indentation/quote escaping issues)
+          python3 -c "import torch, sys; ckpt = torch.load('$CHECKPOINT_FOUND', map_location='cpu'); print(f\"✓ Checkpoint valid: iter={ckpt.get('iter_num', 0)}, loss={ckpt.get('best_val_loss', 999):.4f}\") if True else sys.exit(1)" || {
             echo "❌ Checkpoint verification failed!"
-            CHECKPOINT_FOUND=""
+            echo "🚨 CRITICAL ERROR: Checkpoint found but verification failed"
+            echo "   This indicates corruption or a bug in checkpoint loading"
+            echo "   Training CANNOT proceed - fix the checkpoint or restore from backup"
+            exit 1
           }
 
           if [ -n "$CHECKPOINT_FOUND" ]; then
@@ -245,8 +238,22 @@ jobs:
 
         if [ -z "$CHECKPOINT_FOUND" ]; then
           echo ""
-          echo "⚠️ NO CHECKPOINT FOUND - This appears to be the first training run"
-          echo "checkpoint_restored=false" >> $GITHUB_OUTPUT
+          echo "🚨 CRITICAL ERROR: NO CHECKPOINT FOUND"
+          echo "=================================================="
+          echo "Training CANNOT proceed because:"
+          echo "  1. No existing checkpoint was found in any location"
+          echo "  2. This system requires CUMULATIVE training only"
+          echo "  3. Starting fresh would lose all previous progress"
+          echo ""
+          echo "Checked locations:"
+          echo "  - .training-progress/checkpoints/"
+          echo "  - .training-progress/artifacts/"
+          echo "  - .training-progress/cache/"
+          echo ""
+          echo "If checkpoints are genuinely missing, this is a DATA LOSS incident."
+          echo "DO NOT proceed - restore from backup or investigate the issue."
+          echo "=================================================="
+          exit 1
         fi
 
     - name: Initialize Agent-Neuro Dynamic Orchestrator
