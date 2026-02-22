@@ -21,9 +21,9 @@ on:
           - scheduled
           - full
       repo_id:
-        description: 'HuggingFace repository ID'
-        required: true
-        default: '9cog/echoself-nanecho'
+        description: 'HuggingFace repository ID (uses HFMODEL secret if empty)'
+        required: false
+        default: ''
         type: string
       upload_datasets:
         description: 'Upload training datasets'
@@ -216,6 +216,7 @@ jobs:
     - name: Upload to HuggingFace Hub
       env:
         HF_TOKEN: ${{ secrets.HFESELF }}
+        HF_MODEL_REPO: ${{ secrets.HFMODEL }}
       run: |
         echo "🚀 Uploading to HuggingFace Hub..."
         
@@ -232,8 +233,17 @@ jobs:
         # Login to HuggingFace
         huggingface-cli login --token "$HF_TOKEN"
         
-        # Determine repo ID
-        REPO_ID="${{ github.event.inputs.repo_id || '9cog/echoself-nanecho' }}"
+        # Determine repo ID - use input if provided, otherwise use HFMODEL secret
+        INPUT_REPO_ID="${{ github.event.inputs.repo_id }}"
+        if [ -n "$INPUT_REPO_ID" ]; then
+          REPO_ID="$INPUT_REPO_ID"
+        elif [ -n "$HF_MODEL_REPO" ]; then
+          REPO_ID="$HF_MODEL_REPO"
+        else
+          echo "❌ ERROR: No HuggingFace repository ID provided!"
+          echo "Either provide repo_id input or configure HFMODEL secret"
+          exit 1
+        fi
         
         echo "📤 Uploading to $REPO_ID"
         
@@ -275,11 +285,31 @@ jobs:
     
     - name: Create deployment summary
       if: always()
+      env:
+        HF_MODEL_REPO: ${{ secrets.HFMODEL }}
       run: |
+        # Determine repo ID for summary - use input if provided, otherwise use HFMODEL secret
+        # Note: If neither is configured, the upload step will have already failed
+        INPUT_REPO_ID="${{ github.event.inputs.repo_id }}"
+        if [ -n "$INPUT_REPO_ID" ]; then
+          REPO_ID="$INPUT_REPO_ID"
+        elif [ -n "$HF_MODEL_REPO" ]; then
+          REPO_ID="$HF_MODEL_REPO"
+        else
+          # This case means upload failed - show error in summary
+          echo "⚠️ Deployment Summary (FAILED - No repository configured)"
+          echo "================================================"
+          echo ""
+          echo "**Error**: Neither repo_id input nor HFMODEL secret was configured"
+          echo "**Workflow Run**: ${{ github.run_number }}"
+          echo "**Timestamp**: $(date -u)"
+          exit 0
+        fi
+        
         echo "📝 Deployment Summary"
         echo "===================="
         echo ""
-        echo "**Repository**: ${{ github.event.inputs.repo_id || '9cog/echoself-nanecho' }}"
+        echo "**Repository**: $REPO_ID"
         echo "**Workflow Run**: ${{ github.run_number }}"
         echo "**Timestamp**: $(date -u)"
         echo ""
@@ -290,7 +320,7 @@ jobs:
         fi
         
         echo ""
-        echo "**Model URL**: https://huggingface.co/${{ github.event.inputs.repo_id || '9cog/echoself-nanecho' }}"
+        echo "**Model URL**: https://huggingface.co/$REPO_ID"
         
     - name: Upload deployment artifacts
       uses: actions/upload-artifact@v4
