@@ -231,7 +231,7 @@ jobs:
 
           # Verify checkpoint integrity using a temporary Python script
           # (avoiding inline python -c to prevent indentation/quote escaping issues)
-          python3 -c "import torch, sys; ckpt = torch.load('$CHECKPOINT_FOUND', map_location='cpu'); print(f\"✓ Checkpoint valid: iter={ckpt.get('iter_num', 0)}, loss={ckpt.get('best_val_loss', 999):.4f}\"); print(f\"CHECKPOINT_ITERATION={ckpt.get('iter_num', 0)}\") if True else sys.exit(1)" || {
+          python3 -c "import torch, sys; ckpt = torch.load('$CHECKPOINT_FOUND', map_location='cpu', weights_only=False); print(f\"✓ Checkpoint valid: iter={ckpt.get('iter_num', 0)}, loss={ckpt.get('best_val_loss', 999):.4f}\"); print(f\"CHECKPOINT_ITERATION={ckpt.get('iter_num', 0)}\") if True else sys.exit(1)" || {
             echo "❌ Checkpoint verification failed!"
             echo "🚨 CRITICAL ERROR: Checkpoint found but verification failed"
             echo "   This indicates corruption or a bug in checkpoint loading"
@@ -607,13 +607,13 @@ jobs:
         # Get checkpoint metadata
         ITER_NUM=$(python -c "
         import torch
-        ckpt = torch.load('$CHECKPOINT', map_location='cpu')
+        ckpt = torch.load('$CHECKPOINT', map_location='cpu', weights_only=False)
         print(ckpt.get('iter_num', 0))
         " 2>/dev/null || echo "0")
 
         VAL_LOSS=$(python -c "
         import torch
-        ckpt = torch.load('$CHECKPOINT', map_location='cpu')
+        ckpt = torch.load('$CHECKPOINT', map_location='cpu', weights_only=False)
         print(f'{ckpt.get(\"best_val_loss\", 999.0):.4f}')
         " 2>/dev/null || echo "999.0")
 
