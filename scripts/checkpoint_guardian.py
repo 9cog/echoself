@@ -181,7 +181,7 @@ class CheckpointGuardian:
                         # Try to get iteration number and loss
                         try:
                             import torch
-                            ckpt = torch.load(checkpoint_file, map_location='cpu')
+                            ckpt = torch.load(checkpoint_file, map_location='cpu', weights_only=False)
                             iter_num = ckpt.get('iter_num', 0)
                             best_val_loss = ckpt.get('best_val_loss', float('inf'))
                             candidates.append({
@@ -208,7 +208,7 @@ class CheckpointGuardian:
                     if self._verify_checkpoint(checkpoint_file):
                         try:
                             import torch
-                            ckpt = torch.load(checkpoint_file, map_location='cpu')
+                            ckpt = torch.load(checkpoint_file, map_location='cpu', weights_only=False)
                             iter_num = ckpt.get('iter_num', 0)
                             best_val_loss = ckpt.get('best_val_loss', float('inf'))
                             candidates.append({

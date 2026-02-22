@@ -216,7 +216,7 @@ jobs:
 
           # Verify checkpoint integrity using a temporary Python script
           # (avoiding inline python -c to prevent indentation/quote escaping issues)
-          python3 -c "import torch, sys; ckpt = torch.load('$CHECKPOINT_FOUND', map_location='cpu'); print(f\"✓ Checkpoint valid: iter={ckpt.get('iter_num', 0)}, loss={ckpt.get('best_val_loss', 999):.4f}\") if True else sys.exit(1)" || {
+          python3 -c "import torch, sys; ckpt = torch.load('$CHECKPOINT_FOUND', map_location='cpu', weights_only=False); print(f\"✓ Checkpoint valid: iter={ckpt.get('iter_num', 0)}, loss={ckpt.get('best_val_loss', 999):.4f}\") if True else sys.exit(1)" || {
             echo "❌ Checkpoint verification failed!"
             echo "🚨 CRITICAL ERROR: Checkpoint found but verification failed"
             echo "   This indicates corruption or a bug in checkpoint loading"
@@ -765,6 +765,8 @@ jobs:
 #          --max_new_tokens=200 --temperature=0.7 --no_system_prompt=True
 
     - name: Agent-Neuro Orchestrator - Supervise Evaluation Phase
+      if: always()
+      continue-on-error: true
       env:
         NEURO_MODEL_PATH: nanoGPT/${{ steps.params.outputs.output_dir }}/ckpt.pt
         NEURO_DEEP_TREE_ECHO_MODE: "true"
@@ -775,6 +777,8 @@ jobs:
         python /tmp/agent_neuro_supervisor.py "evaluation" "${{ github.workspace }}/echoself/.training-progress/evaluation_supervision.json"
 
     - name: Evaluate Deep Tree Echo persona fidelity
+      if: always()
+      continue-on-error: true
       run: |
         cd echoself/NanEcho
         python evaluation/echo_fidelity.py \
@@ -797,6 +801,8 @@ jobs:
         fi
 
     - name: Run automation integration analysis  
+      if: always()
+      continue-on-error: true
       run: |
         cd echoself/NanEcho
         echo "🤖 Running NANECHO automation integration..."
@@ -810,17 +816,22 @@ jobs:
         echo "✅ Automation integration analysis complete"
 
     - name: Apply quality gates and determine next steps
+      if: always()
+      continue-on-error: true
       run: |
         cd echoself/NanEcho
         python analyze_quality_gates.py automation_analysis.json
 
     - name: Generate continuous improvement recommendations
+      if: always()
+      continue-on-error: true
       run: |
         cd echoself/NanEcho
         python generate_improvement_plan.py automation_analysis.json
 
     - name: Trigger next training cycle if needed
-      if: github.event_name == 'schedule' || (github.event.inputs.relentless_training == 'True' && success())
+      if: always() && (github.event_name == 'schedule' || github.event.inputs.relentless_training == 'True')
+      continue-on-error: true
       run: |
         cd echoself/NanEcho
         python analyze_training_triggers.py automation_analysis.json ${{ github.event_name }} ${{ github.event.inputs.relentless_training }}
@@ -831,6 +842,7 @@ jobs:
     # ================================================================
 
     - name: Backup model to multiple locations
+      if: always()
       run: |
         cd nanoGPT
         CHECKPOINT="${{ steps.params.outputs.output_dir }}/ckpt.pt"
@@ -847,13 +859,13 @@ jobs:
         # Get checkpoint metadata
         ITER_NUM=$(python -c "
         import torch
-        ckpt = torch.load('$CHECKPOINT', map_location='cpu')
+        ckpt = torch.load('$CHECKPOINT', map_location='cpu', weights_only=False)
         print(ckpt.get('iter_num', 0))
         " 2>/dev/null || echo "0")
 
         VAL_LOSS=$(python -c "
         import torch
-        ckpt = torch.load('$CHECKPOINT', map_location='cpu')
+        ckpt = torch.load('$CHECKPOINT', map_location='cpu', weights_only=False)
         print(f'{ckpt.get(\"best_val_loss\", 999.0):.4f}')
         " 2>/dev/null || echo "999.0")
 
@@ -902,11 +914,14 @@ jobs:
         fi
 
     - name: Upload trained Deep Tree Echo model
+      if: always()
+      continue-on-error: true
       uses: actions/upload-artifact@v4
       with:
         name: agent-neuro-model-${{ steps.params.outputs.output_dir }}
         path: nanoGPT/${{ steps.params.outputs.output_dir }}/
         retention-days: 30
+        if-no-files-found: warn
 
     - name: Upload checkpoint backup artifact
       uses: actions/upload-artifact@v4
@@ -920,18 +935,24 @@ jobs:
         if-no-files-found: warn
 
     - name: Upload trained Deep Tree Echo model (legacy name)
+      if: always()
+      continue-on-error: true
       uses: actions/upload-artifact@v4
       with:
         name: deep-tree-echo-model-${{ steps.params.outputs.output_dir }}
         path: nanoGPT/${{ steps.params.outputs.output_dir }}/
         retention-days: 30
+        if-no-files-found: warn
 
     - name: Upload Deep Tree Echo evaluation report
+      if: always()
+      continue-on-error: true
       uses: actions/upload-artifact@v4
       with:
         name: deep-tree-echo-evaluation-${{ steps.params.outputs.output_dir }}
         path: echoself/NanEcho/evaluation_report.json
         retention-days: 30
+        if-no-files-found: warn
 
     - name: Upload training feedback and improvement plan
       uses: actions/upload-artifact@v4
@@ -954,6 +975,8 @@ jobs:
         if-no-files-found: ignore
 
     - name: Agent-Neuro Orchestrator - Finalize Session & Save Progress
+      if: always()
+      continue-on-error: true
       env:
         NEURO_TRAINING_STATUS: "completed"
         NEURO_MODEL_OUTPUT_DIR: ${{ steps.params.outputs.output_dir }}
@@ -1007,7 +1030,7 @@ jobs:
         echo "✅ Training progress documentation created"
 
     - name: Commit and Push Training Progress to Repository
-      if: success()
+      if: always()
       env:
         OUTPUT_DIR: ${{ steps.params.outputs.output_dir }}
         TRAINING_MODE_LABEL: ${{ steps.params.outputs.training_mode_label }}

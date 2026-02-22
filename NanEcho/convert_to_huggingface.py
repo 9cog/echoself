@@ -21,7 +21,7 @@ def load_nanecho_checkpoint(checkpoint_path: str) -> Dict[str, Any]:
     """Load a NanEcho checkpoint."""
     print(f"📦 Loading NanEcho checkpoint from {checkpoint_path}")
     
-    checkpoint = torch.load(checkpoint_path, map_location='cpu')
+    checkpoint = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
     
     # Handle different checkpoint formats
     if 'model_state' in checkpoint:

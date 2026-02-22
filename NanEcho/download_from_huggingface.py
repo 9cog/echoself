@@ -48,7 +48,7 @@ def load_hf_model(model_dir: Path) -> Dict[str, Any]:
     if not model_path.exists():
         raise FileNotFoundError(f"Model weights not found: {model_path}")
     
-    model_state = torch.load(model_path, map_location='cpu')
+    model_state = torch.load(model_path, map_location='cpu', weights_only=False)
     print(f"  ✓ Loaded {len(model_state)} parameters")
     
     # Load config
