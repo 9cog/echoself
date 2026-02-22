@@ -3,13 +3,13 @@
   "persona_enforced": "Deep Tree Echo",
   "session_log": [
     {
-      "timestamp": "2026-02-22T11:52:57.614179",
+      "timestamp": "2026-02-22T16:08:17.829744",
       "phase": "data_preparation",
       "config": {
         "persona_weight": "0.95",
         "echo_depth": "7",
-        "deep_tree_echo_mode": "False",
-        "persona_reinforcement": "0.7"
+        "deep_tree_echo_mode": "True",
+        "persona_reinforcement": "0.95"
       },
       "agent_neuro_status": "supervising",
       "deep_tree_echo_enforcement": true
