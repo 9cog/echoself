@@ -494,13 +494,13 @@
     "file_size_mb": 249.29015827178955,
     "quality_score": 76800.6769302556
   },
-  "ckpt_20260228_180559_500_22deff1b_9470fbb7": {
-    "checkpoint_id": "ckpt_20260228_180559_500_22deff1b_9470fbb7",
-    "created_at": "2026-02-28T18:06:00.055621",
+  "ckpt_20260301_061507_500_22deff1b_9470fbb7": {
+    "checkpoint_id": "ckpt_20260301_061507_500_22deff1b_9470fbb7",
+    "created_at": "2026-03-01T06:15:07.789570",
     "iteration": 500,
     "epoch": 0,
     "train_loss": 0.0,
-    "val_loss": 7.549430780410766,
+    "val_loss": 7.549222717285156,
     "learning_rate": 1.3971999999999998e-05,
     "model_config": {
       "n_layer": 4,
@@ -532,7 +532,7 @@
       "block_size": 1024
     },
     "metrics": {
-      "val_loss": 7.549430780410766,
+      "val_loss": 7.549222717285156,
       "connection_ratio": 0.3,
       "tokens_processed": 1024000,
       "training_speed_iters_per_sec": 0.0
@@ -547,6 +547,6 @@
     "parent_checkpoint": null,
     "notes": "Training checkpoint at iteration 500 (resumed from iteration 500) | Phase: adaptive_mastery",
     "file_size_mb": 249.29015827178955,
-    "quality_score": 76800.67058410455
+    "quality_score": 76800.67057049245
   }
 }
