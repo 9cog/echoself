@@ -79,7 +79,7 @@ on:
         default: ''
         type: string
       force_fresh_start:
-        description: 'DANGEROUS: Force fresh start - ONLY use for first-ever training or if you understand this ignores existing checkpoints'
+        description: 'Force fresh start (first-time training only)'
         required: False
         default: false
         type: boolean
@@ -88,6 +88,9 @@ on:
         required: False
         default: ''
         type: string
+
+env:
+  FRESH_START_CONFIRM_STRING: "I CONFIRM FRESH START"
 
 jobs:
   train:
@@ -207,9 +210,10 @@ jobs:
 
         FORCE_FRESH="${{ github.event.inputs.force_fresh_start || 'false' }}"
         CONFIRM="${{ github.event.inputs.confirm_fresh_start || '' }}"
+        EXPECTED_CONFIRM="${{ env.FRESH_START_CONFIRM_STRING }}"
 
         if [[ "$FORCE_FRESH" == "true" ]]; then
-          if [[ "$CONFIRM" != "I CONFIRM FRESH START" ]]; then
+          if [[ "$CONFIRM" != "$EXPECTED_CONFIRM" ]]; then
             echo "❌ SAFETY CHECK FAILED"
             echo ""
             echo "You requested force_fresh_start=true but did not provide the"
@@ -217,7 +221,7 @@ jobs:
             echo ""
             echo "To force a fresh start (which bypasses checkpoint restoration):"
             echo "  1. Set force_fresh_start: true"
-            echo "  2. Set confirm_fresh_start: 'I CONFIRM FRESH START'"
+            echo "  2. Set confirm_fresh_start: '$EXPECTED_CONFIRM'"
             echo ""
             echo "This safety check exists because fresh starts:"
             echo "  - Ignore ALL existing checkpoints"
@@ -335,7 +339,7 @@ jobs:
             echo "If this is the FIRST EVER training run, you can:"
             echo "  1. Trigger the workflow manually with:"
             echo "     - force_fresh_start: true"
-            echo "     - confirm_fresh_start: 'I CONFIRM FRESH START'"
+            echo "     - confirm_fresh_start: '${{ env.FRESH_START_CONFIRM_STRING }}'"
             echo ""
             echo "If checkpoints are genuinely missing, this is a DATA LOSS incident."
             echo "DO NOT proceed - restore from backup or investigate the issue."
