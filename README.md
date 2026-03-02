@@ -231,6 +231,7 @@ gh workflow run netrain-cached.yml \
 ```
 
 **Features:**
+
 - ✅ Automatic model conversion to HuggingFace GPT-2 format
 - ✅ Dataset upload alongside models
 - ✅ Comprehensive model cards with training metadata
@@ -238,6 +239,7 @@ gh workflow run netrain-cached.yml \
 - ✅ Continuous improvement cycle: train → deploy → download → train
 
 **Setup:**
+
 1. Create HuggingFace token at https://huggingface.co/settings/tokens
 2. Add token as GitHub secret `HFESELF`
 3. Create model repository at https://huggingface.co/new

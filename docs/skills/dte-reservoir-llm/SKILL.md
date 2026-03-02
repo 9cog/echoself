@@ -9,11 +9,11 @@ This meta-skill provides a complete workflow for creating, training, and deployi
 
 This skill unifies the capabilities of several other skills into a single, coherent pipeline:
 
--   `nanecho-custom-vocab`: For building the domain-specific tokenizer.
--   `reservoirpy-nodes`: For defining the custom reservoir nodes.
--   `echo-train`: For managing the CI/CD training pipeline.
--   `echo-deploy`: For deploying the final model to the HuggingFace Hub.
--   `echo-introspect`, `unreal-echo`, `meta-echo-dna`: For integrating the trained model into the full Deep Tree Echo cognitive architecture.
+- `nanecho-custom-vocab`: For building the domain-specific tokenizer.
+- `reservoirpy-nodes`: For defining the custom reservoir nodes.
+- `echo-train`: For managing the CI/CD training pipeline.
+- `echo-deploy`: For deploying the final model to the HuggingFace Hub.
+- `echo-introspect`, `unreal-echo`, `meta-echo-dna`: For integrating the trained model into the full Deep Tree Echo cognitive architecture.
 
 ## Core Architecture: The Reservoir-Augmented Transformer (RAT)
 
@@ -74,11 +74,11 @@ For a detailed architectural breakdown, see `references/architecture.md`.
 
 With the trained RAT model deployed, you can now integrate it into the full Deep Tree Echo cognitive architecture:
 
--   **Introspection (`echo-introspect`)**: Analyze the internal state of the reservoir during inference to gain insights into the model's "cognitive state."
--   **Avatar Embodiment (`unreal-echo` & `meta-echo-dna`)**: Use the model's output to drive the expression and behavior of a MetaHuman avatar.
--   **Harmonic Analysis (`harmonic-llm`)**: Apply frequency-domain analysis to the reservoir's dynamics to explore new forms of cognitive modeling.
+- **Introspection (`echo-introspect`)**: Analyze the internal state of the reservoir during inference to gain insights into the model's "cognitive state."
+- **Avatar Embodiment (`unreal-echo` & `meta-echo-dna`)**: Use the model's output to drive the expression and behavior of a MetaHuman avatar.
+- **Harmonic Analysis (`harmonic-llm`)**: Apply frequency-domain analysis to the reservoir's dynamics to explore new forms of cognitive modeling.
 
 ## Bundled Resources
 
--   **`references/`**: Contains detailed documentation on the RAT architecture, data preparation, and model implementation.
--   **`scripts/`**: Contains the Python scripts for patching the `echoself` repository.
+- **`references/`**: Contains detailed documentation on the RAT architecture, data preparation, and model implementation.
+- **`scripts/`**: Contains the Python scripts for patching the `echoself` repository.

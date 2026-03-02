@@ -5,6 +5,7 @@ This directory contains scripts and workflows for deploying trained EchoSelf Nan
 ## Overview
 
 The HuggingFace integration enables:
+
 - **Model Sharing**: Deploy trained models to HuggingFace Hub for easy sharing
 - **Incremental Training**: Download pre-trained models to continue training
 - **Version Control**: Track model versions through HuggingFace releases
@@ -114,6 +115,7 @@ huggingface-cli upload 9cog/echoself-nanecho hf-model/ .
 5. Click **"Run workflow"**
 
 The training will:
+
 1. Download the model from HuggingFace
 2. Convert it to NanEcho checkpoint format
 3. Use it as the starting point for incremental training
@@ -138,6 +140,7 @@ python train_cached.py --config training_config.json
 Converts NanEcho PyTorch checkpoint to HuggingFace format.
 
 **Features:**
+
 - Converts model weights to HuggingFace GPT-2 format
 - Creates `config.json` with model architecture
 - Generates `tokenizer_config.json` for tiktoken compatibility
@@ -145,6 +148,7 @@ Converts NanEcho PyTorch checkpoint to HuggingFace format.
 - Preserves training metadata and Echo Self features
 
 **Usage:**
+
 ```bash
 python NanEcho/convert_to_huggingface.py \
   --checkpoint path/to/checkpoint.pt \
@@ -153,6 +157,7 @@ python NanEcho/convert_to_huggingface.py \
 ```
 
 **Output:**
+
 ```
 hf-model/
 ├── pytorch_model.bin       # Model weights
@@ -167,12 +172,14 @@ hf-model/
 Downloads model from HuggingFace Hub and converts to NanEcho format.
 
 **Features:**
+
 - Downloads model from HuggingFace Hub
 - Converts HuggingFace format back to NanEcho checkpoint
 - Preserves Echo Self cognitive architecture features
 - Validates model compatibility
 
 **Usage:**
+
 ```bash
 python NanEcho/download_from_huggingface.py \
   --repo-id 9cog/echoself-nanecho \
@@ -181,6 +188,7 @@ python NanEcho/download_from_huggingface.py \
 ```
 
 **Environment Variables:**
+
 - `HF_TOKEN`: HuggingFace access token (optional for public repos)
 
 ## Workflows
@@ -190,11 +198,13 @@ python NanEcho/download_from_huggingface.py \
 Deploys trained models to HuggingFace Hub.
 
 **Triggers:**
+
 - Manual workflow dispatch
 - Automatic after successful `netrain-cached` runs
 - Can be scheduled
 
 **Steps:**
+
 1. Locate best checkpoint (git, artifacts, cache)
 2. Convert to HuggingFace format
 3. Prepare datasets for upload
@@ -207,10 +217,12 @@ Deploys trained models to HuggingFace Hub.
 Both `netrain.yml` and `netrain-cached.yml` support HuggingFace model downloads:
 
 **New Workflow Inputs:**
+
 - `download_from_hf`: Boolean, download model before training
 - `hf_repo_id`: Repository ID to download from
 
 **Integration Flow:**
+
 ```
 [HuggingFace Hub] ──download──> [Local Checkpoint] ──train──> [Improved Model] ──upload──> [HuggingFace Hub]
 ```
@@ -270,6 +282,7 @@ The recommended workflow for continuous model improvement:
 ```
 
 This creates a continuous improvement loop where:
+
 - Each training session builds on the best previous model
 - Models are versioned and shared via HuggingFace
 - Training history is preserved through checkpoints
@@ -284,11 +297,13 @@ This creates a continuous improvement loop where:
 ### "No checkpoint found"
 
 **Causes:**
+
 - Training hasn't completed successfully
 - Checkpoint artifacts expired
 - Cache was cleared
 
 **Solution:**
+
 - Verify training workflow completed
 - Check artifact retention settings (30-90 days)
 - Run fresh training session
@@ -296,10 +311,12 @@ This creates a continuous improvement loop where:
 ### "Model architecture mismatch"
 
 **Causes:**
+
 - Training config changed between upload and download
 - Incompatible model versions
 
 **Solution:**
+
 - Ensure consistent `n_layer`, `n_embd`, `n_head` settings
 - Check config.json in HuggingFace repository
 - Use matching training configuration
@@ -307,11 +324,13 @@ This creates a continuous improvement loop where:
 ### "Upload failed"
 
 **Causes:**
+
 - Invalid token
 - Insufficient permissions
 - Repository doesn't exist
 
 **Solution:**
+
 - Verify token has write permissions
 - Check repository exists at specified `repo_id`
 - Test token with `huggingface-cli whoami`
@@ -388,6 +407,7 @@ gh workflow run deploy-huggingface.yml \
 ### Private Repositories
 
 For private HuggingFace repositories:
+
 1. Ensure token has access to private repos
 2. Set repository visibility on HuggingFace
 3. Use same deployment workflow
@@ -395,6 +415,7 @@ For private HuggingFace repositories:
 ### Dataset-Only Upload
 
 To update datasets without changing the model:
+
 1. Modify datasets in `data/nanecho/`
 2. Run deployment with current checkpoint
 3. Datasets will be updated in HuggingFace repository
@@ -411,6 +432,7 @@ When contributing to HuggingFace integration:
 ## Support
 
 For issues or questions:
+
 - **GitHub Issues**: https://github.com/9cog/echoself/issues
 - **Documentation**: See repository README
 - **HuggingFace**: https://huggingface.co/docs
