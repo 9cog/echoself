@@ -78,6 +78,19 @@ on:
         required: False
         default: ''
         type: string
+      force_fresh_start:
+        description: 'Force fresh start (first-time training only)'
+        required: False
+        default: false
+        type: boolean
+      confirm_fresh_start:
+        description: 'Type "I CONFIRM FRESH START" to enable force_fresh_start (required safety check)'
+        required: False
+        default: ''
+        type: string
+
+env:
+  FRESH_START_CONFIRM_STRING: "I CONFIRM FRESH START"
 
 jobs:
   train:
@@ -185,13 +198,59 @@ jobs:
         search_artifacts: true
         if_no_artifact_found: warn
 
+    # ================================================================
+    # CUMULATIVE TRAINING SAFETY CHECK
+    # ================================================================
+
+    - name: Validate fresh start request (if any)
+      id: safety_check
+      run: |
+        echo "🛡️ CHECKPOINT GUARDIAN: Safety validation"
+        echo "=========================================="
+
+        FORCE_FRESH="${{ github.event.inputs.force_fresh_start || 'false' }}"
+        CONFIRM="${{ github.event.inputs.confirm_fresh_start || '' }}"
+        EXPECTED_CONFIRM="${{ env.FRESH_START_CONFIRM_STRING }}"
+
+        if [[ "$FORCE_FRESH" == "true" ]]; then
+          if [[ "$CONFIRM" != "$EXPECTED_CONFIRM" ]]; then
+            echo "❌ SAFETY CHECK FAILED"
+            echo ""
+            echo "You requested force_fresh_start=true but did not provide the"
+            echo "required confirmation string."
+            echo ""
+            echo "To force a fresh start (which bypasses checkpoint restoration):"
+            echo "  1. Set force_fresh_start: true"
+            echo "  2. Set confirm_fresh_start: '$EXPECTED_CONFIRM'"
+            echo ""
+            echo "This safety check exists because fresh starts:"
+            echo "  - Ignore ALL existing checkpoints"
+            echo "  - May result in lost training progress"
+            echo "  - Should only be used for first-ever training or recovery"
+            echo ""
+            echo "Defaulting to CUMULATIVE training mode (safe)."
+            echo "allow_fresh_start=false" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ WARNING: Fresh start CONFIRMED by user"
+            echo "   All previous checkpoints will be ignored"
+            echo "   This is typically used for first-ever training"
+            echo "allow_fresh_start=true" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "✓ Cumulative training mode (default, safe)"
+          echo "allow_fresh_start=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: Restore checkpoint for cumulative training
       id: restore_checkpoint
       run: |
         cd echoself
 
+        ALLOW_FRESH="${{ steps.safety_check.outputs.allow_fresh_start }}"
+        
         echo "🛡️ CHECKPOINT GUARDIAN: Ensuring cumulative training"
         echo "=================================================="
+        echo "Allow fresh start: $ALLOW_FRESH"
 
         # Create checkpoint directories
         mkdir -p .training-progress/checkpoints
@@ -252,23 +311,41 @@ jobs:
         fi
 
         if [ -z "$CHECKPOINT_FOUND" ]; then
-          echo ""
-          echo "🚨 CRITICAL ERROR: NO CHECKPOINT FOUND"
-          echo "=================================================="
-          echo "Training CANNOT proceed because:"
-          echo "  1. No existing checkpoint was found in any location"
-          echo "  2. This system requires CUMULATIVE training only"
-          echo "  3. Starting fresh would lose all previous progress"
-          echo ""
-          echo "Checked locations:"
-          echo "  - .training-progress/checkpoints/"
-          echo "  - .training-progress/artifacts/"
-          echo "  - .training-progress/cache/"
-          echo ""
-          echo "If checkpoints are genuinely missing, this is a DATA LOSS incident."
-          echo "DO NOT proceed - restore from backup or investigate the issue."
-          echo "=================================================="
-          exit 1
+          if [[ "$ALLOW_FRESH" == "true" ]]; then
+            echo ""
+            echo "⚠️ WARNING: NO CHECKPOINT FOUND - Starting fresh (user confirmed)"
+            echo "=================================================="
+            echo "This is the FIRST training run or a recovery situation."
+            echo "Fresh start was explicitly confirmed via workflow inputs."
+            echo ""
+            echo "checkpoint_restored=false" >> $GITHUB_OUTPUT
+            echo "checkpoint_path=" >> $GITHUB_OUTPUT
+            echo "fresh_start=true" >> $GITHUB_OUTPUT
+            echo "✅ Proceeding with fresh start (first-time training)"
+          else
+            echo ""
+            echo "🚨 CRITICAL ERROR: NO CHECKPOINT FOUND"
+            echo "=================================================="
+            echo "Training CANNOT proceed because:"
+            echo "  1. No existing checkpoint was found in any location"
+            echo "  2. This system requires CUMULATIVE training only"
+            echo "  3. Starting fresh would lose all previous progress"
+            echo ""
+            echo "Checked locations:"
+            echo "  - .training-progress/checkpoints/"
+            echo "  - .training-progress/artifacts/"
+            echo "  - .training-progress/cache/"
+            echo ""
+            echo "If this is the FIRST EVER training run, you can:"
+            echo "  1. Trigger the workflow manually with:"
+            echo "     - force_fresh_start: true"
+            echo "     - confirm_fresh_start: '${{ env.FRESH_START_CONFIRM_STRING }}'"
+            echo ""
+            echo "If checkpoints are genuinely missing, this is a DATA LOSS incident."
+            echo "DO NOT proceed - restore from backup or investigate the issue."
+            echo "=================================================="
+            exit 1
+          fi
         fi
 
     - name: Determine training parameters
