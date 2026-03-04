@@ -11,12 +11,36 @@
   },
   "special_tokens": {
     "control": ["<|pad|>", "<|endoftext|>", "<|startoftext|>"],
-    "cognitive": ["<|echo|>", "<|deep_tree|>", "<|reservoir|>", "<|membrane|>", "<|hypergraph|>", "<|atomspace|>"],
+    "cognitive": [
+      "<|echo|>",
+      "<|deep_tree|>",
+      "<|reservoir|>",
+      "<|membrane|>",
+      "<|hypergraph|>",
+      "<|atomspace|>"
+    ],
     "aar_triad": ["<|agent|>", "<|arena|>", "<|relation|>"],
-    "cognitive_state": ["<|introspect|>", "<|perceive|>", "<|act|>", "<|simulate|>"],
+    "cognitive_state": [
+      "<|introspect|>",
+      "<|perceive|>",
+      "<|act|>",
+      "<|simulate|>"
+    ],
     "echobeat": ["<|echobeat_start|>", "<|echobeat_end|>", "<|step|>"],
-    "persona": ["<|persona|>", "<|cognitive|>", "<|adaptive|>", "<|recursive|>", "<|synergistic|>", "<|holographic|>"],
-    "structural": ["<|feedback|>", "<|feedforward|>", "<|resonance|>", "<|entelechy|>"],
+    "persona": [
+      "<|persona|>",
+      "<|cognitive|>",
+      "<|adaptive|>",
+      "<|recursive|>",
+      "<|synergistic|>",
+      "<|holographic|>"
+    ],
+    "structural": [
+      "<|feedback|>",
+      "<|feedforward|>",
+      "<|resonance|>",
+      "<|entelechy|>"
+    ],
     "conversation": ["<|user|>", "<|echo_self|>", "<|system|>"],
     "architecture": ["<|b9|>", "<|p9|>", "<|j9|>"]
   },

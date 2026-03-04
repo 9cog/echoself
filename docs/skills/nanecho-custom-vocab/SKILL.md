@@ -8,12 +8,14 @@ description: "Build custom BPE vocabularies and tokenizers for the NanEcho model
 ## Triggers
 
 Use this skill when the user wants to:
+
 - Train the NanEcho model with a custom vocabulary.
 - Build a custom tokenizer for NanEcho from their own data.
 - Fine-tune NanEcho on a new domain with specialized terminology.
 - Create a more efficient version of NanEcho for a specific task.
 
 **Example prompts**:
+
 - "I want to train NanEcho on my own dataset with a custom vocabulary."
 - "How can I build a custom tokenizer for the echoself model?"
 - "Fine-tune nanecho with a new vocabulary based on these documents."
@@ -30,6 +32,7 @@ The end-to-end process is broken down into the following phases:
 ### Phase 2: Custom Tokenizer Training
 
 1.  **Train BPE Tokenizer**: Use the `scripts/build_tokenizer.py` script to train a custom Byte-Pair Encoding (BPE) tokenizer from the training corpus.
+
     - This script takes the raw text from the JSONL files and trains a `tokenizers` model.
     - It defines special tokens crucial for the Deep Tree Echo cognitive architecture (e.g., `<|echo|>`, `<|agent|>`, `<|b9|>`).
     - The output is a directory (e.g., `dte_tokenizer/`) containing `tokenizer.json` and other configuration files.
@@ -44,6 +47,7 @@ The end-to-end process is broken down into the following phases:
 ### Phase 3: Data Tokenization for nanoGPT
 
 1.  **Prepare Binary Data**: Use the `scripts/prepare_data.py` script to convert the raw JSONL data into tokenized `train.bin` and `val.bin` files using the newly trained tokenizer.
+
     - This script reads the JSONL files, formats the text with special tokens (`<|startoftext|>`, `<|endoftext|>`), and uses the custom tokenizer to encode the text into integer token IDs.
     - The output is a pair of binary files containing `uint16` numpy arrays, which is the format expected by the `nanoGPT` training pipeline in the `9cog/echoself` repository.
 
@@ -64,10 +68,12 @@ The end-to-end process is broken down into the following phases:
 ### Phase 5: Trigger Training
 
 1.  **Dispatch Workflow**: Trigger the `netrain-cached.yml` GitHub Actions workflow.
+
     - **Crucially**, you must override the default parameters to point to the new data directory and specify the new vocabulary size.
     - This is done by modifying the `train_cached.py` command in the workflow or by passing inputs if the workflow is configured to accept them.
 
     Example invocation (if using command-line overrides):
+
     ```bash
     python train_cached.py \
       --data_dir data/nanecho_dte \

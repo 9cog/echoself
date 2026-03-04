@@ -7,6 +7,7 @@
 ## Overview
 
 This implementation adds a complete HuggingFace integration system to the EchoSelf project, enabling:
+
 - Automated deployment of trained NanEcho models to HuggingFace Hub
 - Download of pre-trained models for incremental training
 - Continuous improvement cycle with version control
@@ -19,6 +20,7 @@ This implementation adds a complete HuggingFace integration system to the EchoSe
 **File**: `.github/workflows/deploy-huggingface.yml`
 
 **Features**:
+
 - ✅ Automated deployment after successful training runs
 - ✅ Manual workflow dispatch for on-demand deployments
 - ✅ Multi-source checkpoint discovery (git → artifacts → cache)
@@ -29,11 +31,13 @@ This implementation adds a complete HuggingFace integration system to the EchoSe
 - ✅ Deployment summary and artifact upload
 
 **Triggers**:
+
 - Manual: `workflow_dispatch` with configurable options
 - Automatic: After successful `netrain-cached.yml` runs
 - Can be scheduled if desired
 
 **Workflow Steps**:
+
 1. Checkout repository
 2. Setup Python environment
 3. Install dependencies (torch, numpy, tiktoken, transformers, huggingface_hub)
@@ -51,6 +55,7 @@ This implementation adds a complete HuggingFace integration system to the EchoSe
 **File**: `NanEcho/convert_to_huggingface.py`
 
 **Features**:
+
 - ✅ Loads NanEcho PyTorch checkpoints (multiple formats supported)
 - ✅ Converts to HuggingFace GPT-2 compatible format
 - ✅ Preserves Echo Self cognitive architecture metadata
@@ -59,6 +64,7 @@ This implementation adds a complete HuggingFace integration system to the EchoSe
 - ✅ Exports model configuration (config.json)
 
 **Usage**:
+
 ```bash
 python NanEcho/convert_to_huggingface.py \
   --checkpoint .training-progress/checkpoints/latest_checkpoint.pt \
@@ -66,6 +72,7 @@ python NanEcho/convert_to_huggingface.py \
 ```
 
 **Output Structure**:
+
 ```
 hf-model/
 ├── pytorch_model.bin       # Model weights
@@ -80,6 +87,7 @@ hf-model/
 **File**: `NanEcho/download_from_huggingface.py`
 
 **Features**:
+
 - ✅ Downloads models from HuggingFace Hub
 - ✅ Converts back to NanEcho checkpoint format
 - ✅ Validates model compatibility (checks for required GPT-2 components)
@@ -87,11 +95,13 @@ hf-model/
 - ✅ Comprehensive error messages with guidance
 
 **Validation**:
+
 - Checks for required model components: `transformer.wte.weight`, `transformer.wpe.weight`, `transformer.ln_f.weight`
 - Fails early with helpful error messages if model is incompatible
 - Provides documentation references for troubleshooting
 
 **Usage**:
+
 ```bash
 python NanEcho/download_from_huggingface.py \
   --repo-id 9cog/echoself-nanecho \
@@ -102,23 +112,26 @@ python NanEcho/download_from_huggingface.py \
 ### 4. Training Workflow Integration
 
 **Files Modified**:
+
 - `.github/workflows/netrain-cached.yml`
 - `.github/workflows/netrain.yml`
 
 **New Workflow Inputs**:
+
 ```yaml
 download_from_hf:
-  description: 'Download initial model from HuggingFace Hub before training'
+  description: "Download initial model from HuggingFace Hub before training"
   type: boolean
   default: false
 
 hf_repo_id:
-  description: 'HuggingFace repository ID to download from'
+  description: "HuggingFace repository ID to download from"
   type: string
-  default: '9cog/echoself-nanecho'
+  default: "9cog/echoself-nanecho"
 ```
 
 **Integration Flow**:
+
 1. Install dependencies
 2. **If `download_from_hf=true`**: Install huggingface_hub and download model
 3. Download converts model to NanEcho checkpoint format
@@ -127,6 +140,7 @@ hf_repo_id:
 6. Continue with normal training flow
 
 **Optimization**:
+
 - `huggingface_hub` only installed when `download_from_hf=true`
 - Seamless integration with existing checkpoint cache system
 - No changes to training logic required
@@ -134,10 +148,12 @@ hf_repo_id:
 ### 5. Documentation
 
 **Files Created/Updated**:
+
 - `NanEcho/HUGGINGFACE_README.md` - Comprehensive HuggingFace integration guide
 - `README.md` - Added HuggingFace integration section
 
 **Documentation Includes**:
+
 - ✅ Setup instructions for HuggingFace token
 - ✅ GitHub secret configuration (HFESELF)
 - ✅ HuggingFace repository creation
@@ -182,23 +198,27 @@ The implementation enables a sustainable continuous improvement cycle:
 ## Code Quality & Security
 
 ### Code Review Results
+
 - **Iterations**: 3
 - **Issues Found**: 4
 - **Issues Resolved**: 4 ✅
 - **Final Status**: No review comments
 
 **Issues Addressed**:
+
 1. ✅ Fixed boolean type consistency in workflow inputs (string 'false' → boolean false)
 2. ✅ Added validation for required model components before conversion
 3. ✅ Optimized dependency installation (conditional huggingface_hub install)
 4. ✅ Improved error messages with specific guidance and documentation references
 
 ### Security Analysis (CodeQL)
+
 - **Languages Analyzed**: Actions, Python
 - **Vulnerabilities Found**: 0 ✅
 - **Security Status**: Clean
 
 ### Validation
+
 - ✅ All Python scripts: Syntax validated
 - ✅ All YAML workflows: Syntax validated
 - ✅ Workflow structure: Verified
@@ -208,16 +228,19 @@ The implementation enables a sustainable continuous improvement cycle:
 ## Setup Requirements
 
 ### 1. HuggingFace Token
+
 - Create token at https://huggingface.co/settings/tokens
 - Permission: **Write**
 - Purpose: Model upload and download
 
 ### 2. GitHub Secret
+
 - Name: `HFESELF`
 - Value: HuggingFace token from step 1
 - Location: Repository Settings → Secrets and variables → Actions
 
 ### 3. HuggingFace Repository
+
 - Create at https://huggingface.co/new
 - Type: Model
 - Suggested name: `9cog/echoself-nanecho`
@@ -228,12 +251,14 @@ The implementation enables a sustainable continuous improvement cycle:
 ### Deploy After Training
 
 **Via GitHub UI**:
+
 1. Actions → "Deploy to HuggingFace Hub"
 2. Run workflow
 3. Configure: source_workflow=netrain-cached, training_type=scheduled
 4. Run
 
 **Via CLI**:
+
 ```bash
 gh workflow run deploy-huggingface.yml \
   -f source_workflow=netrain-cached \
@@ -244,12 +269,14 @@ gh workflow run deploy-huggingface.yml \
 ### Train from HuggingFace Model
 
 **Via GitHub UI**:
+
 1. Actions → "Train NanEcho Model with Caching"
 2. Run workflow
 3. Set download_from_hf=true, hf_repo_id=9cog/echoself-nanecho
 4. Run
 
 **Via CLI**:
+
 ```bash
 gh workflow run netrain-cached.yml \
   -f download_from_hf=true \
@@ -273,17 +300,20 @@ gh workflow run netrain-cached.yml -f download_from_hf=true -f training_type=ful
 ## File Manifest
 
 ### New Files
+
 1. `.github/workflows/deploy-huggingface.yml` - Deployment workflow (344 lines)
 2. `NanEcho/convert_to_huggingface.py` - Model conversion script (377 lines)
 3. `NanEcho/download_from_huggingface.py` - Model download script (207 lines)
 4. `NanEcho/HUGGINGFACE_README.md` - Comprehensive documentation (450+ lines)
 
 ### Modified Files
+
 1. `.github/workflows/netrain-cached.yml` - Added HF download capability
 2. `.github/workflows/netrain.yml` - Added HF download capability
 3. `README.md` - Added HuggingFace integration section
 
 ### Total Changes
+
 - **Lines Added**: ~1,500
 - **New Workflows**: 1
 - **New Scripts**: 2
@@ -293,6 +323,7 @@ gh workflow run netrain-cached.yml -f download_from_hf=true -f training_type=ful
 ## Benefits
 
 ### For Development
+
 - ✅ Easy model sharing within team
 - ✅ Version control for trained models
 - ✅ Public/private model distribution
@@ -300,6 +331,7 @@ gh workflow run netrain-cached.yml -f download_from_hf=true -f training_type=ful
 - ✅ No manual checkpoint management
 
 ### For Community
+
 - ✅ Access to trained EchoSelf models
 - ✅ Reproducible results
 - ✅ Model cards with full context
@@ -307,6 +339,7 @@ gh workflow run netrain-cached.yml -f download_from_hf=true -f training_type=ful
 - ✅ Clear usage examples
 
 ### For Research
+
 - ✅ Model versioning and tracking
 - ✅ Training history preservation
 - ✅ Easy experimentation (download → modify → train → upload)
@@ -316,18 +349,21 @@ gh workflow run netrain-cached.yml -f download_from_hf=true -f training_type=ful
 ## Best Practices
 
 ### Security
+
 1. ✅ Never commit HFESELF token to repository
 2. ✅ Use scoped tokens with minimal required permissions
 3. ✅ Rotate tokens periodically
 4. ✅ Monitor HuggingFace account for unauthorized access
 
 ### Deployment
+
 1. ✅ Test conversions locally before deployment
 2. ✅ Review model cards for accuracy
 3. ✅ Use release tags for version tracking
 4. ✅ Monitor disk space usage
 
 ### Training
+
 1. ✅ Verify model compatibility before download
 2. ✅ Test downloads manually before automated runs
 3. ✅ Maintain git-committed checkpoints as fallback
@@ -357,6 +393,7 @@ The HuggingFace integration is **complete and production-ready**:
 - ✅ Full backward compatibility maintained
 
 The system enables sustainable model development with:
+
 - Automated deployment and version control
 - Incremental training from shared checkpoints
 - Community access to trained models

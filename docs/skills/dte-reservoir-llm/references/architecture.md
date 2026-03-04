@@ -9,12 +9,12 @@ The key innovation is to treat an Echo State Network (ESN) as a replacement for 
 - **Standard Transformer**: `Attention -> Add & Norm -> FFN -> Add & Norm`
 - **Reservoir-Augmented Transformer**: `Attention -> Add & Norm -> ReservoirReadout -> Add & Norm`
 
-| Component | Standard Transformer | Reservoir-Augmented Transformer |
-|:---|:---|:---|
-| **State** | Stateless | Stateful (Reservoir maintains a dynamic internal state) |
-| **Temporal Processing** | Relies solely on positional embeddings | Inherently temporal; processes sequences naturally |
-| **Training** | Fully backpropagation-based | Hybrid: backpropagation for attention, linear regression (or RLS) for reservoir readout |
-| **Adaptability** | Static weights | Readout can be adapted online with efficient algorithms (RLS) |
+| Component               | Standard Transformer                   | Reservoir-Augmented Transformer                                                         |
+| :---------------------- | :------------------------------------- | :-------------------------------------------------------------------------------------- |
+| **State**               | Stateless                              | Stateful (Reservoir maintains a dynamic internal state)                                 |
+| **Temporal Processing** | Relies solely on positional embeddings | Inherently temporal; processes sequences naturally                                      |
+| **Training**            | Fully backpropagation-based            | Hybrid: backpropagation for attention, linear regression (or RLS) for reservoir readout |
+| **Adaptability**        | Static weights                         | Readout can be adapted online with efficient algorithms (RLS)                           |
 
 ## 2. Detailed Architecture: The RAT Block
 
@@ -40,8 +40,8 @@ graph TD
 
 1.  **Multi-Head Self-Attention**: Standard self-attention mechanism.
 2.  **Reservoir System**: This is the core of the RAT.
-    -   **`EchoReservoir`**: A fixed, non-linear, recurrent neural network that receives the output from the attention layer. It projects the input into a high-dimensional state space, creating a rich temporal representation.
-    -   **`CognitiveReadout`**: A trainable linear layer (the "readout") that learns to map the reservoir's state to the desired output. This is the only part of the reservoir system that is trained via backpropagation.
+    - **`EchoReservoir`**: A fixed, non-linear, recurrent neural network that receives the output from the attention layer. It projects the input into a high-dimensional state space, creating a rich temporal representation.
+    - **`CognitiveReadout`**: A trainable linear layer (the "readout") that learns to map the reservoir's state to the desired output. This is the only part of the reservoir system that is trained via backpropagation.
 3.  **Add & Norm**: Standard residual connection and layer normalization.
 
 ## 3. Training Workflow
@@ -56,10 +56,10 @@ The training process is a hybrid approach that leverages the strengths of both t
 
 The RAT is not just a standalone model; it is a core component of the Deep Tree Echo cognitive architecture.
 
--   **`echo-introspect`**: The reservoir's internal state provides a rich source of data for introspection. The dynamics of the reservoir can be analyzed to understand the model's internal 
-'"cognitive state."'
--   **`unreal-echo` / `meta-echo-dna`**: The output of the RAT can be directly piped into the expression and animation systems, allowing the avatar's behavior to be driven by the model's stateful understanding of the conversation.
--   **`harmonic-llm`**: The principles of frequency-domain processing can be applied to the reservoir, creating a **Harmonic Reservoir** that operates on spectral representations of the input.
+- **`echo-introspect`**: The reservoir's internal state provides a rich source of data for introspection. The dynamics of the reservoir can be analyzed to understand the model's internal
+  '"cognitive state."'
+- **`unreal-echo` / `meta-echo-dna`**: The output of the RAT can be directly piped into the expression and animation systems, allowing the avatar's behavior to be driven by the model's stateful understanding of the conversation.
+- **`harmonic-llm`**: The principles of frequency-domain processing can be applied to the reservoir, creating a **Harmonic Reservoir** that operates on spectral representations of the input.
 
 ## 5. Deployment
 
