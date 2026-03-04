@@ -90,6 +90,9 @@ class TrainingCache:
         # Load existing metadata
         self.metadata = self._load_metadata()
         
+        # Validate metadata against actual files on disk
+        self._validate_metadata()
+        
         print(f"🗂️  Training cache initialized at {self.cache_dir}")
         print(f"   Current checkpoints: {len(self.metadata)}")
         
@@ -115,6 +118,18 @@ class TrainingCache:
         
         return {}
     
+    def _validate_metadata(self):
+        """Remove metadata entries whose checkpoint files are missing from disk."""
+        stale_ids = [
+            cid for cid in self.metadata
+            if not (self.checkpoints_dir / f"{cid}.pt").exists()
+        ]
+        if stale_ids:
+            for cid in stale_ids:
+                del self.metadata[cid]
+            self._save_metadata()
+            print(f"🧹 Pruned {len(stale_ids)} stale metadata entries (missing .pt files)")
+
     def _save_metadata(self):
         """Save checkpoint metadata to disk."""
         try:
@@ -552,17 +567,50 @@ class TrainingCache:
             'cache_dir': str(self.cache_dir)
         }
     
+    def checkpoint_exists(self, checkpoint_id: str) -> bool:
+        """Check whether the .pt file for a checkpoint actually exists on disk."""
+        return (self.checkpoints_dir / f"{checkpoint_id}.pt").exists()
+
     def export_best_checkpoint(
         self,
         export_path: str,
         include_optimizer: bool = False
     ) -> str:
-        """Export the best checkpoint for deployment."""
-        best_id = self.get_best_checkpoint()
-        if not best_id:
+        """Export the best checkpoint for deployment.
+        
+        Iterates through checkpoints by quality score, skipping any whose
+        .pt file is missing on disk, so stale metadata never causes a crash.
+        """
+        # Build a list of candidates sorted by quality (best first)
+        if not self.metadata:
             raise ValueError("No checkpoints available")
         
-        checkpoint_data, metadata = self.load_checkpoint(best_id)
+        sorted_ids = sorted(
+            self.metadata.keys(),
+            key=lambda k: self.metadata[k].quality_score,
+            reverse=True
+        )
+        
+        checkpoint_data = None
+        metadata = None
+        best_id = None
+        
+        for cid in sorted_ids:
+            if not self.checkpoint_exists(cid):
+                print(f"⚠️  Skipping export candidate {cid} — .pt file missing")
+                continue
+            try:
+                checkpoint_data, metadata = self.load_checkpoint(cid)
+                best_id = cid
+                break
+            except Exception as e:
+                print(f"⚠️  Failed to load export candidate {cid}: {e}")
+                continue
+        
+        if best_id is None or checkpoint_data is None:
+            raise ValueError(
+                "No exportable checkpoints available — all .pt files are missing or corrupt"
+            )
         
         # Create export data
         export_data = {

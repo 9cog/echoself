@@ -512,7 +512,27 @@ class CachedNanEchoTrainer(NanEchoTrainer):
         
         # Export best model for deployment
         export_path = os.path.join(self.config.out_dir, 'best_model_export.pt')
-        best_checkpoint_id = self.cache.export_best_checkpoint(export_path)
+        try:
+            best_checkpoint_id = self.cache.export_best_checkpoint(export_path)
+        except ValueError as e:
+            print(f"\n⚠️  Could not export best checkpoint: {e}")
+            print("   Saving current model state as fallback export...")
+            fallback_data = {
+                'model_state_dict': self.model.state_dict(),
+                'model_config': {
+                    'n_layer': self.config.n_layer,
+                    'n_head': self.config.n_head,
+                    'n_embd': self.config.n_embd,
+                    'vocab_size': self.config.vocab_size,
+                    'block_size': self.config.block_size,
+                    'dropout': self.config.dropout,
+                    'bias': self.config.bias,
+                },
+                'exported_at': time.strftime('%Y-%m-%dT%H:%M:%S'),
+                'fallback': True,
+            }
+            torch.save(fallback_data, export_path)
+            best_checkpoint_id = 'fallback-current-model'
         
         # Save introspection history
         introspection_path = os.path.join(self.config.out_dir, 'introspection_history.json')
