@@ -2,16 +2,17 @@
   "tokenizer_type": "dte_bpe",
   "tokenizer_dir": "NanEcho/dte_tokenizer",
   "vocab_size": 8192,
-  "total_tokens": 634110,
-  "train_tokens": 570699,
-  "val_tokens": 63411,
-  "val_split": 0.1,
-  "block_size": 1024,
-  "num_documents": 1621,
+  "total_tokens": 653054,
+  "train_tokens": 620402,
+  "val_tokens": 32652,
+  "val_split": 0.05,
+  "block_size": 512,
+  "num_documents": 1897,
   "source_files": [
-    "training_dataset_dtesnn.jsonl",
     "deep_tree_echo_dan_conversation.jsonl",
-    "echobeats_corpus_v0.7.0.jsonl"
+    "echobeats_corpus_v0.7.0.jsonl",
+    "echobeats_autonomous_corpus_v0.8.0.jsonl",
+    "training_dataset_dtesnn.jsonl"
   ],
   "max_token_id": 8191,
   "dtype": "uint16"
