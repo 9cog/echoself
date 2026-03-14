@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-01-29T02:53:05.681Z",
+  "timestamp": "2026-03-14T02:53:51.418Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -75,13 +75,13 @@
       "@typescript-eslint/parser": 0,
       "@uiw/react-codemirror": 1,
       "@uiw/react-split": 2,
-      "eslint": 8,
+      "eslint": 7,
       "eslint-import-resolver-typescript": 0,
       "eslint-plugin-import": 0,
       "eslint-plugin-jsx-a11y": 0,
       "eslint-plugin-react": 0,
       "eslint-plugin-react-hooks": 0,
-      "typescript": 9,
+      "typescript": 8,
       "vite": 3,
       "vite-tsconfig-paths": 0
     },

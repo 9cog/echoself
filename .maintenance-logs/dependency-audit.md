@@ -1,10 +1,9 @@
-# Dependency Audit Report - 2026-01-29 02:53:07 UTC
+# Dependency Audit Report - 2026-03-14 02:53:53 UTC
 
 ## Dependency Analysis Summary
-
-````json
+```json
 {
-  "timestamp": "2026-01-29T02:53:05.681Z",
+  "timestamp": "2026-03-14T02:53:51.418Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -80,13 +79,13 @@
       "@typescript-eslint/parser": 0,
       "@uiw/react-codemirror": 1,
       "@uiw/react-split": 2,
-      "eslint": 8,
+      "eslint": 7,
       "eslint-import-resolver-typescript": 0,
       "eslint-plugin-import": 0,
       "eslint-plugin-jsx-a11y": 0,
       "eslint-plugin-react": 0,
       "eslint-plugin-react-hooks": 0,
-      "typescript": 9,
+      "typescript": 8,
       "vite": 3,
       "vite-tsconfig-paths": 0
     },
@@ -96,177 +95,112 @@
 }```
 
 ## Security Audit
-````
-
+```
 # npm audit report
 
-@remix-run/node <=2.17.2
-Severity: critical
-Depends on vulnerable versions of @remix-run/server-runtime
-React Router has Path Traversal in File Session Storage - https://github.com/advisories/GHSA-9583-h5hc-x8cw
+dompurify  3.1.3 - 3.3.1
+Severity: moderate
+DOMPurify contains a Cross-site Scripting vulnerability - https://github.com/advisories/GHSA-v8jm-5vwx-cfxm
+DOMPurify contains a Cross-site Scripting vulnerability - https://github.com/advisories/GHSA-v2wj-7wpq-c8vv
 fix available via `npm audit fix`
-node_modules/@remix-run/dev/node_modules/@remix-run/node
-node_modules/@remix-run/node
-@remix-run/dev \*
-Depends on vulnerable versions of @remix-run/node
-Depends on vulnerable versions of @remix-run/router
-Depends on vulnerable versions of @remix-run/server-runtime
-Depends on vulnerable versions of @vanilla-extract/integration
-Depends on vulnerable versions of cacache
-Depends on vulnerable versions of esbuild
-Depends on vulnerable versions of remark-mdx-frontmatter
-Depends on vulnerable versions of valibot
-node_modules/@remix-run/dev
-@remix-run/express <=2.17.1
-Depends on vulnerable versions of @remix-run/node
-node_modules/@remix-run/express
-@remix-run/serve <=2.17.1
-Depends on vulnerable versions of @remix-run/express
-Depends on vulnerable versions of @remix-run/node
-node_modules/@remix-run/serve
+node_modules/dompurify
 
-@remix-run/react <=2.17.3
-Severity: high
-Depends on vulnerable versions of @remix-run/router
-Depends on vulnerable versions of @remix-run/server-runtime
-React Router SSR XSS in ScrollRestoration - https://github.com/advisories/GHSA-8v8x-cx79-35w7
-React Router has XSS Vulnerability - https://github.com/advisories/GHSA-3cgp-3xvw-98x8
-Depends on vulnerable versions of react-router
-Depends on vulnerable versions of react-router-dom
-fix available via `npm audit fix`
-node_modules/@remix-run/react
-
-@remix-run/router <=1.23.1
-Severity: high
-React Router vulnerable to XSS via Open Redirects - https://github.com/advisories/GHSA-2w69-qvjg-hvjx
-fix available via `npm audit fix`
-node_modules/@remix-run/router
-@remix-run/server-runtime <=2.17.3
-Depends on vulnerable versions of @remix-run/router
-node_modules/@remix-run/dev/node_modules/@remix-run/server-runtime
-node_modules/@remix-run/server-runtime
-react-router 6.0.0 - 6.30.2
-Depends on vulnerable versions of @remix-run/router
-node_modules/react-router
-react-router-dom 6.0.0-alpha.0 - 6.30.2
-Depends on vulnerable versions of @remix-run/router
-Depends on vulnerable versions of react-router
-node_modules/react-router-dom
-
-diff 5.0.0 - 5.2.1
-jsdiff has a Denial of Service vulnerability in parsePatch and applyPatch - https://github.com/advisories/GHSA-73rr-hh4g-fpgx
-fix available via `npm audit fix`
-node_modules/diff
-
-esbuild <=0.24.2
+esbuild  <=0.24.2
 Severity: moderate
 esbuild enables any website to send any requests to the development server and read the response - https://github.com/advisories/GHSA-67mh-4wv8-2f99
-fix available via `npm audit fix --force`
-Will install vite@6.4.1, which is a breaking change
+No fix available
 node_modules/esbuild
 node_modules/vite/node_modules/esbuild
-@vanilla-extract/integration \*
-Depends on vulnerable versions of esbuild
-Depends on vulnerable versions of vite
-Depends on vulnerable versions of vite-node
-node_modules/@vanilla-extract/integration
-vite 0.11.0 - 6.1.6
-Depends on vulnerable versions of esbuild
-node_modules/vite
-vite-node <=2.2.0-beta.2
-Depends on vulnerable versions of vite
-node_modules/@vanilla-extract/integration/node_modules/vite-node
+  @remix-run/dev  *
+  Depends on vulnerable versions of @vanilla-extract/integration
+  Depends on vulnerable versions of cacache
+  Depends on vulnerable versions of esbuild
+  Depends on vulnerable versions of remark-mdx-frontmatter
+  node_modules/@remix-run/dev
+  @vanilla-extract/integration  *
+  Depends on vulnerable versions of esbuild
+  Depends on vulnerable versions of vite
+  Depends on vulnerable versions of vite-node
+  node_modules/@vanilla-extract/integration
+  vite  0.11.0 - 6.1.6
+  Depends on vulnerable versions of esbuild
+  node_modules/vite
+    vite-node  <=2.2.0-beta.2
+    Depends on vulnerable versions of vite
+    node_modules/@vanilla-extract/integration/node_modules/vite-node
 
-estree-util-value-to-estree <3.3.3
+estree-util-value-to-estree  <3.3.3
 Severity: moderate
 estree-util-value-to-estree allows prototype pollution in generated ESTree - https://github.com/advisories/GHSA-f7f6-9jq7-3rqj
 fix available via `npm audit fix`
 node_modules/estree-util-value-to-estree
-remark-mdx-frontmatter <=2.1.1
-Depends on vulnerable versions of estree-util-value-to-estree
-node_modules/remark-mdx-frontmatter
+  remark-mdx-frontmatter  <=2.1.1
+  Depends on vulnerable versions of estree-util-value-to-estree
+  node_modules/remark-mdx-frontmatter
 
-lodash 4.0.0 - 4.17.21
-Severity: moderate
-Lodash has Prototype Pollution Vulnerability in `_.unset` and `_.omit` functions - https://github.com/advisories/GHSA-xxjr-mmjv-4gpg
-fix available via `npm audit fix`
-node_modules/lodash
-
-lodash-es 4.0.0 - 4.17.22
-Severity: moderate
-Lodash has Prototype Pollution Vulnerability in `_.unset` and `_.omit` functions - https://github.com/advisories/GHSA-xxjr-mmjv-4gpg
-fix available via `npm audit fix --force`
-Will install mermaid@10.9.5, which is a breaking change
-node_modules/lodash-es
-@chevrotain/cst-dts-gen 11.0.0 - 11.1.0
-Depends on vulnerable versions of @chevrotain/gast
-Depends on vulnerable versions of lodash-es
-node_modules/@chevrotain/cst-dts-gen
-@chevrotain/gast 11.0.0 - 11.1.0
-Depends on vulnerable versions of lodash-es
-node_modules/@chevrotain/gast
-chevrotain 11.0.0 - 11.1.0
-Depends on vulnerable versions of @chevrotain/cst-dts-gen
-Depends on vulnerable versions of @chevrotain/gast
-Depends on vulnerable versions of lodash-es
-node_modules/chevrotain
-langium 2.1.0 - 4.1.3
-Depends on vulnerable versions of chevrotain
-node_modules/langium
-@mermaid-js/parser \*
-Depends on vulnerable versions of langium
-node_modules/@mermaid-js/parser
-mermaid >=11.0.0-alpha.1
-Depends on vulnerable versions of @mermaid-js/parser
-node_modules/mermaid
-
-qs <6.14.1
+flatted  <3.4.0
 Severity: high
-qs's arrayLimit bypass in its bracket notation allows DoS via memory exhaustion - https://github.com/advisories/GHSA-6rw7-vpxm-498p
+flatted vulnerable to unbounded recursion DoS in parse() revive phase - https://github.com/advisories/GHSA-25h7-pfq9-p65f
 fix available via `npm audit fix`
-node_modules/qs
-body-parser <=1.20.3 || 2.0.0-beta.1 - 2.0.2
-Depends on vulnerable versions of qs
-node_modules/body-parser
-express 2.5.8 - 2.5.11 || 3.2.1 - 3.2.3 || 4.0.0-rc1 - 4.21.2 || 5.0.0-alpha.1 - 5.0.1
-Depends on vulnerable versions of body-parser
-Depends on vulnerable versions of qs
-node_modules/express
+node_modules/flatted
 
-tar <=7.5.6
+minimatch  9.0.0 - 9.0.6
 Severity: high
-node-tar is Vulnerable to Arbitrary File Overwrite and Symlink Poisoning via Insufficient Path Sanitization - https://github.com/advisories/GHSA-8qq5-rm4j-mr97
+minimatch has a ReDoS via repeated wildcards with non-matching literal in pattern - https://github.com/advisories/GHSA-3ppc-4f35-3m26
+minimatch has ReDoS: matchOne() combinatorial backtracking via multiple non-adjacent GLOBSTAR segments - https://github.com/advisories/GHSA-7r86-cg39-jmmj
+minimatch ReDoS: nested *() extglobs generate catastrophically backtracking regular expressions - https://github.com/advisories/GHSA-23c5-xmqv-rm74
+fix available via `npm audit fix`
+node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
+  @typescript-eslint/typescript-estree  6.16.0 - 7.5.0
+  Depends on vulnerable versions of minimatch
+  node_modules/@typescript-eslint/typescript-estree
+    @typescript-eslint/parser  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/parser
+    @typescript-eslint/type-utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    Depends on vulnerable versions of @typescript-eslint/utils
+    node_modules/@typescript-eslint/type-utils
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
+      @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
+      Depends on vulnerable versions of @typescript-eslint/type-utils
+      Depends on vulnerable versions of @typescript-eslint/utils
+      node_modules/@typescript-eslint/eslint-plugin
+
+tar  <=7.5.10
+Severity: high
 Race Condition in node-tar Path Reservations via Unicode Ligature Collisions on macOS APFS - https://github.com/advisories/GHSA-r6q2-hw4h-h46w
 node-tar Vulnerable to Arbitrary File Creation/Overwrite via Hardlink Path Traversal - https://github.com/advisories/GHSA-34x7-hfp2-rc4v
+node-tar is Vulnerable to Arbitrary File Overwrite and Symlink Poisoning via Insufficient Path Sanitization - https://github.com/advisories/GHSA-8qq5-rm4j-mr97
+Arbitrary File Read/Write via Hardlink Target Escape Through Symlink Chain in node-tar Extraction - https://github.com/advisories/GHSA-83g3-92jg-28cx
+tar has Hardlink Path Traversal via Drive-Relative Linkpath - https://github.com/advisories/GHSA-qffp-2rhf-9h96
+node-tar Symlink Path Traversal via Drive-Relative Linkpath - https://github.com/advisories/GHSA-9ppj-qmqm-q256
 fix available via `npm audit fix`
 node_modules/@tailwindcss/oxide/node_modules/tar
 node_modules/@tailwindcss/postcss/node_modules/tar
 node_modules/tar
-cacache 14.0.0 - 18.0.4
-Depends on vulnerable versions of tar
-node_modules/cacache
+  cacache  14.0.0 - 18.0.4
+  Depends on vulnerable versions of tar
+  node_modules/cacache
 
-undici <6.23.0
-Severity: moderate
-Undici has an unbounded decompression chain in HTTP responses on Node.js Fetch API via Content-Encoding leads to resource exhaustion - https://github.com/advisories/GHSA-g9mf-h72j-4rw9
+undici  <=6.23.0
+Severity: high
+Undici: Malicious WebSocket 64-bit length overflows parser and crashes the client - https://github.com/advisories/GHSA-f269-vfmq-vjvj
+Undici has an HTTP Request/Response Smuggling issue - https://github.com/advisories/GHSA-2mjp-6q6p-2qxm
+Undici has Unbounded Memory Consumption in WebSocket permessage-deflate Decompression - https://github.com/advisories/GHSA-vrm6-8vpv-qv8q
+Undici has Unhandled Exception in WebSocket Client Due to Invalid server_max_window_bits Validation - https://github.com/advisories/GHSA-v9p9-hfj2-hcw8
+Undici has CRLF Injection in undici via `upgrade` option - https://github.com/advisories/GHSA-4992-7rv2-5pvq
 fix available via `npm audit fix`
 node_modules/undici
 
-valibot 0.31.0 - 1.1.0
-Severity: high
-Valibot has a ReDoS vulnerability in `EMOJI_REGEX` - https://github.com/advisories/GHSA-vqpr-j7v3-hqw9
-fix available via `npm audit fix`
-node_modules/valibot
-
-31 vulnerabilities (1 low, 15 moderate, 12 high, 3 critical)
+18 vulnerabilities (7 moderate, 11 high)
 
 To address issues that do not require attention, run:
-npm audit fix
+  npm audit fix
 
-To address all issues (including breaking changes), run:
-npm audit fix --force
+Some issues need review, and may require choosing
+a different dependency.
 No security issues found
-
-```
-
 ```
