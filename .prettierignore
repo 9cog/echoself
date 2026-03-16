@@ -11,3 +11,5 @@ coverage
 *.yaml
 .github/
 public/build/
+.maintenance-logs/
+.training-progress/
