@@ -111,15 +111,15 @@ esbuild <=0.24.2
 Severity: moderate
 esbuild enables any website to send any requests to the development server and read the response - https://github.com/advisories/GHSA-67mh-4wv8-2f99
 No fix available
-node_modules/esbuild
+node*modules/esbuild
 node_modules/vite/node_modules/esbuild
-@remix-run/dev _
+@remix-run/dev *
 Depends on vulnerable versions of @vanilla-extract/integration
 Depends on vulnerable versions of cacache
 Depends on vulnerable versions of esbuild
 Depends on vulnerable versions of remark-mdx-frontmatter
-node_modules/@remix-run/dev
-@vanilla-extract/integration _
+node*modules/@remix-run/dev
+@vanilla-extract/integration *
 Depends on vulnerable versions of esbuild
 Depends on vulnerable versions of vite
 Depends on vulnerable versions of vite-node
