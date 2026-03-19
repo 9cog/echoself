@@ -145,11 +145,110 @@ class NanEchoAutomationIntegrator:
     Implements the continuous improvement loop for NANECHO training automation.
     """
     
-    def __init__(self, config_path: Optional[str] = None):
-        """Initialize the automation integrator."""
+    #: Default path used to persist improvement history across process restarts.
+    DEFAULT_HISTORY_FILE = ".training-progress/improvement_history.json"
+
+    def __init__(self, config_path: Optional[str] = None,
+                 history_file: Optional[str] = None):
+        """Initialize the automation integrator.
+        
+        Args:
+            config_path:  Optional path to a JSON configuration file.
+            history_file: Optional path where improvement history is persisted.
+                          Defaults to ``DEFAULT_HISTORY_FILE``.
+        """
         self.config = self._load_config(config_path)
-        self.results_cache = {}
-        self.improvement_history = []
+        self.results_cache: Dict[str, Any] = {}
+        self.history_file = history_file or self.DEFAULT_HISTORY_FILE
+        self.improvement_history: List[Dict[str, Any]] = self._load_improvement_history()
+
+    # ─── Persistent history helpers ─────────────────────────────────────────────
+
+    def _load_improvement_history(self) -> List[Dict[str, Any]]:
+        """Load improvement history from disk, returning an empty list on failure."""
+        try:
+            if os.path.exists(self.history_file):
+                with open(self.history_file, 'r') as f:
+                    data = json.load(f)
+                if isinstance(data, list):
+                    print(f"📂 Loaded {len(data)} historical cycle(s) from {self.history_file}")
+                    return data
+                else:
+                    print(f"⚠️ Improvement history file has unexpected type "
+                          f"({type(data).__name__}); ignoring and starting fresh.")
+        except Exception as e:
+            print(f"⚠️ Could not load improvement history: {e}")
+        return []
+
+    def _save_improvement_history(self) -> None:
+        """Persist improvement history to disk so it survives process restarts."""
+        try:
+            os.makedirs(os.path.dirname(self.history_file) or ".", exist_ok=True)
+            with open(self.history_file, 'w') as f:
+                json.dump(self.improvement_history, f, indent=2)
+        except Exception as e:
+            print(f"⚠️ Could not save improvement history: {e}")
+
+    def get_cycle_improvement_summary(self) -> Dict[str, Any]:
+        """Return a summary of cross-cycle improvement trends.
+        
+        Compares the most-recent third of recorded cycles against the earliest
+        third so that a meaningful trend can be reported even when the number
+        of cycles is small.
+
+        Returns:
+            A dictionary containing:
+            - ``total_cycles``     – number of recorded evaluation cycles.
+            - ``trend``            – "improving" | "stable" | "declining".
+            - ``delta``            – change in overall fidelity (recent vs baseline).
+            - ``baseline_fidelity`` – average fidelity of the earliest cycle group.
+            - ``recent_fidelity``  – average fidelity of the most-recent cycle group.
+            - ``best_fidelity``    – highest fidelity ever recorded.
+            - ``worst_fidelity``   – lowest fidelity ever recorded.
+        """
+        if not self.improvement_history:
+            return {
+                "total_cycles": 0,
+                "trend": "no_data",
+                "delta": 0.0,
+                "baseline_fidelity": 0.0,
+                "recent_fidelity": 0.0,
+                "best_fidelity": 0.0,
+                "worst_fidelity": 0.0,
+            }
+
+        fidelity_values = [
+            entry.get("fidelity_metrics", {}).get("overall_fidelity", 0.0)
+            for entry in self.improvement_history
+        ]
+
+        # Divide the history into thirds so that the comparison is robust even with
+        # a small number of cycles: "baseline" = earliest third, "recent" = latest
+        # third.  max(1, ...) prevents a zero-division when fewer than 3 cycles exist.
+        third = max(1, len(fidelity_values) // 3)
+        baseline_avg = sum(fidelity_values[:third]) / third
+        recent_avg = sum(fidelity_values[-third:]) / third
+        delta = recent_avg - baseline_avg
+
+        improvement_threshold = self.config["training_triggers"]["performance_improvement_threshold"]
+        decline_threshold = -self.config["quality_gates"]["max_performance_decline"]
+
+        if delta > improvement_threshold:
+            trend = "improving"
+        elif delta < decline_threshold:
+            trend = "declining"
+        else:
+            trend = "stable"
+
+        return {
+            "total_cycles": len(self.improvement_history),
+            "trend": trend,
+            "delta": round(delta, 4),
+            "baseline_fidelity": round(baseline_avg, 4),
+            "recent_fidelity": round(recent_avg, 4),
+            "best_fidelity": round(max(fidelity_values), 4),
+            "worst_fidelity": round(min(fidelity_values), 4),
+        }
         
     def _load_config(self, config_path: Optional[str]) -> Dict[str, Any]:
         """Load automation integration configuration."""
@@ -671,7 +770,7 @@ class NanEchoAutomationIntegrator:
             }
 
     def save_analysis_results(self, results: Dict[str, Any], output_path: str):
-        """Save analysis results to file."""
+        """Save analysis results to file and persist cross-cycle improvement history."""
         # Add to improvement history
         self.improvement_history.append({
             "timestamp": results["timestamp"],
@@ -681,12 +780,20 @@ class NanEchoAutomationIntegrator:
             "quality_status": results["quality_gate_status"]["status"],
             "training_mode": results["training_mode"]
         })
+
+        # Persist improvement history so future runs can compare against it
+        self._save_improvement_history()
         
         # Save complete results
         with open(output_path, 'w') as f:
             json.dump(results, f, indent=2)
         
         print(f"💾 Analysis results saved to: {output_path}")
+
+        # Log cross-cycle improvement summary
+        summary = self.get_cycle_improvement_summary()
+        print(f"📈 Cross-cycle trend: {summary['trend']} "
+              f"(Δ{summary['delta']:+.3f} over {summary['total_cycles']} cycle(s))")
     
     def generate_automation_report(self, results: Dict[str, Any]) -> str:
         """Generate human-readable automation report."""
@@ -701,6 +808,21 @@ class NanEchoAutomationIntegrator:
             f"- Deployment Ready: {'✅' if results['quality_gate_status']['deployment_ready'] else '❌'}",
             ""
         ]
+
+        # Add cross-cycle improvement trend
+        summary = self.get_cycle_improvement_summary()
+        report_lines.append("## Cross-Cycle Improvement Trend")
+        trend_emoji = {"improving": "📈", "stable": "➡️", "declining": "📉", "no_data": "❓"}
+        report_lines.append(
+            f"- Trend: {trend_emoji.get(summary['trend'], '')} **{summary['trend'].upper()}**"
+        )
+        report_lines.append(f"- Cycles Recorded: {summary['total_cycles']}")
+        if summary['total_cycles'] >= 2:
+            report_lines.append(f"- Baseline Fidelity: {summary['baseline_fidelity']:.3f}")
+            report_lines.append(f"- Recent Fidelity:   {summary['recent_fidelity']:.3f}")
+            report_lines.append(f"- Δ Improvement:     {summary['delta']:+.3f}")
+            report_lines.append(f"- Best Ever:         {summary['best_fidelity']:.3f}")
+        report_lines.append("")
         
         # Add quality gate details
         report_lines.append("## Quality Gate Details")
