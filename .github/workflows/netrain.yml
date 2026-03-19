@@ -324,7 +324,10 @@ jobs:
             echo "✅ Proceeding with fresh start (first-time training)"
           else
             # Check if this is truly the first-ever run (no .pt checkpoint files anywhere)
-            EXISTING_PT_FILES=$(find .training-progress -name "*.pt" 2>/dev/null | wc -l)
+            EXISTING_PT_FILES=0
+            if [ -d .training-progress ]; then
+              EXISTING_PT_FILES=$(find .training-progress -name "*.pt" 2>/dev/null | wc -l)
+            fi
             if [[ "$EXISTING_PT_FILES" -eq 0 ]]; then
               echo ""
               echo "🆕 FIRST-EVER RUN DETECTED: No checkpoint files exist anywhere"
