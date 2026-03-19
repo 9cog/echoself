@@ -237,23 +237,39 @@ jobs:
         fi
 
         if [ -z "$CHECKPOINT_FOUND" ]; then
-          echo ""
-          echo "🚨 CRITICAL ERROR: NO CHECKPOINT FOUND"
-          echo "=================================================="
-          echo "Training CANNOT proceed because:"
-          echo "  1. No existing checkpoint was found in any location"
-          echo "  2. This system requires CUMULATIVE training only"
-          echo "  3. Starting fresh would lose all previous progress"
-          echo ""
-          echo "Checked locations:"
-          echo "  - .training-progress/checkpoints/"
-          echo "  - .training-progress/artifacts/"
-          echo "  - .training-progress/cache/"
-          echo ""
-          echo "If checkpoints are genuinely missing, this is a DATA LOSS incident."
-          echo "DO NOT proceed - restore from backup or investigate the issue."
-          echo "=================================================="
-          exit 1
+          # Check if this is truly the first-ever run (no .pt checkpoint files anywhere)
+          EXISTING_PT_FILES=$(find .training-progress -name "*.pt" 2>/dev/null | wc -l)
+          if [[ "$EXISTING_PT_FILES" -eq 0 ]]; then
+            echo ""
+            echo "🆕 FIRST-EVER RUN DETECTED: No checkpoint files exist anywhere"
+            echo "=================================================="
+            echo "Auto-allowing fresh start for initial training."
+            echo "Once a checkpoint is created, subsequent runs will require"
+            echo "explicit confirmation to start fresh."
+            echo ""
+            echo "checkpoint_restored=false" >> $GITHUB_OUTPUT
+            echo "checkpoint_path=" >> $GITHUB_OUTPUT
+            echo "fresh_start=true" >> $GITHUB_OUTPUT
+            echo "✅ Proceeding with first-ever training run"
+          else
+            echo ""
+            echo "🚨 CRITICAL ERROR: NO CHECKPOINT FOUND"
+            echo "=================================================="
+            echo "Training CANNOT proceed because:"
+            echo "  1. No existing checkpoint was found in any location"
+            echo "  2. This system requires CUMULATIVE training only"
+            echo "  3. Starting fresh would lose all previous progress"
+            echo ""
+            echo "Checked locations:"
+            echo "  - .training-progress/checkpoints/"
+            echo "  - .training-progress/artifacts/"
+            echo "  - .training-progress/cache/"
+            echo ""
+            echo "If checkpoints are genuinely missing, this is a DATA LOSS incident."
+            echo "DO NOT proceed - restore from backup or investigate the issue."
+            echo "=================================================="
+            exit 1
+          fi
         fi
 
     - name: Initialize Agent-Neuro Dynamic Orchestrator
