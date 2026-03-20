@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-03-19 03:00:11 UTC
+# Dependency Audit Report - 2026-03-20 02:55:51 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-03-19T03:00:09.215Z",
+  "timestamp": "2026-03-20T02:55:49.619Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -138,9 +138,10 @@ node_modules/estree-util-value-to-estree
   Depends on vulnerable versions of estree-util-value-to-estree
   node_modules/remark-mdx-frontmatter
 
-flatted  <3.4.0
+flatted  <=3.4.1
 Severity: high
 flatted vulnerable to unbounded recursion DoS in parse() revive phase - https://github.com/advisories/GHSA-25h7-pfq9-p65f
+Prototype Pollution via parse() in NodeJS flatted - https://github.com/advisories/GHSA-rf6f-7fwh-wjgh
 fix available via `npm audit fix`
 node_modules/flatted
 
@@ -161,13 +162,13 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
 
 tar  <=7.5.10
 Severity: high
