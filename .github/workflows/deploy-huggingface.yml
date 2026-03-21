@@ -160,20 +160,26 @@ jobs:
         fi
         
         if [ -z "$CHECKPOINT_PATH" ]; then
-          echo "❌ ERROR: No checkpoint found!"
+          echo "⚠️ WARNING: No checkpoint found!"
           echo "Searched locations:"
           echo "  - checkpoint-source/model.pt"
           echo "  - checkpoint-source/.training-progress/checkpoints/"
           echo "  - ${{ steps.checkpoint.outputs.output_dir }}/best_model_export.pt"
           echo "  - ${{ steps.checkpoint.outputs.output_dir }}/cache/checkpoints/latest.pt"
-          exit 1
+          echo ""
+          echo "Deployment will be skipped. To deploy, ensure a checkpoint exists by:"
+          echo "  1. Running a successful training workflow first, or"
+          echo "  2. Configuring HFMODEL and HFESELF secrets, then triggering a training run"
+          echo "checkpoint_found=false" >> $GITHUB_OUTPUT
+        else
+          echo "checkpoint_found=true" >> $GITHUB_OUTPUT
+          echo "checkpoint_path=$CHECKPOINT_PATH" >> $GITHUB_OUTPUT
+          echo "📍 Checkpoint location: $CHECKPOINT_PATH"
+          ls -lh "$CHECKPOINT_PATH"
         fi
-        
-        echo "checkpoint_path=$CHECKPOINT_PATH" >> $GITHUB_OUTPUT
-        echo "📍 Checkpoint location: $CHECKPOINT_PATH"
-        ls -lh "$CHECKPOINT_PATH"
     
     - name: Convert to HuggingFace format
+      if: steps.locate.outputs.checkpoint_found == 'true'
       run: |
         echo "🔄 Converting checkpoint to HuggingFace format..."
         
@@ -186,7 +192,7 @@ jobs:
         ls -lh hf-model/
     
     - name: Prepare datasets for upload
-      if: github.event.inputs.upload_datasets == 'true' || github.event_name == 'workflow_run'
+      if: (steps.locate.outputs.checkpoint_found == 'true') && (github.event.inputs.upload_datasets == 'true' || github.event_name == 'workflow_run')
       run: |
         echo "📦 Preparing datasets..."
         
@@ -214,6 +220,7 @@ jobs:
         echo "✅ Dataset preparation complete"
     
     - name: Upload to HuggingFace Hub
+      if: steps.locate.outputs.checkpoint_found == 'true'
       env:
         HF_TOKEN: ${{ secrets.HFESELF }}
         HF_MODEL_REPO: ${{ secrets.HFMODEL }}
@@ -221,13 +228,15 @@ jobs:
         echo "🚀 Uploading to HuggingFace Hub..."
         
         if [ -z "$HF_TOKEN" ]; then
-          echo "❌ ERROR: HFESELF secret not configured!"
+          echo "⚠️ WARNING: HFESELF secret not configured!"
           echo ""
           echo "To configure:"
           echo "  1. Go to https://huggingface.co/settings/tokens"
           echo "  2. Create a token with 'write' permissions"
           echo "  3. Add it as a secret named 'HFESELF' in GitHub repository settings"
-          exit 1
+          echo ""
+          echo "Skipping upload - no HuggingFace token available"
+          exit 0
         fi
         
         # Login to HuggingFace
@@ -240,9 +249,10 @@ jobs:
         elif [ -n "$HF_MODEL_REPO" ]; then
           REPO_ID="$HF_MODEL_REPO"
         else
-          echo "❌ ERROR: No HuggingFace repository ID provided!"
+          echo "⚠️ WARNING: No HuggingFace repository ID provided!"
           echo "Either provide repo_id input or configure HFMODEL secret"
-          exit 1
+          echo "Skipping upload - no repository ID available"
+          exit 0
         fi
         
         echo "📤 Uploading to $REPO_ID"
@@ -257,7 +267,7 @@ jobs:
         echo "🎉 Model deployed to: https://huggingface.co/$REPO_ID"
     
     - name: Create release tag
-      if: github.event.inputs.create_release == 'true'
+      if: (steps.locate.outputs.checkpoint_found == 'true') && (github.event.inputs.create_release == 'true')
       run: |
         echo "🏷️ Creating release tag..."
         
@@ -288,30 +298,40 @@ jobs:
       env:
         HF_MODEL_REPO: ${{ secrets.HFMODEL }}
       run: |
+        echo "📝 Deployment Summary"
+        echo "===================="
+        echo ""
+        echo "**Workflow Run**: ${{ github.run_number }}"
+        echo "**Timestamp**: $(date -u)"
+        echo ""
+
+        # Report checkpoint status
+        if [ "${{ steps.locate.outputs.checkpoint_found }}" != "true" ]; then
+          echo "**Status**: ⚠️ SKIPPED - No checkpoint available"
+          echo ""
+          echo "No trained model checkpoint was found. To deploy:"
+          echo "  1. Run a successful training workflow first"
+          echo "  2. The deployment will automatically trigger after successful training"
+          exit 0
+        fi
+
         # Determine repo ID for summary - use input if provided, otherwise use HFMODEL secret
-        # Note: If neither is configured, the upload step will have already failed
         INPUT_REPO_ID="${{ github.event.inputs.repo_id }}"
         if [ -n "$INPUT_REPO_ID" ]; then
           REPO_ID="$INPUT_REPO_ID"
         elif [ -n "$HF_MODEL_REPO" ]; then
           REPO_ID="$HF_MODEL_REPO"
         else
-          # This case means upload failed - show error in summary
-          echo "⚠️ Deployment Summary (FAILED - No repository configured)"
-          echo "================================================"
+          echo "**Status**: ⚠️ SKIPPED - No HuggingFace repository configured"
           echo ""
-          echo "**Error**: Neither repo_id input nor HFMODEL secret was configured"
-          echo "**Workflow Run**: ${{ github.run_number }}"
-          echo "**Timestamp**: $(date -u)"
+          echo "To configure deployment:"
+          echo "  1. Go to https://huggingface.co/settings/tokens"
+          echo "  2. Create a token with 'write' permissions"
+          echo "  3. Add HFESELF (token) and HFMODEL (repo ID) as repository secrets"
           exit 0
         fi
         
-        echo "📝 Deployment Summary"
-        echo "===================="
-        echo ""
         echo "**Repository**: $REPO_ID"
-        echo "**Workflow Run**: ${{ github.run_number }}"
-        echo "**Timestamp**: $(date -u)"
         echo ""
         
         if [ -f "hf-model/training_metadata.json" ]; then
@@ -324,7 +344,7 @@ jobs:
         
     - name: Upload deployment artifacts
       uses: actions/upload-artifact@v4
-      if: always()
+      if: always() && steps.locate.outputs.checkpoint_found == 'true'
       with:
         name: hf-deployment-${{ github.run_number }}
         path: |
