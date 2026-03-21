@@ -77,6 +77,10 @@ jobs:
       fail-fast: False
       matrix:
         python-version: ["3.10"]
+    env:
+      # Default output directory used as fallback when steps.params is skipped
+      # Matches the CI-mode output path set in the Determine training parameters step
+      DEFAULT_OUTPUT_DIR: .training-progress/nanecho-cached-ci
 
     steps:
     - name: Checkout echoself repository
@@ -104,8 +108,11 @@ jobs:
 
     - name: Download model from HuggingFace Hub
       if: github.event.inputs.download_from_hf == 'true'
+      # continue-on-error: prevents a missing/invalid repo ID from failing all downstream steps
+      continue-on-error: true
       env:
         HF_TOKEN: ${{ secrets.HFESELF }}
+        # HF_MODEL_REPO is injected from the HFMODEL secret; must be 'namespace/repo_name'
         HF_MODEL_REPO: ${{ secrets.HFMODEL }}
       run: |
         cd echoself
@@ -121,7 +128,16 @@ jobs:
           REPO_ID="$HF_MODEL_REPO"
         else
           echo "❌ ERROR: No HuggingFace repository ID provided!"
-          echo "Either provide hf_repo_id input or configure HFMODEL secret"
+          echo "Either provide hf_repo_id input or configure HFMODEL secret (value must be 'namespace/repo_name')"
+          exit 1
+        fi
+        
+        # Validate repo ID format: must be 'repo_name' or 'namespace/repo_name'
+        # Both namespace and repo name must start with alphanumeric or underscore
+        if ! echo "$REPO_ID" | grep -qE '^[a-zA-Z0-9_][a-zA-Z0-9_.-]*(/[a-zA-Z0-9_][a-zA-Z0-9._-]*)?$'; then
+          echo "❌ ERROR: Invalid HuggingFace repository ID format."
+          echo "Got: '$REPO_ID' — expected 'repo_name' or 'namespace/repo_name'"
+          echo "Check the HFMODEL secret or hf_repo_id workflow input."
           exit 1
         fi
         
@@ -230,7 +246,11 @@ jobs:
         mkdir -p ${{ steps.params.outputs.output_dir }}/cache
 
     - name: Set PYTHONPATH
+      # Run even if earlier steps fail so project-local modules are always importable
+      if: always()
       run: |
+        # Extend PYTHONPATH to include the repo root, ensuring training_cache and
+        # other project-local modules can be found regardless of working directory
         echo "PYTHONPATH=${{ github.workspace }}/echoself" >> $GITHUB_ENV
 
     - name: Cache training artifacts
@@ -364,10 +384,14 @@ jobs:
         # Show cache statistics
         echo "📊 Final Cache Statistics:"
         cat << 'EOFPYTHON' > /tmp/analyze_progress.py
+        import sys, os
+        # Ensure project-local modules (training_cache, etc.) are importable
+        # even if the Set PYTHONPATH step was skipped due to an upstream failure
+        sys.path.insert(0, os.getcwd())
         from training_cache import TrainingCache, CacheConfig
         import json
         
-        cache_config = CacheConfig(cache_dir='${{ steps.params.outputs.output_dir }}/cache')
+        cache_config = CacheConfig(cache_dir='${{ steps.params.outputs.output_dir || env.DEFAULT_OUTPUT_DIR }}/cache')
         cache = TrainingCache(cache_config)
         
         stats = cache.get_cache_stats()
@@ -436,6 +460,8 @@ jobs:
         cd echoself
         
         # Generate training summary
+        # Note: fallback values prevent SyntaxError when steps.params outputs are
+        # empty (e.g. when an earlier step failure caused the params step to be skipped)
         cat << 'EOFPYTHON' > /tmp/create_summary.py
         import json
         import os
@@ -447,11 +473,13 @@ jobs:
             'training_type': '${{ steps.params.outputs.output_dir }}',
             'completed_at': datetime.now().isoformat(),
             'parameters': {
-                'max_iters': ${{ steps.params.outputs.max_iters }},
-                'batch_size': ${{ steps.params.outputs.batch_size }},
-                'learning_rate': ${{ steps.params.outputs.learning_rate }},
-                'model_layers': ${{ steps.params.outputs.n_layer }},
-                'model_embedding': ${{ steps.params.outputs.n_embd }},
+                # Fallback values match CI-mode defaults (Determine training parameters step)
+                # and prevent SyntaxError when steps.params outputs are empty
+                'max_iters': ${{ steps.params.outputs.max_iters || '1000' }},
+                'batch_size': ${{ steps.params.outputs.batch_size || '2' }},
+                'learning_rate': ${{ steps.params.outputs.learning_rate || '2e-4' }},
+                'model_layers': ${{ steps.params.outputs.n_layer || '4' }},
+                'model_embedding': ${{ steps.params.outputs.n_embd || '256' }},
                 'force_fresh_start': '${{ steps.params.outputs.force_fresh_start }}' == 'true'
             }
         }
@@ -459,7 +487,7 @@ jobs:
         # Add cache statistics if available
         try:
             from training_cache import TrainingCache, CacheConfig
-            cache_config = CacheConfig(cache_dir='${{ steps.params.outputs.output_dir }}/cache')
+            cache_config = CacheConfig(cache_dir='${{ steps.params.outputs.output_dir || env.DEFAULT_OUTPUT_DIR }}/cache')
             cache = TrainingCache(cache_config)
             summary['cache_stats'] = cache.get_cache_stats()
             
@@ -478,12 +506,20 @@ jobs:
             summary['cache_error'] = str(e)
         
         # Save summary
-        with open('${{ steps.params.outputs.output_dir }}/training_summary.json', 'w') as f:
+        out_dir = '${{ steps.params.outputs.output_dir || env.DEFAULT_OUTPUT_DIR }}'
+        os.makedirs(out_dir, exist_ok=True)
+        with open(f'{out_dir}/training_summary.json', 'w') as f:
             json.dump(summary, f, indent=2)
         
         print('📝 Training Summary:')
         print(json.dumps(summary, indent=2))
         EOFPYTHON
+        # Verify Python syntax before running to catch template expansion issues early
+        python -m py_compile /tmp/create_summary.py || {
+          echo "⚠️ Syntax error detected in create_summary.py — see script below:"
+          cat /tmp/create_summary.py
+          exit 1
+        }
         python /tmp/create_summary.py
 
     # ================================================================
