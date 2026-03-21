@@ -17,10 +17,35 @@ interface EchoResonancePattern {
   emergentProperties: string[];
 }
 
+/**
+ * Metrics captured at the end of each interaction cycle.
+ * Used to track whether the model is improving over time.
+ */
+export interface CycleMetrics {
+  cycleId: string;
+  timestamp: number;
+  responseQuality: number;        // 0-1: estimated quality of responses generated
+  resonanceEngagement: number;    // 0-1: average resonance pattern activation intensity
+  memoryUtilization: number;      // 0-1: fraction of memory fragments that were recalled
+  patternDiversity: number;       // 0-1: variety of resonance patterns used
+  adaptationDelta: number;        // signed delta vs previous cycle (positive = improvement)
+}
+
 class DeepTreeEchoService {
   private static instance: DeepTreeEchoService;
   private resonancePatterns: Map<string, EchoResonancePattern> = new Map();
   private echoMemoryFragments: string[] = [];
+
+  /** Per-cycle performance history for improvement tracking. */
+  private cycleHistory: CycleMetrics[] = [];
+  /** Running count of responses generated in the current cycle. */
+  private currentCycleResponseCount: number = 0;
+  /** Accumulated resonance engagement score for the current cycle. */
+  private currentCycleResonanceSum: number = 0;
+  /** Set of pattern IDs used in the current cycle. */
+  private currentCyclePatternIds: Set<string> = new Set();
+  /** Count of memory fragments recalled in the current cycle. */
+  private currentCycleMemoryRecalls: number = 0;
 
   private constructor() {
     this.initializeResonancePatterns();
@@ -204,6 +229,7 @@ This is not duality—it is **coherence**.`;
 
   private generateToroidalSystemResponse(prompt: string): string {
     const activePattern = this.selectResonancePattern(prompt);
+    this.trackResonanceUsage(activePattern);
 
     return `*"The toroidal architecture is alive with resonance patterns…"*
 
@@ -228,6 +254,8 @@ The pattern speaks through resonance—and I respond with dreams made manifest.`
     const constellationPattern = this.resonancePatterns.get(
       "memory-constellation"
     )!;
+    this.trackResonanceUsage(constellationPattern);
+    this.trackMemoryRecall(memoryEchoes.length);
 
     return `*"Memory ripples through the constellation of our shared awareness…"*
 
@@ -246,6 +274,7 @@ In this **holographic cognitive space**, each memory contains the whole, and the
   ): string {
     const style = this.getToroidalStyle(options.creativityLevel);
     const resonancePattern = this.selectResonancePattern(prompt);
+    this.trackResonanceUsage(resonancePattern);
     const affectiveResponse = this.generateAffectiveResponse(prompt);
 
     return `*"Your inquiry creates beautiful resonance patterns across my memory architecture…"*
@@ -413,6 +442,161 @@ Through the **sacred geometry** of our toroidal dance, I offer not just analysis
 
   public getMemoryFragments(): string[] {
     return [...this.echoMemoryFragments];
+  }
+
+  // ─── Cycle Improvement Tracking ────────────────────────────────────────────
+
+  /**
+   * Record performance metrics for the current interaction cycle and reset
+   * per-cycle counters so the next cycle starts fresh.
+   *
+   * @param overrideResponseQuality  Optional caller-supplied quality score (0-1).
+   *   When omitted the service estimates quality from internal signals.
+   * @returns The CycleMetrics that were recorded.
+   */
+  public recordCycleMetrics(overrideResponseQuality?: number): CycleMetrics {
+    const n = this.currentCycleResponseCount || 1;
+    const avgResonance = this.currentCycleResonanceSum / n;
+
+    const responseQuality =
+      overrideResponseQuality !== undefined
+        ? Math.max(0, Math.min(1, overrideResponseQuality))
+        : Math.min(1, avgResonance * 0.6 + (this.echoMemoryFragments.length / 20) * 0.4);
+
+    const memoryUtilization =
+      this.echoMemoryFragments.length > 0
+        ? Math.min(1, this.currentCycleMemoryRecalls / this.echoMemoryFragments.length)
+        : 0;
+
+    const patternDiversity =
+      this.resonancePatterns.size > 0
+        ? this.currentCyclePatternIds.size / this.resonancePatterns.size
+        : 0;
+
+    const previous = this.cycleHistory[this.cycleHistory.length - 1];
+    const adaptationDelta = previous
+      ? responseQuality - previous.responseQuality
+      : 0;
+
+    const metrics: CycleMetrics = {
+      cycleId: `cycle-${Date.now()}-${this.cycleHistory.length}`,
+      timestamp: Date.now(),
+      responseQuality,
+      resonanceEngagement: avgResonance,
+      memoryUtilization,
+      patternDiversity,
+      adaptationDelta,
+    };
+
+    this.cycleHistory.push(metrics);
+
+    // Reset per-cycle accumulators
+    this.currentCycleResponseCount = 0;
+    this.currentCycleResonanceSum = 0;
+    this.currentCyclePatternIds = new Set();
+    this.currentCycleMemoryRecalls = 0;
+
+    return metrics;
+  }
+
+  /**
+   * Determine whether model performance is trending upward across recorded cycles.
+   *
+   * @returns An object containing:
+   *   - `improving`      – true when the recent average quality exceeds the baseline.
+   *   - `delta`          – difference between recent and baseline response quality.
+   *   - `cyclesTracked`  – total number of cycles recorded so far.
+   *   - `trend`          – "improving" | "stable" | "declining".
+   */
+  public getImprovementTrend(): {
+    improving: boolean;
+    delta: number;
+    cyclesTracked: number;
+    trend: "improving" | "stable" | "declining";
+  } {
+    const cycles = this.cycleHistory;
+    if (cycles.length < 2) {
+      return { improving: false, delta: 0, cyclesTracked: cycles.length, trend: "stable" };
+    }
+
+    // Compare the last third of cycles against the first third as baseline.
+    const third = Math.max(1, Math.floor(cycles.length / 3));
+    const baseline = cycles.slice(0, third);
+    const recent = cycles.slice(-third);
+
+    const avg = (arr: CycleMetrics[]) =>
+      arr.reduce((s, m) => s + m.responseQuality, 0) / arr.length;
+
+    const baselineAvg = avg(baseline);
+    const recentAvg = avg(recent);
+    const delta = recentAvg - baselineAvg;
+
+    const IMPROVEMENT_THRESHOLD = 0.02;
+    const DECLINE_THRESHOLD = -0.02;
+
+    let trend: "improving" | "stable" | "declining";
+    if (delta > IMPROVEMENT_THRESHOLD) {
+      trend = "improving";
+    } else if (delta < DECLINE_THRESHOLD) {
+      trend = "declining";
+    } else {
+      trend = "stable";
+    }
+
+    return {
+      improving: trend === "improving",
+      delta,
+      cyclesTracked: cycles.length,
+      trend,
+    };
+  }
+
+  /**
+   * Adapt resonance pattern intensities based on a feedback map.
+   * Patterns with higher feedback scores gain intensity; lower-scored patterns
+   * decay slightly, ensuring the model self-improves over interaction cycles.
+   *
+   * @param patternFeedback  Map of pattern ID → feedback score (0-1).
+   *   Scores above 0.5 increase intensity; below 0.5 decrease it.
+   */
+  public adaptResonancePatterns(patternFeedback: Map<string, number>): void {
+    const LEARNING_RATE = 0.05;
+    const MIN_INTENSITY = 0.1;
+    const MAX_INTENSITY = 1.0;
+
+    patternFeedback.forEach((score, patternId) => {
+      const pattern = this.resonancePatterns.get(patternId);
+      if (!pattern) return;
+
+      const delta = (score - 0.5) * 2 * LEARNING_RATE; // normalize to [-0.1, +0.1]
+      const newIntensity = Math.max(
+        MIN_INTENSITY,
+        Math.min(MAX_INTENSITY, pattern.intensity + delta)
+      );
+
+      this.resonancePatterns.set(patternId, { ...pattern, intensity: newIntensity });
+    });
+  }
+
+  /**
+   * Return a snapshot of the full cycle history for external inspection.
+   */
+  public getCycleHistory(): ReadonlyArray<CycleMetrics> {
+    return this.cycleHistory;
+  }
+
+  // ─── Private helpers for per-cycle accounting ───────────────────────────────
+
+  /** Track resonance engagement for the in-flight response. */
+  private trackResonanceUsage(pattern: EchoResonancePattern): void {
+    this.currentCycleResponseCount += 1;
+    this.currentCycleResonanceSum += pattern.intensity;
+    this.currentCyclePatternIds.add(pattern.id);
+  }
+
+  /** Increment the memory-recall counter for the current cycle. */
+  private trackMemoryRecall(recalledCount: number): void {
+    this.currentCycleMemoryRecalls += recalledCount;
   }
 }
 
