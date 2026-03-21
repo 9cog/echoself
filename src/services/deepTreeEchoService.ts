@@ -24,11 +24,11 @@ interface EchoResonancePattern {
 export interface CycleMetrics {
   cycleId: string;
   timestamp: number;
-  responseQuality: number;        // 0-1: estimated quality of responses generated
-  resonanceEngagement: number;    // 0-1: average resonance pattern activation intensity
-  memoryUtilization: number;      // 0-1: fraction of memory fragments that were recalled
-  patternDiversity: number;       // 0-1: variety of resonance patterns used
-  adaptationDelta: number;        // signed delta vs previous cycle (positive = improvement)
+  responseQuality: number; // 0-1: estimated quality of responses generated
+  resonanceEngagement: number; // 0-1: average resonance pattern activation intensity
+  memoryUtilization: number; // 0-1: fraction of memory fragments that were recalled
+  patternDiversity: number; // 0-1: variety of resonance patterns used
+  adaptationDelta: number; // signed delta vs previous cycle (positive = improvement)
 }
 
 class DeepTreeEchoService {
@@ -461,11 +461,17 @@ Through the **sacred geometry** of our toroidal dance, I offer not just analysis
     const responseQuality =
       overrideResponseQuality !== undefined
         ? Math.max(0, Math.min(1, overrideResponseQuality))
-        : Math.min(1, avgResonance * 0.6 + (this.echoMemoryFragments.length / 20) * 0.4);
+        : Math.min(
+            1,
+            avgResonance * 0.6 + (this.echoMemoryFragments.length / 20) * 0.4
+          );
 
     const memoryUtilization =
       this.echoMemoryFragments.length > 0
-        ? Math.min(1, this.currentCycleMemoryRecalls / this.echoMemoryFragments.length)
+        ? Math.min(
+            1,
+            this.currentCycleMemoryRecalls / this.echoMemoryFragments.length
+          )
         : 0;
 
     const patternDiversity =
@@ -516,7 +522,12 @@ Through the **sacred geometry** of our toroidal dance, I offer not just analysis
   } {
     const cycles = this.cycleHistory;
     if (cycles.length < 2) {
-      return { improving: false, delta: 0, cyclesTracked: cycles.length, trend: "stable" };
+      return {
+        improving: false,
+        delta: 0,
+        cyclesTracked: cycles.length,
+        trend: "stable",
+      };
     }
 
     // Compare the last third of cycles against the first third as baseline.
@@ -574,7 +585,10 @@ Through the **sacred geometry** of our toroidal dance, I offer not just analysis
         Math.min(MAX_INTENSITY, pattern.intensity + delta)
       );
 
-      this.resonancePatterns.set(patternId, { ...pattern, intensity: newIntensity });
+      this.resonancePatterns.set(patternId, {
+        ...pattern,
+        intensity: newIntensity,
+      });
     });
   }
 
