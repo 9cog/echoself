@@ -1,12 +1,10 @@
 {
-  "timestamp": "20260321_030049",
-  "workflow_run": "184",
-  "run_id": "23370579988",
-  "output_dir": "",
-  "best_checkpoint": "none",
-  "backup_locations": 0,
-  "total_files_swept": 0,
-  "commit": "c3b00245402ea1a0fd1ebdceb1018f58394281cc",
-  "triggered_by": "workflow_dispatch",
-  "backup_policy": "UNCONDITIONAL — if: always() — nothing can bypass this step"
+  "timestamp": "20260321_044850",
+  "iteration": 200,
+  "val_loss": 2.4482,
+  "output_dir": "out-nanecho-ci",
+  "workflow_run": "239",
+  "commit": "9f018b457d477741b0028d2f92bc689c5088ac17",
+  "backup_count": 3,
+  "orchestrator": "Agent-Neuro"
 }
