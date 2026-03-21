@@ -134,27 +134,34 @@ jobs:
         
         CHECKPOINT_PATH=""
         
-        # Priority 1: Git checkpoint
+        # Priority 1: Git checkpoint (placed directly by git_checkpoint step)
         if [ -f "checkpoint-source/model.pt" ]; then
           CHECKPOINT_PATH="checkpoint-source/model.pt"
           echo "✅ Using checkpoint from git"
         
-        # Priority 2: Downloaded artifact checkpoint
-        elif [ -f "checkpoint-source/.training-progress/checkpoints/latest_checkpoint.pt" ]; then
-          CHECKPOINT_PATH="checkpoint-source/.training-progress/checkpoints/latest_checkpoint.pt"
-          echo "✅ Using checkpoint from artifacts (.training-progress)"
-        
-        elif [ -f "checkpoint-source/best_model.pt" ]; then
-          CHECKPOINT_PATH="checkpoint-source/best_model.pt"
-          echo "✅ Using checkpoint from artifacts (best_model.pt)"
+        # Priority 2: Search downloaded artifacts recursively.
+        # dawidd6/action-download-artifact@v6 with name_is_regexp places each
+        # matched artifact in its own subdirectory (e.g. checkpoint-source/<artifact-name>/),
+        # so we must search recursively rather than checking flat paths.
+        else
+          for pattern in "latest_checkpoint.pt" "best_model.pt" "ckpt.pt"; do
+            FOUND=$(find checkpoint-source -maxdepth 5 -name "$pattern" 2>/dev/null | head -1)
+            if [ -n "$FOUND" ]; then
+              CHECKPOINT_PATH="$FOUND"
+              echo "✅ Found checkpoint in downloaded artifacts: $CHECKPOINT_PATH"
+              break
+            fi
+          done
+        fi
         
         # Priority 3: Check output directory from current training
-        elif [ -f "${{ steps.checkpoint.outputs.output_dir }}/best_model_export.pt" ]; then
+        if [ -z "$CHECKPOINT_PATH" ] && [ -f "${{ steps.checkpoint.outputs.output_dir }}/best_model_export.pt" ]; then
           CHECKPOINT_PATH="${{ steps.checkpoint.outputs.output_dir }}/best_model_export.pt"
           echo "✅ Using checkpoint from output directory"
+        fi
         
         # Priority 4: Check cache directory
-        elif [ -f "${{ steps.checkpoint.outputs.output_dir }}/cache/checkpoints/latest.pt" ]; then
+        if [ -z "$CHECKPOINT_PATH" ] && [ -f "${{ steps.checkpoint.outputs.output_dir }}/cache/checkpoints/latest.pt" ]; then
           CHECKPOINT_PATH="${{ steps.checkpoint.outputs.output_dir }}/cache/checkpoints/latest.pt"
           echo "✅ Using checkpoint from cache"
         fi
@@ -162,8 +169,10 @@ jobs:
         if [ -z "$CHECKPOINT_PATH" ]; then
           echo "⚠️ WARNING: No checkpoint found!"
           echo "Searched locations:"
-          echo "  - checkpoint-source/model.pt"
-          echo "  - checkpoint-source/.training-progress/checkpoints/"
+          echo "  - checkpoint-source/model.pt (git)"
+          echo "  - checkpoint-source/**/latest_checkpoint.pt (artifact, recursive)"
+          echo "  - checkpoint-source/**/best_model.pt (artifact, recursive)"
+          echo "  - checkpoint-source/**/ckpt.pt (artifact, recursive)"
           echo "  - ${{ steps.checkpoint.outputs.output_dir }}/best_model_export.pt"
           echo "  - ${{ steps.checkpoint.outputs.output_dir }}/cache/checkpoints/latest.pt"
           echo ""

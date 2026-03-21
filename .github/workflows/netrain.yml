@@ -879,6 +879,17 @@ jobs:
         path: nanoGPT/${{ steps.params.outputs.output_dir }}/
         retention-days: 30
 
+    - name: Upload checkpoint backup artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: checkpoint-backup-${{ github.run_number }}
+        path: |
+          echoself/.training-progress/checkpoints/
+          /tmp/nanecho-checkpoint-backup/
+        retention-days: 90
+        if-no-files-found: warn
+
     - name: Upload Deep Tree Echo evaluation report
       uses: actions/upload-artifact@v4
       with:
