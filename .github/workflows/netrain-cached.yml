@@ -263,6 +263,56 @@ jobs:
         restore-keys: |
           nanecho-training-${{ steps.params.outputs.cache_key }}-
 
+    - name: Download previous cached training artifacts
+      uses: dawidd6/action-download-artifact@v6
+      continue-on-error: true
+      with:
+        workflow: netrain-cached.yml
+        name: nanecho-cached-training-${{ steps.params.outputs.cache_key }}
+        path: echoself/.training-progress/artifacts
+        search_artifacts: true
+        if_no_artifact_found: warn
+
+    - name: Restore checkpoints from previous artifacts
+      continue-on-error: true
+      run: |
+        cd echoself
+        OUTPUT_DIR="${{ steps.params.outputs.output_dir }}"
+        ARTIFACTS_DIR=".training-progress/artifacts"
+
+        if [ ! -d "$ARTIFACTS_DIR" ]; then
+          echo "ℹ️ No artifacts directory found - skipping restore"
+          exit 0
+        fi
+
+        PT_COUNT=$(find "$ARTIFACTS_DIR" -name "*.pt" -type f 2>/dev/null | wc -l)
+        if [ "$PT_COUNT" -eq 0 ]; then
+          echo "ℹ️ No .pt checkpoint files found in artifacts"
+          exit 0
+        fi
+
+        echo "📦 Found $PT_COUNT checkpoint file(s) in artifacts - restoring..."
+
+        DEST_CHECKPOINTS="$OUTPUT_DIR/cache/checkpoints"
+        mkdir -p "$DEST_CHECKPOINTS"
+
+        find "$ARTIFACTS_DIR" -name "*.pt" -type f | while read -r ptfile; do
+          BASENAME=$(basename "$ptfile")
+          if cp "$ptfile" "$DEST_CHECKPOINTS/$BASENAME"; then
+            echo "  ✓ Restored: $BASENAME"
+          fi
+        done
+
+        # Restore metadata.json from artifact (authoritative record of checkpoint history)
+        META_FILE=$(find "$ARTIFACTS_DIR" -name "metadata.json" -path "*/cache/*" -type f 2>/dev/null | head -1)
+        if [ -n "$META_FILE" ]; then
+          mkdir -p "$OUTPUT_DIR/cache"
+          cp "$META_FILE" "$OUTPUT_DIR/cache/metadata.json"
+          echo "  ✓ Restored cache metadata.json"
+        fi
+
+        echo "✅ Checkpoint restore from artifacts complete"
+
     - name: Create minimal training data
       run: |
         cd echoself
@@ -694,7 +744,7 @@ jobs:
       continue-on-error: true
       uses: actions/upload-artifact@v4
       with:
-        name: nanecho-cached-training-${{ steps.params.outputs.output_dir }}
+        name: nanecho-cached-training-${{ steps.params.outputs.cache_key }}
         path: |
           echoself/${{ steps.params.outputs.output_dir }}/
         retention-days: 30
@@ -726,7 +776,7 @@ jobs:
       continue-on-error: true
       uses: actions/upload-artifact@v4
       with:
-        name: training-summary-${{ steps.params.outputs.output_dir }}
+        name: training-summary-${{ steps.params.outputs.cache_key }}
         path: echoself/${{ steps.params.outputs.output_dir }}/training_summary.json
         retention-days: 30
         if-no-files-found: warn
