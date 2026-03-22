@@ -2,19 +2,20 @@
   "tokenizer_type": "dte_bpe",
   "tokenizer_dir": "NanEcho/dte_tokenizer",
   "vocab_size": 8192,
-  "total_tokens": 687113,
-  "train_tokens": 618402,
-  "val_tokens": 68711,
-  "val_split": 0.1,
+  "total_tokens": 3962400,
+  "train_tokens": 3764280,
+  "val_tokens": 198120,
+  "val_split": 0.05,
   "block_size": 1024,
-  "num_documents": 2365,
+  "num_documents": 2518,
   "source_files": [
     "deep_tree_echo_dan_conversation.jsonl",
     "echobeats_autonomous_corpus_v0.8.0.jsonl",
     "echobeats_corpus_v0.7.0.jsonl",
     "echobeats_corpus_v0.9.0.jsonl",
     "echobeats_corpus_v1.0.0.jsonl",
-    "training_dataset_dtesnn.jsonl"
+    "training_dataset_dtesnn.jsonl",
+    "tree_polytope_kernel_corpus_v1.1.0.jsonl"
   ],
   "max_token_id": 8191,
   "dtype": "uint16"
