@@ -1,7 +1,7 @@
 {
-  "workflow_run": "192",
+  "workflow_run": "193",
   "training_type": ".training-progress/nanecho-cached-ci",
-  "completed_at": "2026-03-21T18:08:29.777800",
+  "completed_at": "2026-03-22T00:15:44.132013",
   "parameters": {
     "max_iters": 500,
     "batch_size": 2,
@@ -11,9 +11,9 @@
     "force_fresh_start": false
   },
   "cache_stats": {
-    "total_checkpoints": 9,
-    "total_size_mb": 2243.609559059143,
-    "total_size_gb": 2.1910249600186944,
+    "total_checkpoints": 10,
+    "total_size_mb": 2492.8997173309326,
+    "total_size_gb": 2.434472380205989,
     "best_quality_score": 76800.67199621948,
     "best_val_loss": 7.474412879943848,
     "cache_dir": ".training-progress/nanecho-cached-ci/cache"
