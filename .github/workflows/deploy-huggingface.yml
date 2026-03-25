@@ -267,18 +267,10 @@ jobs:
         
         echo "📤 Uploading to $REPO_ID"
         
-        # Upload the model using Python API; pass REPO_ID via env var
-        REPO_ID="$REPO_ID" python -c "
-import os
-from huggingface_hub import HfApi
-api = HfApi()
-api.upload_folder(
-    folder_path='hf-model/',
-    repo_id=os.environ['REPO_ID'],
-    repo_type='model',
-    commit_message='Deploy EchoSelf NanEcho model (workflow run ${{ github.run_number }})'
-)
-"
+        # Upload the model using Python API; pass variables via env vars
+        REPO_ID="$REPO_ID" \
+          COMMIT_MESSAGE="Deploy EchoSelf NanEcho model (workflow run ${{ github.run_number }})" \
+          python scripts/upload_to_huggingface.py
         
         echo "✅ Upload complete!"
         echo ""
