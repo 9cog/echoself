@@ -10,7 +10,6 @@ declare global {
   }
 
   // Allow ENV to be set on globalThis for server-side rendering
-  // deno-lint-ignore no-var
   // eslint-disable-next-line no-var
   var ENV: AppEnv;
 }
