@@ -248,8 +248,9 @@ jobs:
           exit 0
         fi
         
-        # Login to HuggingFace
-        huggingface-cli login --token "$HF_TOKEN"
+        # Login to HuggingFace using Python API (avoids huggingface-cli PATH issues)
+        # HF_TOKEN is already set as an env var in this step's env: block
+        python -c "import os; from huggingface_hub import login; login(token=os.environ['HF_TOKEN'])"
         
         # Determine repo ID - use input if provided, otherwise use HFMODEL secret
         INPUT_REPO_ID="${{ github.event.inputs.repo_id }}"
@@ -266,10 +267,18 @@ jobs:
         
         echo "📤 Uploading to $REPO_ID"
         
-        # Upload the model
-        huggingface-cli upload "$REPO_ID" hf-model/ . \
-          --commit-message "Deploy EchoSelf NanEcho model (workflow run ${{ github.run_number }})" \
-          --repo-type model
+        # Upload the model using Python API; pass REPO_ID via env var
+        REPO_ID="$REPO_ID" python -c "
+import os
+from huggingface_hub import HfApi
+api = HfApi()
+api.upload_folder(
+    folder_path='hf-model/',
+    repo_id=os.environ['REPO_ID'],
+    repo_type='model',
+    commit_message='Deploy EchoSelf NanEcho model (workflow run ${{ github.run_number }})'
+)
+"
         
         echo "✅ Upload complete!"
         echo ""
