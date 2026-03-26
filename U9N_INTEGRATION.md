@@ -9,28 +9,28 @@ This document describes how echoself (9cog/echoself) cognitive services are inte
 
 ## Service Mapping
 
-| echoself Service | u9n Component | Location |
-|-----------------|---------------|----------|
-| `DeepTreeEchoService` | `UEchoSelfIntegration` | `Source/EchoSelf/EchoSelfIntegration.h/.cpp` |
-| `ToroidalCognitiveService` | `UToroidalCognitiveAdapter` | `Source/EchoSelf/ToroidalCognitiveAdapter.h/.cpp` |
-| `EchoSpaceService` | `UEchoSpaceMemoryBridge` | `Source/EchoSelf/EchoSpaceMemoryBridge.h/.cpp` |
-| `HypergraphBridge` (Python) | `UHypergraphBridgeAdapter` | `Source/EchoSelf/HypergraphBridgeAdapter.h/.cpp` |
-| NanEcho pipeline | `FNanEchoTrainingConfig` | `Training/NanEchoConfig.h` |
+| echoself Service            | u9n Component               | Location                                          |
+| --------------------------- | --------------------------- | ------------------------------------------------- |
+| `DeepTreeEchoService`       | `UEchoSelfIntegration`      | `Source/EchoSelf/EchoSelfIntegration.h/.cpp`      |
+| `ToroidalCognitiveService`  | `UToroidalCognitiveAdapter` | `Source/EchoSelf/ToroidalCognitiveAdapter.h/.cpp` |
+| `EchoSpaceService`          | `UEchoSpaceMemoryBridge`    | `Source/EchoSelf/EchoSpaceMemoryBridge.h/.cpp`    |
+| `HypergraphBridge` (Python) | `UHypergraphBridgeAdapter`  | `Source/EchoSelf/HypergraphBridgeAdapter.h/.cpp`  |
+| NanEcho pipeline            | `FNanEchoTrainingConfig`    | `Training/NanEchoConfig.h`                        |
 
 ## Detailed Mapping
 
 ### DeepTreeEchoService → UEchoSelfIntegration
 
-| TypeScript | C++ |
-|------------|-----|
-| `DTEOptions.creativityLevel` | `EEchoSelfCreativityLevel` enum |
-| `DTEOptions.toroidalMode` | `SetToroidalMode(bool)` |
-| `EchoResonancePattern` | `FEchoResonancePattern` struct |
-| `CycleMetrics` | `FEchoSelfCycleMetrics` struct |
+| TypeScript                      | C++                                 |
+| ------------------------------- | ----------------------------------- |
+| `DTEOptions.creativityLevel`    | `EEchoSelfCreativityLevel` enum     |
+| `DTEOptions.toroidalMode`       | `SetToroidalMode(bool)`             |
+| `EchoResonancePattern`          | `FEchoResonancePattern` struct      |
+| `CycleMetrics`                  | `FEchoSelfCycleMetrics` struct      |
 | `initializeResonancePatterns()` | `InitializeCoreResonancePatterns()` |
-| `recordCycleMetrics()` | `RecordCycleMetrics()` |
-| `getImprovementTrend()` | `GetImprovementTrend()` |
-| `adaptResonancePatterns()` | `AdaptResonancePatterns()` |
+| `recordCycleMetrics()`          | `RecordCycleMetrics()`              |
+| `getImprovementTrend()`         | `GetImprovementTrend()`             |
+| `adaptResonancePatterns()`      | `AdaptResonancePatterns()`          |
 
 ### ToroidalCognitiveService → UToroidalCognitiveAdapter
 
@@ -43,28 +43,29 @@ The toroidal model treats cognition as flowing on a torus surface where Deep Tre
 
 ### HypergraphBridge → UHypergraphBridgeAdapter
 
-| Python (hypergraph_bridge.py) | C++ |
-|------------------------------|-----|
-| `calculate_salience()` | `CalculateSalience()` |
-| `adaptive_attention_threshold()` | `GetAdaptiveAttentionThreshold()` |
-| `get_repository_files()` | N/A (UE5 equivalent via asset management) |
-| `create_cognitive_prompt()` | `CreateCognitivePrompt()` |
-| AtomSpace nodes | `FHypergraphNode` struct |
-| Hyperedges | `FHypergraphEdge` struct |
+| Python (hypergraph_bridge.py)    | C++                                       |
+| -------------------------------- | ----------------------------------------- |
+| `calculate_salience()`           | `CalculateSalience()`                     |
+| `adaptive_attention_threshold()` | `GetAdaptiveAttentionThreshold()`         |
+| `get_repository_files()`         | N/A (UE5 equivalent via asset management) |
+| `create_cognitive_prompt()`      | `CreateCognitivePrompt()`                 |
+| AtomSpace nodes                  | `FHypergraphNode` struct                  |
+| Hyperedges                       | `FHypergraphEdge` struct                  |
 
 ### EchoSpaceService → UEchoSpaceMemoryBridge
 
-| TypeScript | C++ |
-|------------|-----|
-| pgvector cosine similarity | `CosineSimilarity()` (in-memory) |
-| Memory types (episodic, semantic, etc.) | `EEchoMemoryType` enum |
-| Memory fragments | `FMemoryFragment` struct |
-| Vector retrieval | `RetrieveSimilar()` |
-| Consolidation | `ConsolidateMemories()` |
+| TypeScript                              | C++                              |
+| --------------------------------------- | -------------------------------- |
+| pgvector cosine similarity              | `CosineSimilarity()` (in-memory) |
+| Memory types (episodic, semantic, etc.) | `EEchoMemoryType` enum           |
+| Memory fragments                        | `FMemoryFragment` struct         |
+| Vector retrieval                        | `RetrieveSimilar()`              |
+| Consolidation                           | `ConsolidateMemories()`          |
 
 ### NanEcho Pipeline → FNanEchoTrainingConfig
 
 The NanEcho training pipeline continues to run as an external Python process. The `FNanEchoTrainingConfig` struct in u9n holds the configuration that parameterizes training runs, including:
+
 - Base model (GPT-2), sequence length, vocabulary size
 - ESN augmentation parameters (reservoir size, spectral radius, leak rate)
 - Training hyperparameters (learning rate, batch size, epochs)
@@ -74,6 +75,7 @@ The NanEcho training pipeline continues to run as an external Python process. Th
 ## Build Integration
 
 The EchoSelf module is defined in `Source/EchoSelf/EchoSelf.Build.cs` with dependencies on:
+
 - `Core`, `CoreUObject`, `Engine` (UE5 fundamentals)
 - `DeepTreeEcho` (u9n native cognitive module)
 - `AngelClaw`, `ReservoirEcho` (companion integration modules)
