@@ -24,8 +24,16 @@ def load_nanecho_checkpoint(checkpoint_path: str) -> Dict[str, Any]:
     checkpoint = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
     
     # Handle different checkpoint formats
-    if 'model_state' in checkpoint:
-        # Export format from cached training
+    if 'model_state_dict' in checkpoint:
+        # Export format from training_cache.py / train_cached.py
+        model_state = checkpoint['model_state_dict']
+        metadata = checkpoint.get('metadata', {})
+        # model_config is a top-level key in this format; merge it into metadata
+        # so that main() can find it via metadata.get('model_config', {})
+        if isinstance(metadata, dict) and 'model_config' in checkpoint:
+            metadata = {**metadata, 'model_config': checkpoint['model_config']}
+    elif 'model_state' in checkpoint:
+        # Older export format
         model_state = checkpoint['model_state']
         metadata = checkpoint.get('metadata', {})
     elif 'model' in checkpoint:
