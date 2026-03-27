@@ -307,9 +307,14 @@ class CachedNanEchoTrainer(NanEchoTrainer):
         self.model.train()
         running_loss = 0.0
         
-        # Adjust starting points if resumed
-        actual_max_iters = self.config.max_iters
+        # Adjust starting points if resumed.
+        # actual_max_iters is the *exclusive upper bound* for the training loop.
+        # max_iters specifies how many NEW iterations to run this session, so we
+        # add it to the checkpoint's starting iteration to get the true ceiling.
+        # Without this, resuming from iteration 500 with max_iters=500 would
+        # produce range(500, 500) — an empty loop with 0 iterations executed.
         start_iteration = self.starting_iteration
+        actual_max_iters = start_iteration + self.config.max_iters
         
         # Progress tracking variables
         start_time = time.time()
