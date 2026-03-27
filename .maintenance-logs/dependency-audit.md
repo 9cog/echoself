@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-03-26 03:00:46 UTC
+# Dependency Audit Report - 2026-03-27 03:00:53 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-03-26T03:00:44.788Z",
+  "timestamp": "2026-03-27T03:00:51.313Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -49,7 +49,7 @@
       "ml-distance": 1,
       "ml-matrix": 2,
       "monaco-editor": 5,
-      "openai": 19,
+      "openai": 17,
       "prettier": 0,
       "python-shell": 1,
       "react": 46,
@@ -86,7 +86,7 @@
       "eslint-plugin-react": 0,
       "eslint-plugin-react-hooks": 0,
       "typescript": 8,
-      "vite": 3,
+      "vite": 2,
       "vite-tsconfig-paths": 0
     },
     "securityVulnerabilities": {},
@@ -97,6 +97,101 @@
 ## Security Audit
 ```
 # npm audit report
+
+brace-expansion  <5.0.5
+Severity: moderate
+brace-expansion: Zero-step sequence causes process hang and memory exhaustion - https://github.com/advisories/GHSA-f886-m6hf-6m8v
+fix available via `npm audit fix --force`
+Will install eslint@4.0.0, which is a breaking change
+node_modules/@eslint/eslintrc/node_modules/brace-expansion
+node_modules/@humanwhocodes/config-array/node_modules/brace-expansion
+node_modules/brace-expansion
+node_modules/eslint-plugin-import/node_modules/brace-expansion
+node_modules/eslint-plugin-jsx-a11y/node_modules/brace-expansion
+node_modules/eslint-plugin-react/node_modules/brace-expansion
+node_modules/eslint/node_modules/brace-expansion
+node_modules/rimraf/node_modules/brace-expansion
+  minimatch  2.0.0 - 10.0.2
+  Depends on vulnerable versions of brace-expansion
+  node_modules/@eslint/eslintrc/node_modules/minimatch
+  node_modules/@humanwhocodes/config-array/node_modules/minimatch
+  node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
+  node_modules/eslint-plugin-import/node_modules/minimatch
+  node_modules/eslint-plugin-jsx-a11y/node_modules/minimatch
+  node_modules/eslint-plugin-react/node_modules/minimatch
+  node_modules/eslint/node_modules/minimatch
+  node_modules/minimatch
+  node_modules/rimraf/node_modules/minimatch
+    @eslint/eslintrc  0.0.1 || >=0.1.1
+    Depends on vulnerable versions of minimatch
+    node_modules/@eslint/eslintrc
+      eslint  0.12.0 - 2.0.0-rc.1 || 4.1.0 - 10.0.0-rc.2
+      Depends on vulnerable versions of @eslint/eslintrc
+      Depends on vulnerable versions of @humanwhocodes/config-array
+      Depends on vulnerable versions of file-entry-cache
+      Depends on vulnerable versions of minimatch
+      node_modules/eslint
+        @typescript-eslint/eslint-plugin  <=8.55.1-alpha.3
+        Depends on vulnerable versions of @typescript-eslint/type-utils
+        Depends on vulnerable versions of @typescript-eslint/utils
+        Depends on vulnerable versions of eslint
+        node_modules/@typescript-eslint/eslint-plugin
+        @typescript-eslint/parser  1.1.1-alpha.0 - 8.55.1-alpha.3
+        Depends on vulnerable versions of @typescript-eslint/typescript-estree
+        Depends on vulnerable versions of eslint
+        node_modules/@typescript-eslint/parser
+        @typescript-eslint/type-utils  5.62.1-alpha.0 - 8.0.0-alpha.62 || 8.14.1-alpha.0 - 8.55.1-alpha.3
+        Depends on vulnerable versions of @typescript-eslint/typescript-estree
+        Depends on vulnerable versions of @typescript-eslint/utils
+        Depends on vulnerable versions of eslint
+        node_modules/@typescript-eslint/type-utils
+        @typescript-eslint/utils  <=8.55.1-alpha.3
+        Depends on vulnerable versions of @typescript-eslint/typescript-estree
+        Depends on vulnerable versions of eslint
+        node_modules/@typescript-eslint/utils
+    @humanwhocodes/config-array  *
+    Depends on vulnerable versions of minimatch
+    node_modules/@humanwhocodes/config-array
+    @remix-run/dev  *
+    Depends on vulnerable versions of @npmcli/package-json
+    Depends on vulnerable versions of @vanilla-extract/integration
+    Depends on vulnerable versions of cacache
+    Depends on vulnerable versions of esbuild
+    Depends on vulnerable versions of minimatch
+    Depends on vulnerable versions of remark-mdx-frontmatter
+    node_modules/@remix-run/dev
+    @typescript-eslint/typescript-estree  6.16.0 - 7.5.0
+    Depends on vulnerable versions of minimatch
+    node_modules/@typescript-eslint/typescript-estree
+    eslint-plugin-import  >=1.15.0
+    Depends on vulnerable versions of minimatch
+    node_modules/eslint-plugin-import
+    eslint-plugin-jsx-a11y  >=6.5.0
+    Depends on vulnerable versions of minimatch
+    node_modules/eslint-plugin-jsx-a11y
+    eslint-plugin-react  >=7.23.0
+    Depends on vulnerable versions of minimatch
+    node_modules/eslint-plugin-react
+    glob  4.3.0 - 10.5.0
+    Depends on vulnerable versions of minimatch
+    node_modules/glob
+    node_modules/rimraf/node_modules/glob
+      @npmcli/package-json  3.1.0 - 6.2.0
+      Depends on vulnerable versions of glob
+      node_modules/@npmcli/package-json
+      cacache  6.1.1 - 19.0.1
+      Depends on vulnerable versions of glob
+      Depends on vulnerable versions of tar
+      node_modules/cacache
+      rimraf  2.3.0 - 3.0.2 || 4.2.0 - 5.0.10
+      Depends on vulnerable versions of glob
+      node_modules/rimraf
+        flat-cache  1.3.4 - 4.0.0
+        Depends on vulnerable versions of rimraf
+        node_modules/flat-cache
+          file-entry-cache  4.0.0 - 7.0.2
+          Depends on vulnerable versions of flat-cache
+          node_modules/file-entry-cache
 
 dompurify  3.1.3 - 3.3.1
 Severity: moderate
@@ -111,12 +206,6 @@ esbuild enables any website to send any requests to the development server and r
 No fix available
 node_modules/esbuild
 node_modules/vite/node_modules/esbuild
-  @remix-run/dev  *
-  Depends on vulnerable versions of @vanilla-extract/integration
-  Depends on vulnerable versions of cacache
-  Depends on vulnerable versions of esbuild
-  Depends on vulnerable versions of remark-mdx-frontmatter
-  node_modules/@remix-run/dev
   @vanilla-extract/integration  *
   Depends on vulnerable versions of esbuild
   Depends on vulnerable versions of vite
@@ -145,30 +234,6 @@ Prototype Pollution via parse() in NodeJS flatted - https://github.com/advisorie
 fix available via `npm audit fix`
 node_modules/flatted
 
-minimatch  9.0.0 - 9.0.6
-Severity: high
-minimatch has a ReDoS via repeated wildcards with non-matching literal in pattern - https://github.com/advisories/GHSA-3ppc-4f35-3m26
-minimatch has ReDoS: matchOne() combinatorial backtracking via multiple non-adjacent GLOBSTAR segments - https://github.com/advisories/GHSA-7r86-cg39-jmmj
-minimatch ReDoS: nested *() extglobs generate catastrophically backtracking regular expressions - https://github.com/advisories/GHSA-23c5-xmqv-rm74
-fix available via `npm audit fix`
-node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
-  @typescript-eslint/typescript-estree  6.16.0 - 7.5.0
-  Depends on vulnerable versions of minimatch
-  node_modules/@typescript-eslint/typescript-estree
-    @typescript-eslint/parser  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/parser
-    @typescript-eslint/type-utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    Depends on vulnerable versions of @typescript-eslint/utils
-    node_modules/@typescript-eslint/type-utils
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
-      @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
-      Depends on vulnerable versions of @typescript-eslint/type-utils
-      Depends on vulnerable versions of @typescript-eslint/utils
-      node_modules/@typescript-eslint/eslint-plugin
 
 picomatch  <=2.3.1 || 4.0.0 - 4.0.3
 Severity: high
@@ -192,9 +257,6 @@ fix available via `npm audit fix`
 node_modules/@tailwindcss/oxide/node_modules/tar
 node_modules/@tailwindcss/postcss/node_modules/tar
 node_modules/tar
-  cacache  14.0.0 - 18.0.4
-  Depends on vulnerable versions of tar
-  node_modules/cacache
 
 undici  <=6.23.0
 Severity: high
@@ -212,10 +274,13 @@ yaml is vulnerable to Stack Overflow via deeply nested YAML collections - https:
 fix available via `npm audit fix`
 node_modules/yaml
 
-20 vulnerabilities (8 moderate, 12 high)
+32 vulnerabilities (20 moderate, 12 high)
 
 To address issues that do not require attention, run:
   npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
 
 Some issues need review, and may require choosing
 a different dependency.

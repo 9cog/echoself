@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-26T03:00:44.788Z",
+  "timestamp": "2026-03-27T03:00:51.313Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -45,7 +45,7 @@
       "ml-distance": 1,
       "ml-matrix": 2,
       "monaco-editor": 5,
-      "openai": 19,
+      "openai": 17,
       "prettier": 0,
       "python-shell": 1,
       "react": 46,
@@ -82,7 +82,7 @@
       "eslint-plugin-react": 0,
       "eslint-plugin-react-hooks": 0,
       "typescript": 8,
-      "vite": 3,
+      "vite": 2,
       "vite-tsconfig-paths": 0
     },
     "securityVulnerabilities": {},
