@@ -739,6 +739,56 @@ jobs:
         echo "📦 Training progress checkpoints:"
         ls -lah .training-progress/checkpoints/ 2>/dev/null || echo "   (empty)"
 
+    # ================================================================
+    # HUGGINGFACE MODEL UPLOAD
+    # Upload the best trained model to HuggingFace Hub so the
+    # published model stays in sync with the latest training run.
+    # Requires HFESELF (write token) and HFMODEL (repo id) secrets.
+    # ================================================================
+    - name: Upload model to HuggingFace Hub
+      if: always()
+      continue-on-error: true
+      env:
+        HF_TOKEN: ${{ secrets.HFESELF }}
+        REPO_ID: ${{ secrets.HFMODEL }}
+        COMMIT_MESSAGE: "Training update: run ${{ github.run_number }}, ${{ steps.params.outputs.max_iters }} iters, cache_key=${{ steps.params.outputs.cache_key }}"
+      run: |
+        cd echoself
+
+        if [ -z "$HF_TOKEN" ] || [ -z "$REPO_ID" ]; then
+          echo "⚠️ Skipping HuggingFace upload: HFESELF or HFMODEL secret not configured"
+          exit 0
+        fi
+
+        # Locate the best available model (priority order)
+        BEST_MODEL=""
+        if [ -f "${{ steps.params.outputs.output_dir }}/best_model_export.pt" ]; then
+          BEST_MODEL="${{ steps.params.outputs.output_dir }}/best_model_export.pt"
+        elif [ -f ".training-progress/checkpoints/latest_checkpoint.pt" ]; then
+          BEST_MODEL=".training-progress/checkpoints/latest_checkpoint.pt"
+        fi
+
+        if [ -z "$BEST_MODEL" ]; then
+          echo "⚠️ No trained model found — skipping HuggingFace upload"
+          exit 0
+        fi
+
+        echo "📤 Uploading model to HuggingFace Hub..."
+        echo "   Source: $BEST_MODEL"
+        echo "   Repository: $REPO_ID"
+
+        pip install huggingface_hub --quiet
+
+        # Convert NanEcho checkpoint to HuggingFace format
+        python NanEcho/convert_to_huggingface.py \
+          --checkpoint "$BEST_MODEL" \
+          --output-dir hf-model
+
+        # Upload converted model folder to the Hub
+        python scripts/upload_to_huggingface.py
+
+        echo "✅ Model uploaded to HuggingFace Hub: $REPO_ID"
+
     - name: Upload cached training artifacts
       if: always()
       continue-on-error: true
