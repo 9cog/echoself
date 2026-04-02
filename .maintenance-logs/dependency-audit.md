@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-04-01 03:01:11 UTC
+# Dependency Audit Report - 2026-04-02 03:00:25 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-04-01T03:01:09.258Z",
+  "timestamp": "2026-04-02T03:00:23.127Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -160,6 +160,46 @@ Prototype Pollution via parse() in NodeJS flatted - https://github.com/advisorie
 fix available via `npm audit fix`
 node_modules/flatted
 
+lodash  <=4.17.23
+Severity: high
+lodash vulnerable to Code Injection via `_.template` imports key names - https://github.com/advisories/GHSA-r5fr-rjxr-66jc
+lodash vulnerable to Prototype Pollution via array path bypass in `_.unset` and `_.omit` - https://github.com/advisories/GHSA-f23m-r3pf-42rh
+fix available via `npm audit fix`
+node_modules/lodash
+
+lodash-es  <=4.17.23
+Severity: high
+lodash vulnerable to Code Injection via `_.template` imports key names - https://github.com/advisories/GHSA-r5fr-rjxr-66jc
+lodash vulnerable to Prototype Pollution via array path bypass in `_.unset` and `_.omit` - https://github.com/advisories/GHSA-f23m-r3pf-42rh
+fix available via `npm audit fix --force`
+Will install mermaid@10.9.5, which is a breaking change
+node_modules/lodash-es
+  @chevrotain/cst-dts-gen  11.0.0 - 11.2.0
+  Depends on vulnerable versions of @chevrotain/gast
+  Depends on vulnerable versions of lodash-es
+  node_modules/@chevrotain/cst-dts-gen
+  @chevrotain/gast  11.0.0 - 11.2.0
+  Depends on vulnerable versions of lodash-es
+  node_modules/@chevrotain/gast
+  chevrotain  11.0.0 - 11.2.0
+  Depends on vulnerable versions of @chevrotain/cst-dts-gen
+  Depends on vulnerable versions of @chevrotain/gast
+  Depends on vulnerable versions of lodash-es
+  node_modules/chevrotain
+    chevrotain-allstar  >=0.3.0
+    Depends on vulnerable versions of chevrotain
+    node_modules/chevrotain-allstar
+    langium  >=2.0.0-next.239179f
+    Depends on vulnerable versions of chevrotain
+    Depends on vulnerable versions of chevrotain-allstar
+    node_modules/langium
+      @mermaid-js/parser  *
+      Depends on vulnerable versions of langium
+      node_modules/@mermaid-js/parser
+        mermaid  >=11.0.0-alpha.1
+        Depends on vulnerable versions of @mermaid-js/parser
+        node_modules/mermaid
+
 minimatch  9.0.0 - 9.0.6
 Severity: high
 minimatch has a ReDoS via repeated wildcards with non-matching literal in pattern - https://github.com/advisories/GHSA-3ppc-4f35-3m26
@@ -233,10 +273,13 @@ yaml is vulnerable to Stack Overflow via deeply nested YAML collections - https:
 fix available via `npm audit fix`
 node_modules/yaml
 
-22 vulnerabilities (9 moderate, 13 high)
+31 vulnerabilities (9 moderate, 22 high)
 
 To address issues that do not require attention, run:
   npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
 
 Some issues need review, and may require choosing
 a different dependency.
