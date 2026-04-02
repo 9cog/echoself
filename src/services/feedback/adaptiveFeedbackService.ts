@@ -101,7 +101,7 @@ export class AdaptiveFeedbackService {
   };
   private lastFeedbackLoopRun: Date | null = null;
   private isRunning = false;
-  private feedbackIntervalId: number | null = null;
+  private feedbackIntervalId: ReturnType<typeof setInterval> | null = null;
 
   private constructor() {
     this.hypergraphCore = new HypergraphSchemeCore();
@@ -316,7 +316,7 @@ export class AdaptiveFeedbackService {
     }
 
     if (intervalMs > 0) {
-      this.feedbackIntervalId = window.setInterval(() => {
+      this.feedbackIntervalId = setInterval(() => {
         this.triggerFeedbackLoop().catch(err =>
           console.error("Feedback loop error:", err)
         );
