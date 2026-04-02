@@ -31,6 +31,7 @@ export interface Mem0ryQueryOptions {
   threshold?: number;
   limit?: number;
   type?: Mem0ryType;
+  tags?: string[];
   includeTags?: string[];
   excludeTags?: string[];
   timeframe?: {
