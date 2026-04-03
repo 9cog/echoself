@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-04-02 03:00:25 UTC
+# Dependency Audit Report - 2026-04-03 03:00:38 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-04-02T03:00:23.127Z",
+  "timestamp": "2026-04-03T03:00:36.491Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -186,7 +186,7 @@ node_modules/lodash-es
   Depends on vulnerable versions of @chevrotain/gast
   Depends on vulnerable versions of lodash-es
   node_modules/chevrotain
-    chevrotain-allstar  >=0.3.0
+    chevrotain-allstar  0.3.0 - 0.3.1
     Depends on vulnerable versions of chevrotain
     node_modules/chevrotain-allstar
     langium  >=2.0.0-next.239179f
@@ -217,13 +217,13 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
 
 path-to-regexp  <0.1.13
 Severity: high
