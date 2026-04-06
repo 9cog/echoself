@@ -167,7 +167,8 @@ Respond in JSON format: {"synergy": "convergent"|"divergent"|"complementary", "c
 
         reflection = {
           synergy: parsed.synergy ?? "complementary",
-          content: parsed.content ?? "These perspectives complement each other.",
+          content:
+            parsed.content ?? "These perspectives complement each other.",
           unified_answer: parsed.unified_answer,
         };
       } catch {

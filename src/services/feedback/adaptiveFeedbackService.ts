@@ -193,7 +193,9 @@ export class AdaptiveFeedbackService {
       suggestions:
         suggestions.length > 0
           ? suggestions
-          : [`Optimize ${model?.name ?? "model"} based on ${request.requestType} analysis`],
+          : [
+              `Optimize ${model?.name ?? "model"} based on ${request.requestType} analysis`,
+            ],
       qualityScore: 0.75,
       confidence: 0.8,
       processingTime: Date.now() - processingStart,
@@ -228,8 +230,10 @@ export class AdaptiveFeedbackService {
 
         // 2. Adapt attention thresholds based on cognitive load
         const cognitiveLoad =
-          this.communityFeedback.length / Math.max(1, this.projectModels.size * 10);
-        const recentActivity = feedback.length / Math.max(1, feedback.length + 1);
+          this.communityFeedback.length /
+          Math.max(1, this.projectModels.size * 10);
+        const recentActivity =
+          feedback.length / Math.max(1, feedback.length + 1);
         const newThreshold = this.hypergraphCore.adaptiveAttention(
           cognitiveLoad,
           recentActivity
@@ -274,8 +278,7 @@ export class AdaptiveFeedbackService {
     const hypergraphNodesCount = modelCount; // one node per model
 
     const cognitiveLoad =
-      this.communityFeedback.length /
-      Math.max(1, this.projectModels.size * 10);
+      this.communityFeedback.length / Math.max(1, this.projectModels.size * 10);
     const recentActivity =
       this.communityFeedback.length /
       Math.max(1, this.communityFeedback.length + 1);

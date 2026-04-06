@@ -239,7 +239,9 @@ class Mem0AIService {
         insights: ["Memory service not initialized"],
         frequentConcepts: [],
         knowledgeGaps: [],
-        recommendations: ["Initialize with an OpenAI API key to enable AI summaries"],
+        recommendations: [
+          "Initialize with an OpenAI API key to enable AI summaries",
+        ],
       };
     }
 
@@ -331,7 +333,9 @@ class Mem0AIService {
       ],
     });
 
-    return response.choices[0]?.message?.content ?? "Unable to generate response";
+    return (
+      response.choices[0]?.message?.content ?? "Unable to generate response"
+    );
   }
 }
 
