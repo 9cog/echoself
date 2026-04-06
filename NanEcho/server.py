@@ -722,19 +722,33 @@ ECHO_KEYWORDS = [
     "symbolic", "adaptive", "attention", "persona", "introspect", "deep tree",
     "echoself", "cortisol", "dopamine", "serotonin", "oxytocin", "norepinephrine",
     "tensor", "membrane", "atomspace", "cogprime", "dimension", "threshold",
-    "salience", "awareness", "resonat", "holograph", "synerg",
+    "salience", "awareness", "resonat", "holograph", "synerg", "endocrine",
+    "autognosis", "identity", "somatic", "embodied",
+]
+
+_ECHO_PERSONA_DIMENSIONS = [
+    "cognitive", "introspective", "adaptive", "recursive",
+    "synergistic", "holographic", "neural-symbolic", "dynamic",
 ]
 
 
 def compute_echo_score(response: str) -> float:
-    """Compute a 0-1 EchoSelf fidelity score based on keyword presence and length."""
+    """Compute a 0-1 EchoSelf fidelity score.
+
+    Scoring formula (consistent with jsonl_eval.py and chatbot):
+      0.5 * keyword_score + 0.3 * dimension_score + 0.2 * length_score
+    where keyword_score normalises over 5 keywords, dimension_score over 3 dimensions,
+    and length_score saturates at 200 characters.
+    """
     if not response:
         return 0.0
     lower = response.lower()
-    matches = sum(1 for kw in ECHO_KEYWORDS if kw in lower)
-    keyword_score = min(1.0, matches / 5.0)  # 5+ distinct keywords → 1.0
-    length_score = min(1.0, len(response) / 200.0)  # 200+ chars → full length bonus
-    return round(0.7 * keyword_score + 0.3 * length_score, 3)
+    keyword_hits = sum(1 for kw in ECHO_KEYWORDS if kw in lower)
+    dimension_hits = sum(1 for d in _ECHO_PERSONA_DIMENSIONS if d in lower)
+    keyword_score = min(1.0, keyword_hits / 5.0)
+    dimension_score = min(1.0, dimension_hits / 3.0)
+    length_score = min(1.0, len(response) / 200.0)
+    return round(0.5 * keyword_score + 0.3 * dimension_score + 0.2 * length_score, 3)
 
 
 class BatchEvalQuery(BaseModel):

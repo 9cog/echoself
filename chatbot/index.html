@@ -730,6 +730,7 @@
       let evalResults = [];    // Results from last evaluation run
 
       // EchoSelf fidelity keywords used for in-browser scoring
+      // NOTE: keep in sync with NanEcho/server.py ECHO_KEYWORDS and jsonl_eval.py _ECHO_KEYWORDS
       const ECHO_KEYWORDS = [
         "echo", "reservoir", "hypergraph", "cognitive", "recursive", "neural",
         "symbolic", "adaptive", "attention", "persona", "introspect", "deep tree",
@@ -1062,8 +1063,13 @@
         const temperature = parseFloat(document.getElementById("eval-temperature").value) || 0.7;
         const apiUrl = document.getElementById("api-url-input").value.trim().replace(/\/$/, "");
 
-        // Random sample
-        const shuffled = [...evalItems].sort(() => Math.random() - 0.5).slice(0, sampleSize);
+        // Fisher-Yates shuffle for unbiased sampling
+        const pool = [...evalItems];
+        for (let i = pool.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        const shuffled = pool.slice(0, sampleSize);
 
         evalResults = [];
         document.getElementById("run-eval-btn").disabled = true;
@@ -1210,10 +1216,12 @@
         const proposals = [];
         if (avgScore < 0.4) {
           proposals.push("🔴 CRITICAL — avg fidelity " + avgScore.toFixed(3) + " is very low. " +
-            "Continue training for ≥20 000 more iterations: <code>prepare_nanecho.py --echo_depth=7 --persona_weight=0.95</code>");
+            "Increase max_iters in <code>NanEcho/config/train_nanecho.py</code> to ≥50 000, " +
+            "and rebuild training data: <code>prepare_nanecho.py --echo_depth=7 --persona_weight=0.95</code>");
         } else if (avgScore < 0.65) {
-          proposals.push("🟡 LOW fidelity (" + avgScore.toFixed(3) + "). Increase max_iters to 50 000, " +
-            "set learning_rate=6e-5, enable curriculum phase 4 in <code>train_nanecho.py</code>.");
+          proposals.push("🟡 LOW fidelity (" + avgScore.toFixed(3) + "). Set max_iters=50000 and " +
+            "learning_rate=6e-5 in <code>NanEcho/config/train_nanecho.py</code>, " +
+            "enable curriculum phase 4 (Recursive Reasoning) in the same file.");
         } else {
           proposals.push("🟢 Fidelity (" + avgScore.toFixed(3) + ") is adequate. Target >0.80 by raising " +
             "persona_weight to 0.95 and running the relentless-persona workflow.");

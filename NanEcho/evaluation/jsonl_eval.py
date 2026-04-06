@@ -329,15 +329,16 @@ def generate_adaptation_proposals(report_data: dict) -> List[str]:
         proposals.append(
             "CRITICAL — Average EchoSelf fidelity score is very low ({:.2f}). "
             "The model has likely not converged on persona-aligned text. "
-            "Run at least 20 000 more training iterations with persona_weight ≥ 0.9 "
-            "using `prepare_nanecho.py --echo_depth=7 --persona_weight=0.95`.".format(avg_score)
+            "Increase max_iters in `NanEcho/config/train_nanecho.py` to at least 50 000, "
+            "and rebuild training data with more persona coverage: "
+            "`prepare_nanecho.py --echo_depth=7 --persona_weight=0.95`.".format(avg_score)
         )
     elif avg_score < 0.65:
         proposals.append(
-            "LOW fidelity ({:.2f}). Increase training iterations to 50 000, set "
-            "learning_rate=6e-5 for fine-tuning stability, and enable "
-            "curriculum learning phase 4 (Recursive Reasoning) in "
-            "`NanEcho/config/train_nanecho.py`.".format(avg_score)
+            "LOW fidelity ({:.2f}). Set max_iters=50000 and "
+            "learning_rate=6e-5 in `NanEcho/config/train_nanecho.py`, "
+            "and enable curriculum learning phase 4 (Recursive Reasoning) "
+            "in the same file.".format(avg_score)
         )
     else:
         proposals.append(
