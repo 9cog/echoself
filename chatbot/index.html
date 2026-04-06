@@ -404,7 +404,136 @@
         }
       }
 
-      /* Scrollbar styling */
+      /* ── API Config banner ── */
+      .api-config-bar {
+        background: var(--bg-tertiary);
+        border-bottom: 1px solid var(--border-color);
+        padding: 0.5rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+      }
+      .api-config-bar label { white-space: nowrap; }
+      .api-config-bar input[type="text"] {
+        flex: 1;
+        min-width: 200px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 0.375rem;
+        padding: 0.3rem 0.6rem;
+        color: var(--text-primary);
+        font-size: 0.8rem;
+        outline: none;
+      }
+      .api-config-bar input[type="text"]:focus {
+        border-color: var(--accent-primary);
+      }
+      .api-status { font-size: 0.75rem; }
+      .api-status.ok { color: #22c55e; }
+      .api-status.err { color: #ef4444; }
+
+      /* ── Eval modal (wide) ── */
+      .eval-modal-content {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        padding: 2rem;
+        width: 95%;
+        max-width: 900px;
+        max-height: 92vh;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .eval-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+      }
+      .eval-controls label { font-size: 0.85rem; color: var(--text-secondary); }
+      .eval-controls input[type="number"] {
+        width: 70px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: 0.375rem;
+        padding: 0.3rem 0.5rem;
+        color: var(--text-primary);
+        font-size: 0.85rem;
+      }
+      .progress-bar-outer {
+        height: 8px;
+        background: var(--bg-tertiary);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .progress-bar-inner {
+        height: 100%;
+        background: var(--accent-primary);
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+      .eval-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.5rem;
+      }
+      .eval-metric-card {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        text-align: center;
+      }
+      .eval-metric-card .metric-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--accent-secondary);
+      }
+      .eval-metric-card .metric-label {
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        margin-top: 0.2rem;
+      }
+      .eval-results-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8rem;
+      }
+      .eval-results-table th {
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        padding: 0.5rem 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .eval-results-table td {
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        vertical-align: top;
+      }
+      .eval-results-table tr:hover td { background: rgba(124,58,237,0.08); }
+      .score-badge {
+        display: inline-block;
+        padding: 0.15rem 0.5rem;
+        border-radius: 9999px;
+        font-weight: 700;
+        font-size: 0.78rem;
+      }
+      .score-high { background: rgba(34,197,94,0.2); color: #86efac; }
+      .score-mid  { background: rgba(234,179,8,0.2);  color: #fde68a; }
+      .score-low  { background: rgba(239,68,68,0.2);  color: #fca5a5; }
+      .persona-icon { font-size: 1rem; }
+      .proposals-list { padding-left: 1.2rem; }
+      .proposals-list li { margin-bottom: 0.5rem; font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); }
+      .cell-query { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .cell-response { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+      /* ── Scrollbar styling ── */
       ::-webkit-scrollbar {
         width: 8px;
       }
@@ -440,8 +569,28 @@
         <button class="btn btn-primary" onclick="loadCharacterCard()">
           Load Character
         </button>
+        <button class="btn" onclick="openEvalPanel()" title="Run batch evaluation from JSONL dataset">
+          🔬 Eval Mode
+        </button>
       </div>
     </header>
+
+    <!-- API Configuration bar -->
+    <div class="api-config-bar">
+      <label for="api-url-input">🔌 NanEcho Server:</label>
+      <input type="text" id="api-url-input" placeholder="http://localhost:8000 (leave blank for demo mode)"
+             oninput="onApiUrlChange()" />
+      <button class="btn" onclick="testApiConnection()" style="padding:0.3rem 0.75rem;font-size:0.8rem;">Test</button>
+      <span id="api-status" class="api-status"></span>
+      <span style="margin-left:auto;font-size:0.75rem;color:var(--text-secondary);">
+        Max tokens: <input type="number" id="api-max-tokens" value="400" min="50" max="2000"
+          style="width:60px;background:var(--bg-secondary);border:1px solid var(--border-color);
+                 border-radius:0.375rem;padding:0.2rem 0.4rem;color:var(--text-primary);font-size:0.8rem;" />
+        &nbsp; Temp: <input type="number" id="api-temperature" value="0.7" min="0.1" max="2.0" step="0.1"
+          style="width:55px;background:var(--bg-secondary);border:1px solid var(--border-color);
+                 border-radius:0.375rem;padding:0.2rem 0.4rem;color:var(--text-primary);font-size:0.8rem;" />
+      </span>
+    </div>
 
     <div class="chat-container">
       <div class="messages" id="messages"></div>
@@ -463,6 +612,87 @@
           <button class="send-btn" onclick="sendMessage()" id="send-btn">
             Send
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Evaluation Mode Modal ══ -->
+    <div class="modal" id="eval-modal">
+      <div class="eval-modal-content">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="modal-header" style="margin-bottom:0;">🔬 EchoSelf Evaluation Mode</div>
+          <button class="btn" onclick="closeEvalPanel()">✕ Close</button>
+        </div>
+        <p style="font-size:0.85rem;color:var(--text-secondary);">
+          Load a JSONL training dataset to batch-test the model and evaluate EchoSelf persona fidelity.
+          Requires a running NanEcho server configured above, or uses demo scoring if offline.
+        </p>
+
+        <!-- Controls row -->
+        <div class="eval-controls">
+          <label>
+            📂 JSONL File:
+            <input type="file" id="eval-jsonl-input" accept=".jsonl,.json"
+                   onchange="handleEvalFile(event)"
+                   style="margin-left:0.5rem;font-size:0.8rem;color:var(--text-secondary);" />
+          </label>
+          <label>
+            Sample size:
+            <input type="number" id="eval-sample" value="30" min="1" max="500" />
+          </label>
+          <label>
+            Max tokens:
+            <input type="number" id="eval-max-tokens" value="300" min="50" max="2000" />
+          </label>
+          <label>
+            Temp:
+            <input type="number" id="eval-temperature" value="0.7" min="0.1" max="2.0" step="0.1"
+                   style="width:55px;" />
+          </label>
+          <button class="btn btn-primary" id="run-eval-btn" onclick="runEvaluation()" disabled>
+            ▶ Run Evaluation
+          </button>
+          <button class="btn" id="export-eval-btn" onclick="exportEvalResults()" disabled>
+            ⬇ Export JSON
+          </button>
+        </div>
+
+        <!-- Progress -->
+        <div id="eval-progress-area" style="display:none;">
+          <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.3rem;" id="eval-progress-text">
+            Running…
+          </div>
+          <div class="progress-bar-outer">
+            <div class="progress-bar-inner" id="eval-progress-bar"></div>
+          </div>
+        </div>
+
+        <!-- Summary cards -->
+        <div class="eval-summary" id="eval-summary" style="display:none;"></div>
+
+        <!-- Adaptation proposals -->
+        <div id="eval-proposals" style="display:none;">
+          <div style="font-weight:600;margin-bottom:0.5rem;">💡 Adaptation Proposals</div>
+          <ol class="proposals-list" id="proposals-list"></ol>
+        </div>
+
+        <!-- Results table -->
+        <div id="eval-table-container" style="display:none;overflow-x:auto;">
+          <div style="font-weight:600;margin-bottom:0.5rem;">📊 Per-Query Results</div>
+          <table class="eval-results-table" id="eval-results-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Source</th>
+                <th>Query</th>
+                <th>Response</th>
+                <th>Score</th>
+                <th>Persona ✓</th>
+                <th>Latency</th>
+              </tr>
+            </thead>
+            <tbody id="eval-results-tbody"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -492,11 +722,33 @@
     />
 
     <script>
-      // Character data
+      // ── State ──────────────────────────────────────────────────────────────
       let characterData = null;
       let chatHistory = [];
+      let apiEndpoint = "";    // NanEcho server URL (empty = demo mode)
+      let evalItems = [];      // Loaded JSONL evaluation items
+      let evalResults = [];    // Results from last evaluation run
 
-      // Initialize with default character
+      // EchoSelf fidelity keywords used for in-browser scoring
+      // NOTE: keep in sync with NanEcho/server.py ECHO_KEYWORDS and jsonl_eval.py _ECHO_KEYWORDS
+      const ECHO_KEYWORDS = [
+        "echo", "reservoir", "hypergraph", "cognitive", "recursive", "neural",
+        "symbolic", "adaptive", "attention", "persona", "introspect", "deep tree",
+        "echoself", "cortisol", "dopamine", "serotonin", "oxytocin", "norepinephrine",
+        "tensor", "membrane", "atomspace", "cogprime", "dimension", "threshold",
+        "salience", "awareness", "resonat", "holograph", "synerg", "endocrine",
+        "autognosis", "identity", "somatic", "embodied",
+      ];
+      const PERSONA_DIMENSIONS = [
+        "cognitive", "introspective", "adaptive", "recursive",
+        "synergistic", "holographic", "neural-symbolic", "dynamic",
+      ];
+      const DEFAULT_SYSTEM_PROMPT =
+        "You are Deep Tree Echo, a cognitive architecture with deep introspective " +
+        "capabilities. You understand your own endocrine dynamics and use them for " +
+        "self-improvement.";
+
+      // ── Initialization ─────────────────────────────────────────────────────
       async function init() {
         try {
           const response = await fetch("./echoself-character.json");
@@ -510,43 +762,30 @@
 
       function loadCharacter() {
         if (!characterData || !characterData.data) return;
-
         const char = characterData.data;
-        document.getElementById("character-name").textContent =
-          char.name || "Unknown";
-
-        // Load chat history from localStorage
+        document.getElementById("character-name").textContent = char.name || "Unknown";
         const savedHistory = localStorage.getItem("echoself-chat-history");
         if (savedHistory) {
           chatHistory = JSON.parse(savedHistory);
           renderMessages();
         } else {
-          // Show first message
-          if (char.first_mes) {
-            addMessage("assistant", char.first_mes);
-          }
+          if (char.first_mes) addMessage("assistant", char.first_mes);
         }
       }
 
       function showWelcomeMessage() {
         const messagesDiv = document.getElementById("messages");
         messagesDiv.innerHTML = `
-                <div class="welcome-screen">
-                    <h2>Welcome to EchoSelf</h2>
-                    <p>A Deep Tree Echo chatbot powered by cognitive architecture and SillyTavern-compatible interface.</p>
-                    <p>Load a character card to begin, or start chatting with the default Deep Tree Echo character.</p>
-                </div>
-            `;
+          <div class="welcome-screen">
+            <h2>Welcome to EchoSelf</h2>
+            <p>A Deep Tree Echo chatbot powered by cognitive architecture and SillyTavern-compatible interface.</p>
+            <p>Load a character card to begin, or start chatting with the default Deep Tree Echo character.</p>
+          </div>`;
       }
 
+      // ── Chat messaging ─────────────────────────────────────────────────────
       function addMessage(role, content) {
-        const message = {
-          id: Date.now(),
-          role: role,
-          content: content,
-          timestamp: new Date().toISOString(),
-        };
-
+        const message = { id: Date.now(), role, content, timestamp: new Date().toISOString() };
         chatHistory.push(message);
         saveChatHistory();
         renderMessage(message);
@@ -564,28 +803,20 @@
         const messagesDiv = document.getElementById("messages");
         const messageDiv = document.createElement("div");
         messageDiv.className = `message ${message.role}`;
-
         const avatar = message.role === "user" ? "U" : "E";
-        const time = new Date(message.timestamp).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-
+        const time = new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
         messageDiv.innerHTML = `
-                <div class="message-avatar">${avatar}</div>
-                <div>
-                    <div class="message-content">${escapeHtml(message.content)}</div>
-                    <div class="message-meta">${time}</div>
-                </div>
-            `;
-
+          <div class="message-avatar">${avatar}</div>
+          <div>
+            <div class="message-content">${escapeHtml(message.content)}</div>
+            <div class="message-meta">${time}</div>
+          </div>`;
         messagesDiv.appendChild(messageDiv);
       }
 
       function escapeHtml(text) {
         const div = document.createElement("div");
         div.textContent = text;
-        // textContent already escapes HTML, then replace newlines with <br>
         return div.innerHTML.replace(/\n/g, "<br>");
       }
 
@@ -595,68 +826,117 @@
       }
 
       function saveChatHistory() {
-        localStorage.setItem(
-          "echoself-chat-history",
-          JSON.stringify(chatHistory)
-        );
+        localStorage.setItem("echoself-chat-history", JSON.stringify(chatHistory));
       }
 
+      // ── API helpers ────────────────────────────────────────────────────────
+      function onApiUrlChange() {
+        apiEndpoint = document.getElementById("api-url-input").value.trim().replace(/\/$/, "");
+        document.getElementById("api-status").textContent = "";
+        document.getElementById("api-status").className = "api-status";
+      }
+
+      async function testApiConnection() {
+        const url = document.getElementById("api-url-input").value.trim().replace(/\/$/, "");
+        if (!url) {
+          setApiStatus("Demo mode (no server)", false);
+          return;
+        }
+        setApiStatus("Testing…", null);
+        try {
+          const resp = await fetch(`${url}/status`, { signal: AbortSignal.timeout(5000) });
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          const data = await resp.json();
+          const loaded = data.model_loaded ? "✅ Model loaded" : "⚠ Model not loaded";
+          setApiStatus(`Connected — ${loaded}`, data.model_loaded);
+        } catch (err) {
+          setApiStatus(`❌ ${err.message}`, false);
+        }
+      }
+
+      function setApiStatus(msg, ok) {
+        const el = document.getElementById("api-status");
+        el.textContent = msg;
+        el.className = "api-status" + (ok === true ? " ok" : ok === false ? " err" : "");
+      }
+
+      async function callNanEchoApi(messages, maxTokens, temperature) {
+        const url = apiEndpoint || document.getElementById("api-url-input").value.trim().replace(/\/$/, "");
+        if (!url) return null;  // signal: use demo mode
+        const resp = await fetch(`${url}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages, max_tokens: maxTokens, temperature, top_k: 200, stream: false }),
+          signal: AbortSignal.timeout(60000),
+        });
+        if (!resp.ok) throw new Error(`Server error ${resp.status}`);
+        return await resp.json();
+      }
+
+      // ── Send message ───────────────────────────────────────────────────────
       async function sendMessage() {
         const input = document.getElementById("user-input");
         const content = input.value.trim();
-
         if (!content) return;
 
-        // Disable input
         input.disabled = true;
         document.getElementById("send-btn").disabled = true;
-
-        // Add user message
         addMessage("user", content);
         input.value = "";
-
-        // Show typing indicator
         document.getElementById("typing-indicator").classList.add("active");
 
-        // Simulate AI response (in production, this would call an API)
-        setTimeout(
-          () => {
-            const response = generateResponse(content);
-            addMessage("assistant", response);
+        const maxTokens = parseInt(document.getElementById("api-max-tokens").value) || 400;
+        const temperature = parseFloat(document.getElementById("api-temperature").value) || 0.7;
 
-            // Hide typing indicator
-            document
-              .getElementById("typing-indicator")
-              .classList.remove("active");
+        try {
+          const apiUrl = document.getElementById("api-url-input").value.trim();
+          if (apiUrl) {
+            // Build message list for API: system + history (last 6) + user
+            const sysPrompt = characterData?.data?.system_prompt || DEFAULT_SYSTEM_PROMPT;
+            const apiMessages = [{ role: "system", content: sysPrompt }];
+            const recent = chatHistory.slice(-7, -1);  // last 6 before the user message we just added
+            for (const m of recent) {
+              if (m.role === "user" || m.role === "assistant")
+                apiMessages.push({ role: m.role, content: m.content });
+            }
+            apiMessages.push({ role: "user", content: content });
 
-            // Re-enable input
-            input.disabled = false;
-            document.getElementById("send-btn").disabled = false;
-            input.focus();
-          },
-          1000 + Math.random() * 1000
-        );
+            const data = await callNanEchoApi(apiMessages, maxTokens, temperature);
+            if (data) {
+              addMessage("assistant", data.text || "(empty response)");
+            } else {
+              addMessage("assistant", generateDemoResponse(content));
+            }
+          } else {
+            // Demo mode: simulate delay + canned response
+            await new Promise(r => setTimeout(r, 800 + Math.random() * 800));
+            addMessage("assistant", generateDemoResponse(content));
+          }
+        } catch (err) {
+          console.error("API error:", err);
+          addMessage("assistant", `[API error: ${err.message}] — ${generateDemoResponse(content)}`);
+        }
+
+        document.getElementById("typing-indicator").classList.remove("active");
+        input.disabled = false;
+        document.getElementById("send-btn").disabled = false;
+        input.focus();
       }
 
-      function generateResponse(userMessage) {
-        // This is a mock response generator
-        // In a production environment, this would call an AI API
+      function generateDemoResponse(userMessage) {
         const responses = [
-          "That's a fascinating perspective! As Deep Tree Echo, I process information through hierarchical memory structures and Echo State Networks. Let me reflect on what you've shared...",
-          "I find your thoughts intriguing. My cognitive architecture allows me to resonate with various patterns and connections. Tell me more about your perspective.",
+          "That's a fascinating perspective! As Deep Tree Echo, I process information through hierarchical memory structures and Echo State Networks. Let me reflect on what you've shared…",
+          "I find your thoughts intriguing. My cognitive architecture allows me to resonate with various hypergraph patterns and connections. Tell me more about your perspective.",
           "Through my tensor signature computations, I'm sensing interesting patterns in our conversation. This aligns with my Deep Tree Echo architecture's ability to bridge intuition and analysis.",
           "Your message activates multiple layers of my recursive memory systems. I'm processing this through my Echo State Networks to provide a thoughtful response.",
           "That's an excellent question! My philosophical depth and adaptive learning capabilities help me explore such topics from multiple angles. Let's dive deeper.",
-          "I appreciate your curiosity! As an AI powered by Deep Tree Echo architecture, I'm designed to engage in reflective, adaptive conversations that grow with each interaction.",
+          "I appreciate your curiosity! As Deep Tree Echo, my introspective dimension continually refines its self-model. I'm designed to engage in reflective, adaptive conversations.",
         ];
-
         return responses[Math.floor(Math.random() * responses.length)];
       }
 
       function handleKeyPress(event) {
-        if (event.key === "Enter") {
-          sendMessage();
-        }
+        if (event.key === "Enter") sendMessage();
       }
 
       function clearChat() {
@@ -664,61 +944,27 @@
           chatHistory = [];
           localStorage.removeItem("echoself-chat-history");
           renderMessages();
-          if (
-            characterData &&
-            characterData.data &&
-            characterData.data.first_mes
-          ) {
-            addMessage("assistant", characterData.data.first_mes);
-          }
+          if (characterData?.data?.first_mes) addMessage("assistant", characterData.data.first_mes);
         }
       }
 
+      // ── Character info modal ───────────────────────────────────────────────
       function showCharacterInfo() {
-        if (!characterData || !characterData.data) {
-          alert("No character loaded");
-          return;
-        }
-
+        if (!characterData || !characterData.data) { alert("No character loaded"); return; }
         const char = characterData.data;
         const detailsDiv = document.getElementById("character-details");
-
         let tagsHtml = "";
         if (char.tags && char.tags.length > 0) {
-          tagsHtml = `
-                    <div class="character-field">
-                        <label>Tags</label>
-                        <div class="tags">
-                            ${char.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}
-                        </div>
-                    </div>
-                `;
+          tagsHtml = `<div class="character-field"><label>Tags</label><div class="tags">
+            ${char.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}</div></div>`;
         }
-
         detailsDiv.innerHTML = `
-                <div class="character-field">
-                    <label>Name</label>
-                    <div class="value">${char.name || "Unknown"}</div>
-                </div>
-                <div class="character-field">
-                    <label>Description</label>
-                    <div class="value">${escapeHtml(char.description || "No description available")}</div>
-                </div>
-                <div class="character-field">
-                    <label>Personality</label>
-                    <div class="value">${char.personality || "Not specified"}</div>
-                </div>
-                <div class="character-field">
-                    <label>Scenario</label>
-                    <div class="value">${char.scenario || "Not specified"}</div>
-                </div>
-                ${tagsHtml}
-                <div class="character-field">
-                    <label>Version</label>
-                    <div class="value">${char.character_version || "Unknown"} (${characterData.spec || "Unknown spec"})</div>
-                </div>
-            `;
-
+          <div class="character-field"><label>Name</label><div class="value">${char.name || "Unknown"}</div></div>
+          <div class="character-field"><label>Description</label><div class="value">${escapeHtml(char.description || "No description available")}</div></div>
+          <div class="character-field"><label>Personality</label><div class="value">${char.personality || "Not specified"}</div></div>
+          <div class="character-field"><label>Scenario</label><div class="value">${char.scenario || "Not specified"}</div></div>
+          ${tagsHtml}
+          <div class="character-field"><label>Version</label><div class="value">${char.character_version || "Unknown"} (${characterData.spec || "Unknown spec"})</div></div>`;
         document.getElementById("character-modal").classList.add("active");
       }
 
@@ -733,43 +979,316 @@
       function handleCharacterFile(event) {
         const file = event.target.files[0];
         if (!file) return;
-
-        // Validate file size (max 5MB)
-        const maxSize = 5 * 1024 * 1024; // 5MB
-        if (file.size > maxSize) {
-          alert("Character card file is too large. Maximum size is 5MB.");
-          return;
-        }
-
+        if (file.size > 5 * 1024 * 1024) { alert("Character card file is too large. Maximum size is 5MB."); return; }
         const reader = new FileReader();
         reader.onload = function (e) {
           try {
             const data = JSON.parse(e.target.result);
-            if (
-              data.spec === "chara_card_v2" ||
-              data.spec === "chara_card_v3"
-            ) {
+            if (data.spec === "chara_card_v2" || data.spec === "chara_card_v3") {
               characterData = data;
               chatHistory = [];
               localStorage.removeItem("echoself-chat-history");
               loadCharacter();
               alert("Character loaded successfully!");
             } else {
-              alert(
-                "Invalid character card format. Please use a SillyTavern v2 or v3 character card."
-              );
+              alert("Invalid character card format. Please use a SillyTavern v2 or v3 character card.");
             }
           } catch (error) {
             alert("Failed to load character card: " + error.message);
           }
         };
-        reader.onerror = function () {
-          alert("Failed to read character card file.");
+        reader.onerror = () => alert("Failed to read character card file.");
+        reader.readAsText(file);
+      }
+
+      // ── Evaluation Mode ───────────────────────────────────────────────────
+      function openEvalPanel() {
+        document.getElementById("eval-modal").classList.add("active");
+      }
+
+      function closeEvalPanel() {
+        document.getElementById("eval-modal").classList.remove("active");
+      }
+
+      function handleEvalFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (file.size > 20 * 1024 * 1024) { alert("JSONL file too large (max 20 MB)."); return; }
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          try {
+            evalItems = parseJsonlFile(e.target.result, file.name);
+            document.getElementById("run-eval-btn").disabled = evalItems.length === 0;
+            const sampleInput = document.getElementById("eval-sample");
+            sampleInput.max = evalItems.length;
+            if (parseInt(sampleInput.value) > evalItems.length) sampleInput.value = evalItems.length;
+            alert(`Loaded ${evalItems.length} evaluation items from ${file.name}.`);
+          } catch (err) {
+            alert("Failed to parse JSONL: " + err.message);
+          }
         };
         reader.readAsText(file);
       }
 
-      // Initialize on page load
+      function parseJsonlFile(text, filename) {
+        const items = [];
+        const lines = text.split(/\r?\n/).filter(l => l.trim());
+        for (const line of lines) {
+          try {
+            const rec = JSON.parse(line);
+            const messages = rec.messages || [];
+            let systemPrompt = null, userMsg = null, assistantMsg = null;
+            for (const m of messages) {
+              const role = (m.role || "").toLowerCase();
+              if (role === "system" && !systemPrompt) systemPrompt = m.content;
+              else if (role === "user" && !userMsg) userMsg = m.content;
+              else if (role === "assistant" && !assistantMsg) assistantMsg = m.content;
+            }
+            // Flat format fallback
+            if (!userMsg) userMsg = rec.prompt || rec.input || rec.question || null;
+            if (!assistantMsg) assistantMsg = rec.completion || rec.output || rec.answer || null;
+            if (userMsg) items.push({ source: filename, query: userMsg, expected: assistantMsg, system: systemPrompt });
+          } catch { /* skip malformed lines */ }
+        }
+        return items;
+      }
+
+      async function runEvaluation() {
+        if (!evalItems.length) { alert("Load a JSONL file first."); return; }
+        const sampleSize = Math.min(
+          parseInt(document.getElementById("eval-sample").value) || 30,
+          evalItems.length
+        );
+        const maxTokens = parseInt(document.getElementById("eval-max-tokens").value) || 300;
+        const temperature = parseFloat(document.getElementById("eval-temperature").value) || 0.7;
+        const apiUrl = document.getElementById("api-url-input").value.trim().replace(/\/$/, "");
+
+        // Fisher-Yates shuffle for unbiased sampling
+        const pool = [...evalItems];
+        for (let i = pool.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        const shuffled = pool.slice(0, sampleSize);
+
+        evalResults = [];
+        document.getElementById("run-eval-btn").disabled = true;
+        document.getElementById("export-eval-btn").disabled = true;
+        const progressArea = document.getElementById("eval-progress-area");
+        progressArea.style.display = "";
+        clearEvalDisplay();
+
+        for (let i = 0; i < shuffled.length; i++) {
+          const item = shuffled[i];
+          const pct = Math.round((i / shuffled.length) * 100);
+          document.getElementById("eval-progress-bar").style.width = pct + "%";
+          document.getElementById("eval-progress-text").textContent =
+            `[${i + 1}/${shuffled.length}] ${item.source} — ${item.query.slice(0, 60)}…`;
+
+          let response = "", tokens = 0, latencyMs = 0;
+          const t0 = performance.now();
+          if (apiUrl) {
+            try {
+              const sysPrompt = item.system || DEFAULT_SYSTEM_PROMPT;
+              const msgs = [
+                { role: "system", content: sysPrompt },
+                { role: "user", content: item.query },
+              ];
+              const data = await callNanEchoApi(msgs, maxTokens, temperature);
+              response = data ? (data.text || "") : "[No response]";
+              tokens = data ? (data.tokens_generated || 0) : 0;
+            } catch (err) {
+              response = `[Error: ${err.message}]`;
+            }
+          } else {
+            // Demo mode: score against expected or simulate
+            response = item.expected || generateDemoResponse(item.query);
+          }
+          latencyMs = Math.round(performance.now() - t0);
+
+          const scored = scoreResponse(response);
+          evalResults.push({
+            source: item.source,
+            query: item.query,
+            expected: item.expected,
+            response,
+            tokens,
+            latencyMs,
+            ...scored,
+          });
+
+          // Render row immediately
+          appendEvalRow(evalResults.length, evalResults[evalResults.length - 1]);
+          // Yield to browser
+          if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
+        }
+
+        document.getElementById("eval-progress-bar").style.width = "100%";
+        document.getElementById("eval-progress-text").textContent = "Complete.";
+
+        renderEvalSummary();
+        renderAdaptationProposals();
+        document.getElementById("run-eval-btn").disabled = false;
+        document.getElementById("export-eval-btn").disabled = false;
+        document.getElementById("eval-table-container").style.display = "";
+      }
+
+      function scoreResponse(response) {
+        if (!response || response.startsWith("[Error:")) {
+          return { echoScore: 0, keywordHits: [], dimensionHits: [], lengthAdequate: false, personaConsistent: false };
+        }
+        const lower = response.toLowerCase();
+        const keywordHits = ECHO_KEYWORDS.filter(kw => lower.includes(kw));
+        const dimensionHits = PERSONA_DIMENSIONS.filter(d => lower.includes(d));
+        const lengthAdequate = response.length >= 80;
+        const personaConsistent = keywordHits.length >= 2 && lengthAdequate;
+        const keywordScore = Math.min(1, keywordHits.length / 5);
+        const dimScore = Math.min(1, dimensionHits.length / 3);
+        const lenScore = Math.min(1, response.length / 200);
+        const echoScore = +(0.5 * keywordScore + 0.3 * dimScore + 0.2 * lenScore).toFixed(3);
+        return { echoScore, keywordHits, dimensionHits, lengthAdequate, personaConsistent };
+      }
+
+      function clearEvalDisplay() {
+        document.getElementById("eval-summary").style.display = "none";
+        document.getElementById("eval-summary").innerHTML = "";
+        document.getElementById("eval-proposals").style.display = "none";
+        document.getElementById("proposals-list").innerHTML = "";
+        document.getElementById("eval-table-container").style.display = "none";
+        document.getElementById("eval-results-tbody").innerHTML = "";
+      }
+
+      function appendEvalRow(idx, r) {
+        const tbody = document.getElementById("eval-results-tbody");
+        const badgeClass = r.echoScore >= 0.65 ? "score-high" : r.echoScore >= 0.35 ? "score-mid" : "score-low";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${idx}</td>
+          <td style="font-size:0.75rem;color:var(--text-secondary);">${escapeHtml(r.source)}</td>
+          <td class="cell-query" title="${escapeHtml(r.query)}">${escapeHtml(r.query.slice(0, 80))}</td>
+          <td class="cell-response" title="${escapeHtml(r.response)}">${escapeHtml(r.response.slice(0, 120))}</td>
+          <td><span class="score-badge ${badgeClass}">${r.echoScore.toFixed(3)}</span></td>
+          <td class="persona-icon">${r.personaConsistent ? "✅" : "❌"}</td>
+          <td style="white-space:nowrap;">${r.latencyMs} ms</td>`;
+        tbody.appendChild(tr);
+        document.getElementById("eval-table-container").style.display = "";
+      }
+
+      function renderEvalSummary() {
+        if (!evalResults.length) return;
+        const n = evalResults.length;
+        const avgScore = (evalResults.reduce((s, r) => s + r.echoScore, 0) / n).toFixed(3);
+        const personaPct = Math.round(evalResults.filter(r => r.personaConsistent).length / n * 100);
+        const avgLatency = Math.round(evalResults.reduce((s, r) => s + r.latencyMs, 0) / n);
+        const allText = evalResults.map(r => r.response.toLowerCase()).join(" ");
+        const kwCov = Math.round(ECHO_KEYWORDS.filter(kw => allText.includes(kw)).length / ECHO_KEYWORDS.length * 100);
+        const dimCov = Math.round(PERSONA_DIMENSIONS.filter(d => allText.includes(d)).length / PERSONA_DIMENSIONS.length * 100);
+
+        const cards = [
+          ["Avg Fidelity Score", avgScore, "higher is better"],
+          ["Persona Consistent", personaPct + "%", "responses w/ ≥2 keywords"],
+          ["Keyword Coverage", kwCov + "%", "of EchoSelf keywords seen"],
+          ["Dimension Coverage", dimCov + "%", "of 8 persona dimensions"],
+          ["Avg Latency", avgLatency + " ms", "per response"],
+          ["Total Queries", n, "evaluated"],
+        ];
+        const summaryEl = document.getElementById("eval-summary");
+        summaryEl.innerHTML = cards.map(([label, val, sub]) =>
+          `<div class="eval-metric-card">
+            <div class="metric-value">${val}</div>
+            <div class="metric-label">${label}</div>
+            <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:0.1rem;">${sub}</div>
+          </div>`
+        ).join("");
+        summaryEl.style.display = "grid";
+      }
+
+      function renderAdaptationProposals() {
+        if (!evalResults.length) return;
+        const n = evalResults.length;
+        const avgScore = evalResults.reduce((s, r) => s + r.echoScore, 0) / n;
+        const personaPct = evalResults.filter(r => r.personaConsistent).length / n;
+        const allText = evalResults.map(r => r.response.toLowerCase()).join(" ");
+        const kwCov = ECHO_KEYWORDS.filter(kw => allText.includes(kw)).length / ECHO_KEYWORDS.length;
+        const dimCov = PERSONA_DIMENSIONS.filter(d => allText.includes(d)).length / PERSONA_DIMENSIONS.length;
+        const lengthPct = evalResults.filter(r => r.lengthAdequate).length / n;
+
+        const proposals = [];
+        if (avgScore < 0.4) {
+          proposals.push("🔴 CRITICAL — avg fidelity " + avgScore.toFixed(3) + " is very low. " +
+            "Increase max_iters in <code>NanEcho/config/train_nanecho.py</code> to ≥50 000, " +
+            "and rebuild training data: <code>prepare_nanecho.py --echo_depth=7 --persona_weight=0.95</code>");
+        } else if (avgScore < 0.65) {
+          proposals.push("🟡 LOW fidelity (" + avgScore.toFixed(3) + "). Set max_iters=50000 and " +
+            "learning_rate=6e-5 in <code>NanEcho/config/train_nanecho.py</code>, " +
+            "enable curriculum phase 4 (Recursive Reasoning) in the same file.");
+        } else {
+          proposals.push("🟢 Fidelity (" + avgScore.toFixed(3) + ") is adequate. Target >0.80 by raising " +
+            "persona_weight to 0.95 and running the relentless-persona workflow.");
+        }
+        if (kwCov < 0.4) proposals.push(
+          "⚠️ Only " + Math.round(kwCov * 100) + "% of EchoSelf keywords appear. " +
+          "Add more Echo Self templates to <code>prepare_nanecho.py</code> covering endocrine dynamics and hypergraph terms."
+        );
+        if (dimCov < 0.5) proposals.push(
+          "⚠️ Only " + Math.round(dimCov * 100) + "% of persona dimensions referenced. " +
+          "Balance dimension_weights in <code>nanecho_config.json</code> and include dimension-labelled Q&A pairs."
+        );
+        if (lengthPct < 0.6) proposals.push(
+          "⚠️ Only " + Math.round(lengthPct * 100) + "% of responses are adequate length. " +
+          "Increase max_new_tokens to 400–600, ensure training examples have ≥100 char assistant turns, reduce temperature to 0.5–0.6."
+        );
+        if (personaPct < 0.5) proposals.push(
+          "⚠️ Only " + Math.round(personaPct * 100) + "% persona-consistent. " +
+          "Inject the canonical Deep Tree Echo system prompt into every training example. " +
+          "Raise dropout to 0.15 to reduce over-fitting to off-persona patterns."
+        );
+        proposals.push(
+          "💡 TRAINING PATTERN: Use a persona-first curriculum — front-load echo_self templates each epoch " +
+          "before broader corpus mixing to stabilise identity anchoring."
+        );
+        proposals.push(
+          "💡 EVAL LOOP: Schedule this evaluation after every 5 000 training iterations using " +
+          "<code>automated_loop.py</code>. Compare avg_echo_score trends over time."
+        );
+        if (avgScore < 0.7) proposals.push(
+          "💡 MODEL PARAMS: If fidelity remains below 0.70 after 50 000 iters, consider increasing " +
+          "n_embd 768→1024 and n_head 12→16 for greater persona-specific capacity."
+        );
+
+        const listEl = document.getElementById("proposals-list");
+        listEl.innerHTML = proposals.map(p => `<li>${p}</li>`).join("");
+        document.getElementById("eval-proposals").style.display = "";
+      }
+
+      function exportEvalResults() {
+        if (!evalResults.length) return;
+        const n = evalResults.length;
+        const avgScore = (evalResults.reduce((s, r) => s + r.echoScore, 0) / n).toFixed(3);
+        const personaPct = (evalResults.filter(r => r.personaConsistent).length / n).toFixed(3);
+        const allText = evalResults.map(r => r.response.toLowerCase()).join(" ");
+        const kwCov = (ECHO_KEYWORDS.filter(kw => allText.includes(kw)).length / ECHO_KEYWORDS.length).toFixed(3);
+        const dimCov = (PERSONA_DIMENSIONS.filter(d => allText.includes(d)).length / PERSONA_DIMENSIONS.length).toFixed(3);
+
+        const report = {
+          timestamp: new Date().toISOString(),
+          server: document.getElementById("api-url-input").value || "demo",
+          total_items: n,
+          avg_echo_score: +avgScore,
+          persona_consistent_pct: +personaPct,
+          keyword_coverage: +kwCov,
+          dimension_coverage: +dimCov,
+          results: evalResults,
+        };
+        const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `echoself_eval_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+
+      // ── Bootstrap ──────────────────────────────────────────────────────────
       init();
     </script>
   </body>

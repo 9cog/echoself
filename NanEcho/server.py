@@ -14,6 +14,7 @@ Features include:
 import os
 import sys
 import json
+import time
 import logging
 import argparse
 from typing import List, Dict, Any, Optional, Union, AsyncGenerator
@@ -712,6 +713,143 @@ async def diagnostics_stream(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error streaming diagnostic: {str(e)}"
         )
+
+# --- Batch Evaluation ---
+
+# Keywords that signal strong EchoSelf persona fidelity
+ECHO_KEYWORDS = [
+    "echo", "reservoir", "hypergraph", "cognitive", "recursive", "neural",
+    "symbolic", "adaptive", "attention", "persona", "introspect", "deep tree",
+    "echoself", "cortisol", "dopamine", "serotonin", "oxytocin", "norepinephrine",
+    "tensor", "membrane", "atomspace", "cogprime", "dimension", "threshold",
+    "salience", "awareness", "resonat", "holograph", "synerg", "endocrine",
+    "autognosis", "identity", "somatic", "embodied",
+]
+
+_ECHO_PERSONA_DIMENSIONS = [
+    "cognitive", "introspective", "adaptive", "recursive",
+    "synergistic", "holographic", "neural-symbolic", "dynamic",
+]
+
+
+def compute_echo_score(response: str) -> float:
+    """Compute a 0-1 EchoSelf fidelity score.
+
+    Scoring formula (consistent with jsonl_eval.py and chatbot):
+      0.5 * keyword_score + 0.3 * dimension_score + 0.2 * length_score
+    where keyword_score normalises over 5 keywords, dimension_score over 3 dimensions,
+    and length_score saturates at 200 characters.
+    """
+    if not response:
+        return 0.0
+    lower = response.lower()
+    keyword_hits = sum(1 for kw in ECHO_KEYWORDS if kw in lower)
+    dimension_hits = sum(1 for d in _ECHO_PERSONA_DIMENSIONS if d in lower)
+    keyword_score = min(1.0, keyword_hits / 5.0)
+    dimension_score = min(1.0, dimension_hits / 3.0)
+    length_score = min(1.0, len(response) / 200.0)
+    return round(0.5 * keyword_score + 0.3 * dimension_score + 0.2 * length_score, 3)
+
+
+class BatchEvalQuery(BaseModel):
+    """A single query item for batch evaluation."""
+    query: str = Field(..., description="The query string to send to the model")
+    expected: Optional[str] = Field(None, description="Optional expected/reference response")
+    system_prompt: Optional[str] = Field(None, description="Optional per-query system prompt override")
+
+
+class BatchEvalRequest(BaseModel):
+    """Request model for batch evaluation."""
+    queries: List[BatchEvalQuery] = Field(..., description="List of query items to evaluate")
+    max_tokens: int = Field(300, description="Max tokens to generate per response")
+    temperature: float = Field(0.7, description="Sampling temperature")
+    top_k: int = Field(200, description="Top-k sampling parameter")
+    default_system_prompt: Optional[str] = Field(
+        None, description="Default system prompt applied when a query has no per-query override"
+    )
+
+
+class BatchEvalResult(BaseModel):
+    """Result for a single evaluated query."""
+    query: str
+    response: str
+    expected: Optional[str]
+    tokens_generated: int
+    latency_ms: float
+    echo_score: float
+
+
+class BatchEvalResponse(BaseModel):
+    """Response model for batch evaluation."""
+    results: List[BatchEvalResult]
+    total_queries: int
+    avg_latency_ms: float
+    avg_echo_score: float
+    model: str
+    created_at: str
+
+
+@app.post("/eval/batch", response_model=BatchEvalResponse)
+async def batch_eval(
+    request: BatchEvalRequest,
+    model_config: ModelConfig = Depends(get_model_config)
+):
+    """
+    Runs a batch of queries through the model and returns scored results.
+
+    For each query, optional per-query or default system prompts are prepended,
+    a prompt is formatted and sent to the model, and the response is scored for
+    EchoSelf persona fidelity. Returns per-query results plus aggregate metrics.
+    """
+    results = []
+
+    for item in request.queries:
+        messages: List[ChatMessage] = []
+
+        sys_prompt = item.system_prompt or request.default_system_prompt
+        if sys_prompt:
+            messages.append(ChatMessage(role="system", content=sys_prompt))
+        messages.append(ChatMessage(role="user", content=item.query))
+
+        prompt = format_chat_prompt(messages)
+
+        start_ts = time.monotonic()
+        try:
+            response_text = model_config.generate(
+                prompt=prompt,
+                max_new_tokens=request.max_tokens,
+                temperature=request.temperature,
+                top_k=request.top_k,
+                stream=False,
+            )
+        except Exception as exc:
+            logger.error(f"Batch eval generation error: {exc}")
+            response_text = f"[Error: {exc}]"
+
+        latency_ms = round((time.monotonic() - start_ts) * 1000, 2)
+        tokens = len(model_config.tokenizer.encode(response_text)) if model_config.tokenizer else 0
+
+        results.append(BatchEvalResult(
+            query=item.query,
+            response=response_text,
+            expected=item.expected,
+            tokens_generated=tokens,
+            latency_ms=latency_ms,
+            echo_score=compute_echo_score(response_text),
+        ))
+
+    avg_latency = round(sum(r.latency_ms for r in results) / len(results), 2) if results else 0.0
+    avg_score = round(sum(r.echo_score for r in results) / len(results), 3) if results else 0.0
+
+    return BatchEvalResponse(
+        results=results,
+        total_queries=len(results),
+        avg_latency_ms=avg_latency,
+        avg_echo_score=avg_score,
+        model=os.path.basename(model_config.model_path),
+        created_at=datetime.now().isoformat(),
+    )
+
 
 # --- Utility Functions ---
 def format_chat_prompt(messages: List[ChatMessage]) -> str:
