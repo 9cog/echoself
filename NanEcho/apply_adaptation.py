@@ -170,8 +170,8 @@ def _check_regression(
     return False
 
 
-def _revert_adapted_config(output_path: str, history: List[Dict[str, Any]]) -> bool:
-    """Revert adapted_config.json to the previous cycle's state.
+def _revert_adapted_config(output_path: str, config_path: str, history: List[Dict[str, Any]]) -> bool:
+    """Revert adapted_config.json and nanecho_config.json to pre-regression state.
 
     Returns True if reverted, False if no prior state available.
     """
@@ -193,7 +193,23 @@ def _revert_adapted_config(output_path: str, history: List[Dict[str, Any]]) -> b
             with open(output_path, "w", encoding="utf-8") as fh:
                 json.dump(revert_to, fh, indent=2)
             print(f"⏪ Reverted adapted_config.json to pre-regression state")
-            return True
+
+        # Also restore the base nanecho_config.json if a snapshot was saved
+        config_snapshot = last.get("config_snapshot")
+        if config_snapshot and isinstance(config_snapshot, dict) and len(history) >= 2:
+            # Restore the config that existed before the regressed cycle
+            second_last = history[-2]
+            prev_config = second_last.get("config_snapshot")
+            if prev_config and isinstance(prev_config, dict):
+                with open(config_path, "w", encoding="utf-8") as fh:
+                    json.dump(prev_config, fh, indent=2)
+                print(f"⏪ Restored nanecho_config.json to pre-regression state")
+        elif not config_snapshot:
+            # No config snapshot in history — at minimum, re-apply the reverted
+            # delta on top of the original base config to keep them consistent
+            print(f"⚠️  No config_snapshot in history — base config may be stale")
+
+        return True
     return False
 
 
@@ -366,7 +382,11 @@ def _apply_eval_report_rules(
         weights = echo_self.get("dimension_weights", {})
         if weights:
             avg_w = sum(weights.values()) / len(weights) if weights else 0.125
-            rebalanced = {k: round(max(v, avg_w), 4) for k, v in weights.items()}
+            rebalanced = {k: max(v, avg_w) for k, v in weights.items()}
+            # Normalize so total weight is preserved at 1.0
+            total = sum(rebalanced.values())
+            if total > 0:
+                rebalanced = {k: round(v / total, 4) for k, v in rebalanced.items()}
             if rebalanced != weights:
                 echo_self["dimension_weights"] = rebalanced
                 changes.append(
@@ -612,7 +632,7 @@ def apply_adaptation(
 
     # --- Regression detection -----------------------------------------------
     if _check_regression(history, overall_fidelity):
-        reverted = _revert_adapted_config(dest, history)
+        reverted = _revert_adapted_config(dest, config_path, history)
         if reverted:
             # Log the revert in history
             revert_entry = {
@@ -766,6 +786,7 @@ def apply_adaptation(
             "total_changes": len(changes),
             "changes_applied": changes,
             "delta_snapshot": _load_json(dest) if changes and os.path.isfile(dest) else {},
+            "config_snapshot": config_before,  # Full base config for revert support
             "delta_clamp": DELTA_CLAMP,
             "max_iters_before": max_iters_current,
             "lr_before": lr_current,
