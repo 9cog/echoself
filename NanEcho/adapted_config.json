@@ -1,19 +1,19 @@
 {
   "training": {
     "learning_rate": 6e-05,
-    "max_iters": 168750,
-    "lr_decay_iters": 168750
+    "max_iters": 200000,
+    "lr_decay_iters": 200000
   },
   "echo_self": {
     "dimension_weights": {
-      "cognitive": 0.1305,
-      "introspective": 0.1305,
-      "adaptive": 0.1305,
-      "recursive": 0.1305,
-      "synergistic": 0.1195,
-      "holographic": 0.1195,
-      "neural_symbolic": 0.1195,
-      "dynamic": 0.1195
+      "cognitive": 0.1277,
+      "introspective": 0.1277,
+      "adaptive": 0.1277,
+      "recursive": 0.1277,
+      "synergistic": 0.1223,
+      "holographic": 0.1223,
+      "neural_symbolic": 0.1223,
+      "dynamic": 0.1223
     },
     "max_recursion_depth": 14
   }
