@@ -408,10 +408,11 @@ jobs:
         # Default to CI parameters (smaller model, quick training for testing) unless full training requested
         if [[ "${{ github.event_name }}" != "workflow_dispatch" || "${{ github.event.inputs.training_type }}" == "ci" ]]; then
           echo "CI training mode - using reduced parameters"
-          echo "n_layer=${ADAPTED_N_LAYER:-4}" >> $GITHUB_OUTPUT
-          echo "n_head=${ADAPTED_N_HEAD:-4}" >> $GITHUB_OUTPUT
-          echo "n_embd=${ADAPTED_N_EMBD:-256}" >> $GITHUB_OUTPUT
-          echo "max_iters=${ADAPTED_MAX_ITERS:-200}" >> $GITHUB_OUTPUT
+          # CI mode: hardcoded architecture/scale params — only learning_rate from adapted config
+          echo "n_layer=4" >> $GITHUB_OUTPUT
+          echo "n_head=4" >> $GITHUB_OUTPUT
+          echo "n_embd=256" >> $GITHUB_OUTPUT
+          echo "max_iters=200" >> $GITHUB_OUTPUT
           echo "batch_size=2" >> $GITHUB_OUTPUT
           echo "learning_rate=${ADAPTED_LR:-2e-4}" >> $GITHUB_OUTPUT
           echo "output_dir=out-nanecho-ci" >> $GITHUB_OUTPUT

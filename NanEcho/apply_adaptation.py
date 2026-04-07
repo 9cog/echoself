@@ -56,13 +56,21 @@ def _latest_eval_report(eval_dir: str) -> Optional[Dict[str, Any]]:
 # Adaptation rules
 # ---------------------------------------------------------------------------
 
+# Hard cap to prevent unbounded growth across adaptation cycles.
+MAX_ITERS_CAP = 200000
+
+
 def _apply_fidelity_rules(
     config: Dict[str, Any],
     overall_fidelity: float,
-    max_iters_current: int,
+    max_iters_original: int,
     changes: List[str],
 ) -> None:
-    """Bump model / training parameters when persona fidelity is low."""
+    """Bump model / training parameters when persona fidelity is low.
+
+    *max_iters_original* is the snapshot taken **before** any rules run.
+    All multiplications are based on this original value to avoid compounding.
+    """
 
     model = config.setdefault("model", {})
     training = config.setdefault("training", {})
@@ -71,7 +79,7 @@ def _apply_fidelity_rules(
 
     if overall_fidelity < 0.40:
         # Critical — aggressive parameter increase
-        new_max = max(50000, int(max_iters_current * 1.5))
+        new_max = min(max(50000, int(max_iters_original * 1.5)), MAX_ITERS_CAP)
         if new_max != training.get("max_iters"):
             training["max_iters"] = new_max
             training["lr_decay_iters"] = new_max
@@ -99,7 +107,7 @@ def _apply_fidelity_rules(
 
     elif overall_fidelity < 0.65:
         # Low — moderate increase
-        new_max = int(max_iters_current * 1.5)
+        new_max = min(int(max_iters_original * 1.5), MAX_ITERS_CAP)
         if new_max != training.get("max_iters"):
             training["max_iters"] = new_max
             training["lr_decay_iters"] = new_max
@@ -109,7 +117,7 @@ def _apply_fidelity_rules(
             training["learning_rate"] = 6e-5
             changes.append("learning_rate → 6e-5 (low fidelity)")
 
-    elif overall_fidelity < 0.70 and max_iters_current >= 50000:
+    elif overall_fidelity < 0.70 and max_iters_original >= 50000:
         # Borderline after substantial training — bump model capacity
         if model.get("n_embd", 768) < 1024:
             model["n_embd"] = 1024
@@ -169,9 +177,14 @@ def _apply_eval_report_rules(
 def _apply_trigger_rules(
     config: Dict[str, Any],
     trigger: Dict[str, Any],
+    max_iters_original: int,
     changes: List[str],
 ) -> None:
-    """Apply hyper-parameter hints from ``next_cycle_trigger.json``."""
+    """Apply hyper-parameter hints from ``next_cycle_trigger.json``.
+
+    *max_iters_original* is the pre-mutation snapshot to avoid compounding.
+    If a higher-priority rule already changed max_iters, this rule is skipped.
+    """
 
     training = config.setdefault("training", {})
     hp = trigger.get("hyperparameter_adjustments", {})
@@ -191,34 +204,39 @@ def _apply_trigger_rules(
             changes.append(f"learning_rate {current_lr} → {new_lr} (trigger hint: decrease)")
 
     iters_hint = hp.get("max_iters")
-    if iters_hint == "increase":
-        current = training.get("max_iters", 50000)
-        new_val = int(current * 1.25)
-        if new_val != current:
+    # Only apply if no higher-priority rule already changed max_iters
+    if iters_hint == "increase" and training.get("max_iters") == max_iters_original:
+        new_val = min(int(max_iters_original * 1.25), MAX_ITERS_CAP)
+        if new_val != max_iters_original:
             training["max_iters"] = new_val
             training["lr_decay_iters"] = new_val
-            changes.append(f"max_iters {current} → {new_val} (trigger hint: increase)")
+            changes.append(f"max_iters {max_iters_original} → {new_val} (trigger hint: increase)")
 
 
 def _apply_recommendation_rules(
     config: Dict[str, Any],
     recommendations: Dict[str, Any],
+    max_iters_original: int,
     changes: List[str],
 ) -> None:
-    """Translate high-level recommendation strings into concrete config tweaks."""
+    """Translate high-level recommendation strings into concrete config tweaks.
+
+    *max_iters_original* is the pre-mutation snapshot to avoid compounding.
+    If a higher-priority rule already changed max_iters, this rule is skipped.
+    """
 
     training = config.setdefault("training", {})
     echo_self = config.setdefault("echo_self", {})
 
     hp_adjustments = recommendations.get("hyperparameter_adjustments", [])
 
-    if "extend_training_duration" in hp_adjustments:
-        current = training.get("max_iters", 50000)
-        new_val = int(current * 1.25)
-        if new_val != current:
+    # Only apply if no higher-priority rule already changed max_iters
+    if "extend_training_duration" in hp_adjustments and training.get("max_iters") == max_iters_original:
+        new_val = min(int(max_iters_original * 1.25), MAX_ITERS_CAP)
+        if new_val != max_iters_original:
             training["max_iters"] = new_val
             training["lr_decay_iters"] = new_val
-            changes.append(f"max_iters {current} → {new_val} (recommendation: extend_training_duration)")
+            changes.append(f"max_iters {max_iters_original} → {new_val} (recommendation: extend_training_duration)")
 
     if "balance_persona_weights" in hp_adjustments:
         weights = echo_self.get("dimension_weights", {})
@@ -288,9 +306,11 @@ def apply_adaptation(
     print(f"📊 Current max_iters: {max_iters_current}")
 
     # --- Apply rules in priority order --------------------------------------
+    # Snapshot max_iters BEFORE any mutations so all rules multiply from the
+    # same base value, preventing compounding (e.g. 1.5× then 1.25× then 1.25×).
     _apply_fidelity_rules(config, overall_fidelity, max_iters_current, changes)
-    _apply_recommendation_rules(config, recommendations, changes)
-    _apply_trigger_rules(config, trigger, changes)
+    _apply_recommendation_rules(config, recommendations, max_iters_current, changes)
+    _apply_trigger_rules(config, trigger, max_iters_current, changes)
     if eval_report:
         _apply_eval_report_rules(config, eval_report, changes)
 
