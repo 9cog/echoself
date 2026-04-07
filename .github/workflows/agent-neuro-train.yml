@@ -436,9 +436,6 @@ jobs:
         if [ -f "echoself/NanEcho/adapted_config.json" ]; then
           ADAPTED_CONFIG="echoself/NanEcho/adapted_config.json"
           echo "📄 Found adapted_config.json from previous adaptation cycle"
-        elif [ -f "echoself/nanecho_config.json" ]; then
-          ADAPTED_CONFIG="echoself/nanecho_config.json"
-          echo "📄 Using nanecho_config.json as parameter source"
         fi
 
         if [ -n "$ADAPTED_CONFIG" ]; then
@@ -836,7 +833,7 @@ jobs:
 
         echo "🚀 Starting NanEcho server for JSONL evaluation..."
         python NanEcho/neserver.py \
-          --checkpoint nanoGPT/${{ steps.params.outputs.output_dir }}/ckpt.pt \
+          --checkpoint ../nanoGPT/${{ steps.params.outputs.output_dir }}/ckpt.pt \
           --port 8000 &
         SERVER_PID=$!
 
@@ -912,8 +909,8 @@ jobs:
         python apply_adaptation.py \
           --analysis automation_analysis.json \
           --trigger next_cycle_trigger.json \
-          --config ../../nanecho_config.json \
-          --eval-report ../../.training-progress/eval_history/ \
+          --config ../nanecho_config.json \
+          --eval-report ../.training-progress/eval_history/ \
           --output adapted_config.json
 
     - name: Trigger next training cycle if needed
