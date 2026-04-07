@@ -294,18 +294,35 @@ def apply_adaptation(
     if eval_report:
         _apply_eval_report_rules(config, eval_report, changes)
 
-    # --- Write output -------------------------------------------------------
+    # --- Build delta of only changed keys ------------------------------------
+    # We write ONLY the keys that were actually modified to adapted_config.json.
+    # Writing the full base config would leak full-training values (n_layer=12,
+    # max_iters=50000, etc.) into CI/scheduled runs that expect smaller defaults.
+    delta: Dict[str, Any] = {}
+    for section in ("model", "training", "echo_self", "data"):
+        before_section = config_before.get(section, {})
+        after_section = config.get(section, {})
+        changed_keys = {
+            k: v for k, v in after_section.items()
+            if before_section.get(k) != v
+        }
+        if changed_keys:
+            delta[section] = changed_keys
+
     dest = output_path or config_path
 
-    # Only write adapted_config.json when actual changes were made.
-    # Writing the full base config with no changes would cause the workflow
-    # params step to read full-training values (n_layer=12, max_iters=50000)
-    # and override the per-mode CI/scheduled defaults.
-    if changes:
+    if changes and delta:
         os.makedirs(os.path.dirname(dest) or ".", exist_ok=True)
         with open(dest, "w", encoding="utf-8") as fh:
+            json.dump(delta, fh, indent=2)
+        print(f"\n💾 Adapted config (delta only) written to: {dest}")
+
+        # Also update the source nanecho_config.json with the full config
+        # so it reflects the latest adapted state for training scripts
+        # that read it directly.
+        with open(config_path, "w", encoding="utf-8") as fh:
             json.dump(config, fh, indent=2)
-        print(f"\n💾 Adapted config written to: {dest}")
+        print(f"💾 Updated source config: {config_path}")
     else:
         print(f"\n⏭️  No changes — skipping write to {dest}")
 
@@ -317,6 +334,7 @@ def apply_adaptation(
         "eval_report_used": bool(eval_report),
         "overall_fidelity": overall_fidelity,
         "changes_applied": changes,
+        "changes_delta": delta,
         "total_changes": len(changes),
         "config_output": dest if changes else None,
     }
