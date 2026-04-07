@@ -19,7 +19,7 @@ import {
   ConsensusVote as _ConsensusVote,
 } from "../types/EchoSpace";
 
-import Mem0AIService from "./mem0aiService";
+import { Mem0AIService } from "./mem0aiService";
 import { supabase as _supabase } from "./supabaseClient";
 
 export class EchoSpaceService {
