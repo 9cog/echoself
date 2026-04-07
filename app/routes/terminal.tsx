@@ -1,11 +1,18 @@
 import { json, type ActionFunctionArgs } from "@remix-run/node";
 import { useActionData, useLoaderData } from "@remix-run/react";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { getFileSystemService } from "~/services/fileSystem.server";
 import { getScriptRunnerService } from "~/services/scriptRunner.server";
 import { getPythonRunnerService } from "~/services/pythonRunner.server";
-import TerminalComponent from "~/components/TerminalComponent";
 import process from "node:process";
+
+const TerminalComponent = lazy(() => import("~/components/TerminalComponent.client"));
+
+function ClientOnly({ children, fallback }: { children: () => React.ReactNode; fallback?: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted ? <>{children()}</> : <>{fallback}</>;
+}
 
 export async function loader() {
   return json({
@@ -195,12 +202,18 @@ export default function TerminalPage() {
       </header>
 
       <main className="flex-1 overflow-hidden">
-        <TerminalComponent
-          onCommand={handleCommand}
-          initialOutput={output}
-          commandHistory={commandHistory}
-          isBusy={isBusy}
-        />
+        <ClientOnly fallback={<div className="h-full w-full flex items-center justify-center text-sm opacity-50">Loading terminal...</div>}>
+          {() => (
+            <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-sm opacity-50">Loading terminal...</div>}>
+              <TerminalComponent
+                onCommand={handleCommand}
+                initialOutput={output}
+                commandHistory={commandHistory}
+                isBusy={isBusy}
+              />
+            </Suspense>
+          )}
+        </ClientOnly>
       </main>
 
       <footer className="bg-card text-card-foreground px-6 py-2 border-t border-border">
