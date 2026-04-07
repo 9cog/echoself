@@ -1,21 +1,18 @@
 {
-  "timestamp": "2026-04-07T15:20:39.044188+00:00",
+  "timestamp": "2026-04-07T15:39:46.104730+00:00",
   "analysis_source": "automation_analysis.json",
   "trigger_source": "next_cycle_trigger.json",
   "eval_report_used": true,
-  "overall_fidelity": 0.49441111111111113,
+  "overall_fidelity": 0.49729999999999996,
   "changes_applied": [
-    "max_iters \u2192 75000 (fidelity < 0.65)",
-    "learning_rate \u2192 6e-5 (low fidelity)",
-    "max_iters 75000 \u2192 93750 (recommendation: extend_training_duration)",
+    "max_iters \u2192 140625 (fidelity < 0.65)",
     "Rebalanced dimension_weights (dimension_coverage=0.00 < 0.50)",
-    "max_recursion_depth 5 \u2192 10 (keyword_coverage=0.00 < 0.40)"
+    "max_recursion_depth 10 \u2192 14 (keyword_coverage=0.00 < 0.40)"
   ],
   "changes_delta": {
     "training": {
-      "learning_rate": 6e-05,
-      "max_iters": 93750,
-      "lr_decay_iters": 93750
+      "max_iters": 140625,
+      "lr_decay_iters": 140625
     },
     "echo_self": {
       "dimension_weights": {
@@ -23,14 +20,14 @@
         "introspective": 0.15,
         "adaptive": 0.15,
         "recursive": 0.15,
-        "synergistic": 0.125,
-        "holographic": 0.125,
-        "neural_symbolic": 0.125,
-        "dynamic": 0.125
+        "synergistic": 0.1375,
+        "holographic": 0.1375,
+        "neural_symbolic": 0.1375,
+        "dynamic": 0.1375
       },
-      "max_recursion_depth": 10
+      "max_recursion_depth": 14
     }
   },
-  "total_changes": 5,
+  "total_changes": 3,
   "config_output": "adapted_config.json"
 }
