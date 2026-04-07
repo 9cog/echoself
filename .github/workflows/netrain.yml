@@ -387,33 +387,52 @@ jobs:
           echo "relentless_persona_mode=False" >> $GITHUB_OUTPUT
         fi
         
+        # -----------------------------------------------------------
+        # Check for adapted config from a previous cycle's adaptation
+        # -----------------------------------------------------------
+        ADAPTED_CONFIG=""
+        if [ -f "echoself/NanEcho/adapted_config.json" ]; then
+          ADAPTED_CONFIG="echoself/NanEcho/adapted_config.json"
+          echo "📄 Found adapted_config.json from previous adaptation cycle"
+        fi
+
+        if [ -n "$ADAPTED_CONFIG" ]; then
+          echo "🔍 Reading adapted parameters from $ADAPTED_CONFIG"
+          ADAPTED_N_LAYER=$(python3 -c "import json; c=json.load(open('$ADAPTED_CONFIG')); print(c.get('model',{}).get('n_layer',''))" 2>/dev/null || echo "")
+          ADAPTED_N_HEAD=$(python3 -c "import json; c=json.load(open('$ADAPTED_CONFIG')); print(c.get('model',{}).get('n_head',''))" 2>/dev/null || echo "")
+          ADAPTED_N_EMBD=$(python3 -c "import json; c=json.load(open('$ADAPTED_CONFIG')); print(c.get('model',{}).get('n_embd',''))" 2>/dev/null || echo "")
+          ADAPTED_LR=$(python3 -c "import json; c=json.load(open('$ADAPTED_CONFIG')); print(c.get('training',{}).get('learning_rate',''))" 2>/dev/null || echo "")
+          ADAPTED_MAX_ITERS=$(python3 -c "import json; c=json.load(open('$ADAPTED_CONFIG')); print(c.get('training',{}).get('max_iters',''))" 2>/dev/null || echo "")
+        fi
+
         # Default to CI parameters (smaller model, quick training for testing) unless full training requested
         if [[ "${{ github.event_name }}" != "workflow_dispatch" || "${{ github.event.inputs.training_type }}" == "ci" ]]; then
           echo "CI training mode - using reduced parameters"
+          # CI mode: hardcoded architecture/scale params — only learning_rate from adapted config
           echo "n_layer=4" >> $GITHUB_OUTPUT
           echo "n_head=4" >> $GITHUB_OUTPUT
           echo "n_embd=256" >> $GITHUB_OUTPUT
           echo "max_iters=200" >> $GITHUB_OUTPUT
           echo "batch_size=2" >> $GITHUB_OUTPUT
-          echo "learning_rate=2e-4" >> $GITHUB_OUTPUT
+          echo "learning_rate=${ADAPTED_LR:-2e-4}" >> $GITHUB_OUTPUT
           echo "output_dir=out-nanecho-ci" >> $GITHUB_OUTPUT
         elif [[ "${{ github.event_name }}" == "schedule" ]]; then
           echo "Scheduled relentless training mode - using optimized parameters for Deep Tree Echo"
-          echo "n_layer=6" >> $GITHUB_OUTPUT
-          echo "n_head=6" >> $GITHUB_OUTPUT
-          echo "n_embd=384" >> $GITHUB_OUTPUT
-          echo "max_iters=500" >> $GITHUB_OUTPUT
+          echo "n_layer=${ADAPTED_N_LAYER:-6}" >> $GITHUB_OUTPUT
+          echo "n_head=${ADAPTED_N_HEAD:-6}" >> $GITHUB_OUTPUT
+          echo "n_embd=${ADAPTED_N_EMBD:-384}" >> $GITHUB_OUTPUT
+          echo "max_iters=${ADAPTED_MAX_ITERS:-500}" >> $GITHUB_OUTPUT
           echo "batch_size=4" >> $GITHUB_OUTPUT
-          echo "learning_rate=1e-4" >> $GITHUB_OUTPUT
+          echo "learning_rate=${ADAPTED_LR:-1e-4}" >> $GITHUB_OUTPUT
           echo "output_dir=out-nanecho-relentless" >> $GITHUB_OUTPUT
         else
-          echo "Full training mode - using specified parameters"
-          echo "n_layer=${{ github.event.inputs.n_layer }}" >> $GITHUB_OUTPUT
-          echo "n_head=${{ github.event.inputs.n_head }}" >> $GITHUB_OUTPUT
-          echo "n_embd=${{ github.event.inputs.n_embd }}" >> $GITHUB_OUTPUT
-          echo "max_iters=${{ github.event.inputs.max_iters }}" >> $GITHUB_OUTPUT
+          echo "Full training mode - using specified parameters (adapted config overrides where present)"
+          echo "n_layer=${ADAPTED_N_LAYER:-${{ github.event.inputs.n_layer }}}" >> $GITHUB_OUTPUT
+          echo "n_head=${ADAPTED_N_HEAD:-${{ github.event.inputs.n_head }}}" >> $GITHUB_OUTPUT
+          echo "n_embd=${ADAPTED_N_EMBD:-${{ github.event.inputs.n_embd }}}" >> $GITHUB_OUTPUT
+          echo "max_iters=${ADAPTED_MAX_ITERS:-${{ github.event.inputs.max_iters }}}" >> $GITHUB_OUTPUT
           echo "batch_size=${{ github.event.inputs.batch_size }}" >> $GITHUB_OUTPUT
-          echo "learning_rate=${{ github.event.inputs.learning_rate }}" >> $GITHUB_OUTPUT
+          echo "learning_rate=${ADAPTED_LR:-${{ github.event.inputs.learning_rate }}}" >> $GITHUB_OUTPUT
           echo "output_dir=out-nanecho-full" >> $GITHUB_OUTPUT
         fi
 
@@ -774,8 +793,10 @@ jobs:
 
         echo "📤 Committing checkpoints to repository for permanent storage..."
 
-        # Add checkpoint files
+        # Add checkpoint files, eval history, and adapted config
         git add .training-progress/ -f
+        git add nanecho_config.json || echo "No nanecho_config.json changes"
+        git add NanEcho/adapted_config.json NanEcho/adapted_config_summary.json 2>/dev/null || echo "No adapted config files"
 
         # Check if there are changes to commit
         if git diff --staged --quiet; then
@@ -827,6 +848,8 @@ jobs:
 #          --max_new_tokens=200 --temperature=0.7 --no_system_prompt=True
 
     - name: Evaluate Deep Tree Echo persona fidelity
+      if: always()
+      continue-on-error: true
       run: |
         cd echoself/NanEcho
         python evaluation/echo_fidelity.py \
@@ -835,7 +858,53 @@ jobs:
           --deep_tree_echo_mode=True \
           --no_system_prompt_test=True
 
+    - name: Run JSONL persona fidelity evaluation
+      if: always()
+      continue-on-error: true
+      run: |
+        cd echoself
+        mkdir -p .training-progress/eval_history
+
+        echo "🚀 Starting NanEcho server for JSONL evaluation..."
+        python NanEcho/neserver.py \
+          --checkpoint ../nanoGPT/${{ steps.params.outputs.output_dir }}/ckpt.pt \
+          --port 8000 &
+        SERVER_PID=$!
+
+        # Wait for the server to become ready (up to 60s)
+        SERVER_READY=false
+        for i in $(seq 1 30); do
+          if curl -sf http://localhost:8000/status >/dev/null 2>&1; then
+            echo "✅ Server ready after ~${i}×2s"
+            SERVER_READY=true
+            break
+          fi
+          sleep 2
+        done
+
+        if [ "$SERVER_READY" != "true" ]; then
+          echo "⚠️ Server failed to start within 60s — skipping JSONL evaluation"
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
+          exit 0
+        fi
+
+        EVAL_TS=$(date +%s)
+        echo "📊 Running jsonl_eval.py (sample 50)..."
+        python NanEcho/evaluation/jsonl_eval.py \
+          --server http://localhost:8000 \
+          --data-dir data \
+          --sample 50 \
+          --output .training-progress/eval_history/eval_${EVAL_TS}.json || true
+
+        echo "🛑 Stopping NanEcho server (PID $SERVER_PID)..."
+        kill $SERVER_PID 2>/dev/null || true
+        wait $SERVER_PID 2>/dev/null || true
+        echo "✅ JSONL evaluation complete"
+
     - name: Run automated evaluation loop (single cycle)
+      if: always()
+      continue-on-error: true
       run: |
         cd echoself/NanEcho
         echo "🔄 Running automated evaluation loop for continuous improvement..."
@@ -844,6 +913,8 @@ jobs:
           --config=../../nanoGPT/${{ steps.params.outputs.output_dir }}/training_config.json
 
     - name: Run automation integration analysis  
+      if: always()
+      continue-on-error: true
       run: |
         cd echoself/NanEcho
         echo "🤖 Running NANECHO automation integration..."
@@ -857,20 +928,116 @@ jobs:
         echo "✅ Automation integration analysis complete"
 
     - name: Apply quality gates and determine next steps
+      if: always()
+      continue-on-error: true
       run: |
         cd echoself/NanEcho
         python analyze_quality_gates.py automation_analysis.json
 
     - name: Generate continuous improvement recommendations
+      if: always()
+      continue-on-error: true
       run: |
         cd echoself/NanEcho
         python generate_improvement_plan.py automation_analysis.json
 
+    - name: Run autognosis pre-check (ESN introspection)
+      if: always()
+      continue-on-error: true
+      run: |
+        cd echoself
+        echo "🧠 Running autognosis pre-check before adaptation..."
+        python3 -c "
+        import json, os, glob, sys
+        # Collect ESN telemetry from latest eval report for spectral radius monitoring
+        eval_dir = '.training-progress/eval_history'
+        if not os.path.isdir(eval_dir):
+            print('No eval_history directory — skipping autognosis pre-check')
+            sys.exit(0)
+        candidates = sorted(glob.glob(os.path.join(eval_dir, 'eval_*.json')))
+        if not candidates:
+            print('No eval reports found — skipping autognosis pre-check')
+            sys.exit(0)
+        report = json.load(open(candidates[-1]))
+        sr = report.get('esn_telemetry', {}).get('spectral_radius') or report.get('spectral_radius')
+        fidelity = report.get('overall_fidelity', report.get('fidelity_score'))
+        print(f'📊 Autognosis: spectral_radius={sr}, fidelity={fidelity}')
+        print(f'📊 Optimal SR band: [0.85, 0.95]')
+        if sr is not None and (float(sr) < 0.85 or float(sr) > 0.95):
+            print(f'⚠️  Spectral radius {sr} outside optimal band — adaptation will correct')
+        else:
+            print('✅ Spectral radius within optimal band (or not reported)')
+        " || echo "⚠️ Autognosis pre-check failed (non-fatal)"
+
+    - name: Apply adaptation proposals to training config
+      if: always()
+      continue-on-error: true
+      run: |
+        cd echoself/NanEcho
+        python apply_adaptation.py \
+          --analysis automation_analysis.json \
+          --trigger next_cycle_trigger.json \
+          --config ../nanecho_config.json \
+          --eval-report ../.training-progress/eval_history/ \
+          --output adapted_config.json \
+          --history-file ../.training-progress/adaptation_history.jsonl
+
+    - name: Check coherence halt flag before triggering next cycle
+      id: halt_check
+      if: always()
+      continue-on-error: true
+      run: |
+        cd echoself/NanEcho
+        if [ -f "halt_adaptation.flag" ]; then
+          echo "🛑 COHERENCE HALT: Adaptation halted due to sustained low fidelity"
+          cat halt_adaptation.flag
+          echo "halted=true" >> $GITHUB_OUTPUT
+        else
+          echo "✅ No halt flag — safe to continue"
+          echo "halted=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: Trigger next training cycle if needed
-      if: github.event_name == 'schedule' || (github.event.inputs.relentless_training == 'True' && success())
+      if: (github.event_name == 'schedule' || (github.event.inputs.relentless_training == 'True' && success())) && steps.halt_check.outputs.halted != 'true'
       run: |
         cd echoself/NanEcho
         python analyze_training_triggers.py automation_analysis.json ${{ github.event_name }} ${{ github.event.inputs.relentless_training }}
+
+    - name: Commit adaptation results to repository
+      if: always()
+      continue-on-error: true
+      run: |
+        cd echoself
+        git config --local user.email "agent-neuro@echocog.xyz"
+        git config --local user.name "Agent-Neuro Training Orchestrator"
+
+        # Add adaptation artifacts (eval history, adapted config, halt flag)
+        git add .training-progress/ || echo "No training progress to add"
+        git add nanecho_config.json || echo "No nanecho_config.json changes to add"
+        git add NanEcho/adapted_config.json || echo "No adapted_config.json to add"
+        git add NanEcho/adapted_config_summary.json || echo "No adaptation summary to add"
+        git add NanEcho/halt_adaptation.flag || echo "No halt flag to add"
+
+        if git diff --staged --quiet; then
+          echo "ℹ️ No adaptation changes to commit"
+        else
+          git commit -m "🧠 Agent-Neuro: Adaptation results from training cycle
+
+        - Updated adapted_config.json with cycle adaptations
+        - Updated adaptation_history.jsonl with cycle metrics
+        - Training run: ${{ github.run_number }}"
+
+          # Push with retry
+          for i in 1 2 3; do
+            git pull --rebase origin ${{ github.ref_name }} 2>/dev/null || true
+            if git push origin HEAD:${{ github.ref_name }}; then
+              echo "✅ Adaptation results pushed successfully"
+              break
+            fi
+            echo "⚠️ Push attempt $i failed, retrying..."
+            sleep 5
+          done
+        fi
 
     - name: Upload trained Deep Tree Echo model
       uses: actions/upload-artifact@v4
