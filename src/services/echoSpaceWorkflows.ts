@@ -15,7 +15,7 @@ import {
 import { Mem0rySearchResult } from "../types/Mem0AI";
 
 import { EchoSpaceService } from "./echoSpaceService";
-import Mem0AIService from "./mem0aiService";
+import { Mem0AIService } from "./mem0aiService";
 
 export interface WorkflowContext {
   agentNamespace: string;
