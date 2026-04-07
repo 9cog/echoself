@@ -1,14 +1,21 @@
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import { useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { FiCode, FiSave, FiDownload, FiCopy, FiSettings } from "react-icons/fi";
-import MonacoEditor from "~/components/MonacoEditor";
+
+const MonacoEditor = lazy(() => import("~/components/MonacoEditor.client"));
 
 export async function loader() {
   return json({
     title: "Code Editor",
     editorType: "monaco",
   });
+}
+
+function ClientOnly({ children, fallback }: { children: () => React.ReactNode; fallback?: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted ? <>{children()}</> : <>{fallback}</>;
 }
 
 export default function EditorPage() {
@@ -65,20 +72,26 @@ export default function EditorPage() {
       </header>
 
       <div className="flex-1 overflow-hidden">
-        <MonacoEditor
-          value={code}
-          onChange={setCode}
-          language={language}
-          theme={theme}
-          options={{
-            minimap: { enabled: true },
-            fontSize: 14,
-            lineNumbers: "on",
-            roundedSelection: false,
-            scrollBeyondLastLine: false,
-            automaticLayout: true,
-          }}
-        />
+        <ClientOnly fallback={<div className="h-full w-full flex items-center justify-center text-sm opacity-50">Loading editor...</div>}>
+          {() => (
+            <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-sm opacity-50">Loading editor...</div>}>
+              <MonacoEditor
+                value={code}
+                onChange={setCode}
+                language={language}
+                theme={theme}
+                options={{
+                  minimap: { enabled: true },
+                  fontSize: 14,
+                  lineNumbers: "on",
+                  roundedSelection: false,
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                }}
+              />
+            </Suspense>
+          )}
+        </ClientOnly>
       </div>
 
       <footer className="bg-card text-card-foreground px-6 py-2 border-t border-border">
