@@ -296,10 +296,18 @@ def apply_adaptation(
 
     # --- Write output -------------------------------------------------------
     dest = output_path or config_path
-    os.makedirs(os.path.dirname(dest) or ".", exist_ok=True)
-    with open(dest, "w", encoding="utf-8") as fh:
-        json.dump(config, fh, indent=2)
-    print(f"\n💾 Adapted config written to: {dest}")
+
+    # Only write adapted_config.json when actual changes were made.
+    # Writing the full base config with no changes would cause the workflow
+    # params step to read full-training values (n_layer=12, max_iters=50000)
+    # and override the per-mode CI/scheduled defaults.
+    if changes:
+        os.makedirs(os.path.dirname(dest) or ".", exist_ok=True)
+        with open(dest, "w", encoding="utf-8") as fh:
+            json.dump(config, fh, indent=2)
+        print(f"\n💾 Adapted config written to: {dest}")
+    else:
+        print(f"\n⏭️  No changes — skipping write to {dest}")
 
     # --- Summary ------------------------------------------------------------
     summary = {
@@ -310,7 +318,7 @@ def apply_adaptation(
         "overall_fidelity": overall_fidelity,
         "changes_applied": changes,
         "total_changes": len(changes),
-        "config_output": dest,
+        "config_output": dest if changes else None,
     }
 
     if changes:

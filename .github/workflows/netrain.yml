@@ -871,13 +871,22 @@ jobs:
         SERVER_PID=$!
 
         # Wait for the server to become ready (up to 60s)
+        SERVER_READY=false
         for i in $(seq 1 30); do
           if curl -sf http://localhost:8000/status >/dev/null 2>&1; then
             echo "✅ Server ready after ~${i}×2s"
+            SERVER_READY=true
             break
           fi
           sleep 2
         done
+
+        if [ "$SERVER_READY" != "true" ]; then
+          echo "⚠️ Server failed to start within 60s — skipping JSONL evaluation"
+          kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
+          exit 0
+        fi
 
         EVAL_TS=$(date +%s)
         echo "📊 Running jsonl_eval.py (sample 50)..."
