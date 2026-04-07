@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-04-06 03:00:27 UTC
+# Dependency Audit Report - 2026-04-07 03:00:55 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-04-06T03:00:25.233Z",
+  "timestamp": "2026-04-07T03:00:52.956Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -139,7 +139,7 @@ node_modules/vite/node_modules/esbuild
   Depends on vulnerable versions of vite
   Depends on vulnerable versions of vite-node
   node_modules/@vanilla-extract/integration
-  vite  0.11.0 - 6.1.6
+  vite  <=6.4.1
   Depends on vulnerable versions of esbuild
   node_modules/vite
     vite-node  <=2.2.0-beta.2
@@ -268,6 +268,7 @@ Undici has Unhandled Exception in WebSocket Client Due to Invalid server_max_win
 Undici has CRLF Injection in undici via `upgrade` option - https://github.com/advisories/GHSA-4992-7rv2-5pvq
 fix available via `npm audit fix`
 node_modules/undici
+
 
 yaml  2.0.0 - 2.8.2
 Severity: moderate
