@@ -178,30 +178,30 @@ def _apply_trigger_rules(
     config: Dict[str, Any],
     trigger: Dict[str, Any],
     max_iters_original: int,
+    lr_original: float,
     changes: List[str],
 ) -> None:
     """Apply hyper-parameter hints from ``next_cycle_trigger.json``.
 
-    *max_iters_original* is the pre-mutation snapshot to avoid compounding.
-    If a higher-priority rule already changed max_iters, this rule is skipped.
+    *max_iters_original* and *lr_original* are pre-mutation snapshots.
+    If a higher-priority rule already changed a parameter, that hint is skipped.
     """
 
     training = config.setdefault("training", {})
     hp = trigger.get("hyperparameter_adjustments", {})
 
+    # Only apply LR hint if no higher-priority rule already changed it
     lr_hint = hp.get("learning_rate")
-    if lr_hint == "increase":
-        current_lr = training.get("learning_rate", 1e-4)
-        new_lr = min(current_lr * 1.5, 3e-4)
-        if new_lr != current_lr:
+    if lr_hint == "increase" and training.get("learning_rate") == lr_original:
+        new_lr = min(lr_original * 1.5, 3e-4)
+        if new_lr != lr_original:
             training["learning_rate"] = new_lr
-            changes.append(f"learning_rate {current_lr} → {new_lr} (trigger hint: increase)")
-    elif lr_hint == "decrease":
-        current_lr = training.get("learning_rate", 1e-4)
-        new_lr = max(current_lr * 0.5, 1e-6)
-        if new_lr != current_lr:
+            changes.append(f"learning_rate {lr_original} → {new_lr} (trigger hint: increase)")
+    elif lr_hint == "decrease" and training.get("learning_rate") == lr_original:
+        new_lr = max(lr_original * 0.5, 1e-6)
+        if new_lr != lr_original:
             training["learning_rate"] = new_lr
-            changes.append(f"learning_rate {current_lr} → {new_lr} (trigger hint: decrease)")
+            changes.append(f"learning_rate {lr_original} → {new_lr} (trigger hint: decrease)")
 
     iters_hint = hp.get("max_iters")
     # Only apply if no higher-priority rule already changed max_iters
@@ -300,17 +300,19 @@ def apply_adaptation(
     # --- Extract key metrics ------------------------------------------------
     overall_fidelity = analysis.get("overall_fidelity", 1.0)
     max_iters_current = config.get("training", {}).get("max_iters", 50000)
+    lr_current = config.get("training", {}).get("learning_rate", 1e-4)
     recommendations = analysis.get("recommendations", {})
 
     print(f"📊 Overall fidelity : {overall_fidelity:.3f}")
     print(f"📊 Current max_iters: {max_iters_current}")
 
     # --- Apply rules in priority order --------------------------------------
-    # Snapshot max_iters BEFORE any mutations so all rules multiply from the
-    # same base value, preventing compounding (e.g. 1.5× then 1.25× then 1.25×).
+    # Snapshot max_iters and learning_rate BEFORE any mutations so all rules
+    # compare against the original values, preventing compounding and ensuring
+    # higher-priority rules take precedence.
     _apply_fidelity_rules(config, overall_fidelity, max_iters_current, changes)
     _apply_recommendation_rules(config, recommendations, max_iters_current, changes)
-    _apply_trigger_rules(config, trigger, max_iters_current, changes)
+    _apply_trigger_rules(config, trigger, max_iters_current, lr_current, changes)
     if eval_report:
         _apply_eval_report_rules(config, eval_report, changes)
 
@@ -332,10 +334,24 @@ def apply_adaptation(
     dest = output_path or config_path
 
     if changes and delta:
+        # Merge current delta INTO any existing adapted_config.json so that
+        # prior cycle's adaptations (e.g. n_embd=1024) are preserved even
+        # when the current cycle only changes different keys (e.g. max_iters).
+        existing_delta = _load_json(dest) if os.path.isfile(dest) else None
+        if existing_delta and isinstance(existing_delta, dict):
+            for section, keys in delta.items():
+                if section in existing_delta:
+                    existing_delta[section].update(keys)
+                else:
+                    existing_delta[section] = keys
+            merged = existing_delta
+        else:
+            merged = delta
+
         os.makedirs(os.path.dirname(dest) or ".", exist_ok=True)
         with open(dest, "w", encoding="utf-8") as fh:
-            json.dump(delta, fh, indent=2)
-        print(f"\n💾 Adapted config (delta only) written to: {dest}")
+            json.dump(merged, fh, indent=2)
+        print(f"\n💾 Adapted config (cumulative delta) written to: {dest}")
 
         # Also update the source nanecho_config.json with the full config
         # so it reflects the latest adapted state for training scripts
