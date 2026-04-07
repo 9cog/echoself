@@ -105,6 +105,31 @@ def _clamp_int(original: int, proposed: int, param_name: str) -> Tuple[int, bool
     return int(round(clamped)), was_clamped
 
 
+def _enforce_embd_head_divisibility(
+    model: Dict[str, Any],
+    changes: List[str],
+) -> None:
+    """Ensure n_embd is divisible by n_head (transformer attention constraint).
+
+    After delta clamping, n_embd and n_head may be independently rounded to
+    incompatible values.  We fix this by rounding n_embd down to the nearest
+    multiple of n_head.  See nanoGPT/model.py:33 —
+    ``assert config.n_embd % config.n_head == 0``.
+    """
+    n_embd = model.get("n_embd")
+    n_head = model.get("n_head")
+    if n_embd is None or n_head is None or n_head == 0:
+        return
+    if n_embd % n_head != 0:
+        adjusted = (n_embd // n_head) * n_head
+        if adjusted == 0:
+            adjusted = n_head  # minimum 1 head-dim
+        model["n_embd"] = adjusted
+        changes.append(
+            f"n_embd {n_embd} → {adjusted} (rounded down for n_embd % n_head == 0)"
+        )
+
+
 # ---------------------------------------------------------------------------
 # Adaptation History — cross-cycle trend tracking
 # ---------------------------------------------------------------------------
@@ -327,6 +352,9 @@ def _apply_fidelity_rules(
             suffix = " [clamped]" if clamped else ""
             changes.append(f"n_head → {new_head} (critical fidelity){suffix}")
 
+        # Enforce n_embd % n_head == 0 after independent clamping
+        _enforce_embd_head_divisibility(model, changes)
+
     elif overall_fidelity < 0.65:
         # Low — moderate increase (clamped)
         raw_max = int(max_iters_original * 1.5)
@@ -361,6 +389,9 @@ def _apply_fidelity_rules(
             model["n_head"] = new_head
             suffix = " [clamped]" if clamped else ""
             changes.append(f"n_head {current_head} → {new_head} (fidelity < 0.70 after ≥50k iters){suffix}")
+
+        # Enforce n_embd % n_head == 0 after independent clamping
+        _enforce_embd_head_divisibility(model, changes)
 
 
 def _apply_eval_report_rules(
