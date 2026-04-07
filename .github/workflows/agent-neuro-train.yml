@@ -911,6 +911,34 @@ jobs:
         cd echoself/NanEcho
         python generate_improvement_plan.py automation_analysis.json
 
+    - name: Run autognosis pre-check (ESN introspection)
+      if: always()
+      continue-on-error: true
+      run: |
+        cd echoself
+        echo "🧠 Running autognosis pre-check before adaptation..."
+        python3 -c "
+        import json, os, glob, sys
+        # Collect ESN telemetry from latest eval report for spectral radius monitoring
+        eval_dir = '.training-progress/eval_history'
+        if not os.path.isdir(eval_dir):
+            print('No eval_history directory — skipping autognosis pre-check')
+            sys.exit(0)
+        candidates = sorted(glob.glob(os.path.join(eval_dir, 'eval_*.json')))
+        if not candidates:
+            print('No eval reports found — skipping autognosis pre-check')
+            sys.exit(0)
+        report = json.load(open(candidates[-1]))
+        sr = report.get('esn_telemetry', {}).get('spectral_radius') or report.get('spectral_radius')
+        fidelity = report.get('overall_fidelity', report.get('fidelity_score'))
+        print(f'📊 Autognosis: spectral_radius={sr}, fidelity={fidelity}')
+        print(f'📊 Optimal SR band: [0.85, 0.95]')
+        if sr is not None and (float(sr) < 0.85 or float(sr) > 0.95):
+            print(f'⚠️  Spectral radius {sr} outside optimal band — adaptation will correct')
+        else:
+            print('✅ Spectral radius within optimal band (or not reported)')
+        " || echo "⚠️ Autognosis pre-check failed (non-fatal)"
+
     - name: Apply adaptation proposals to training config
       if: always()
       continue-on-error: true
@@ -921,10 +949,26 @@ jobs:
           --trigger next_cycle_trigger.json \
           --config ../nanecho_config.json \
           --eval-report ../.training-progress/eval_history/ \
-          --output adapted_config.json
+          --output adapted_config.json \
+          --history-file ../.training-progress/adaptation_history.jsonl
+
+    - name: Check coherence halt flag before triggering next cycle
+      id: halt_check
+      if: always()
+      continue-on-error: true
+      run: |
+        cd echoself/NanEcho
+        if [ -f "halt_adaptation.flag" ]; then
+          echo "🛑 COHERENCE HALT: Adaptation halted due to sustained low fidelity"
+          cat halt_adaptation.flag
+          echo "halted=true" >> $GITHUB_OUTPUT
+        else
+          echo "✅ No halt flag — safe to continue"
+          echo "halted=false" >> $GITHUB_OUTPUT
+        fi
 
     - name: Trigger next training cycle if needed
-      if: always() && (github.event_name == 'schedule' || github.event.inputs.relentless_training == 'True')
+      if: always() && (github.event_name == 'schedule' || github.event.inputs.relentless_training == 'True') && steps.halt_check.outputs.halted != 'true'
       continue-on-error: true
       run: |
         cd echoself/NanEcho
@@ -1135,11 +1179,12 @@ jobs:
         git config --local user.email "agent-neuro@echocog.xyz"
         git config --local user.name "Agent-Neuro Training Orchestrator"
         
-        # Add training progress files (including eval history and adapted config)
+        # Add training progress files (including eval history, adapted config, and autogenesis artifacts)
         git add .training-progress/ || echo "No training progress to add"
         git add nanecho_config.json || echo "No nanecho_config.json changes to add"
         git add NanEcho/adapted_config.json || echo "No adapted_config.json to add"
         git add NanEcho/adapted_config_summary.json || echo "No adaptation summary to add"
+        git add NanEcho/halt_adaptation.flag || echo "No halt flag to add"
         
         # Check if there are changes to commit
         if git diff --staged --quiet; then
