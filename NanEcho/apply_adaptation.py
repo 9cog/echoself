@@ -366,6 +366,7 @@ def _apply_fidelity_rules(
 def _apply_eval_report_rules(
     config: Dict[str, Any],
     eval_report: Dict[str, Any],
+    depth_original: int,
     changes: List[str],
 ) -> None:
     """Apply rules derived from the jsonl_eval.py report."""
@@ -394,17 +395,19 @@ def _apply_eval_report_rules(
                 )
 
     # Double echo depth when keyword coverage is very low (clamped)
+    # Skip if a higher-priority fidelity rule already changed max_recursion_depth
     if keyword_coverage < 0.40:
         current_depth = echo_self.get("max_recursion_depth", 5)
-        raw_depth = min(current_depth * 2, 14)
-        new_depth, clamped = _clamp_int(current_depth, raw_depth, "max_recursion_depth")
-        if new_depth != current_depth:
-            echo_self["max_recursion_depth"] = new_depth
-            suffix = " [clamped]" if clamped else ""
-            changes.append(
-                f"max_recursion_depth {current_depth} → {new_depth} "
-                f"(keyword_coverage={keyword_coverage:.2f} < 0.40){suffix}"
-            )
+        if current_depth == depth_original:
+            raw_depth = min(current_depth * 2, 14)
+            new_depth, clamped = _clamp_int(current_depth, raw_depth, "max_recursion_depth")
+            if new_depth != current_depth:
+                echo_self["max_recursion_depth"] = new_depth
+                suffix = " [clamped]" if clamped else ""
+                changes.append(
+                    f"max_recursion_depth {current_depth} → {new_depth} "
+                    f"(keyword_coverage={keyword_coverage:.2f} < 0.40){suffix}"
+                )
 
     # Reduce model size for inference when latency is too high (clamped)
     if avg_latency > 5000:
@@ -615,10 +618,11 @@ def apply_adaptation(
     config_before = copy.deepcopy(config)
     changes: List[str] = []
 
-    # --- Extract key metrics ------------------------------------------------
+    # --- Extract key metrics (snapshot BEFORE any rules run) -----------------
     overall_fidelity = analysis.get("overall_fidelity", 1.0)
     max_iters_current = config.get("training", {}).get("max_iters", 50000)
     lr_current = config.get("training", {}).get("learning_rate", 1e-4)
+    depth_current = config.get("echo_self", {}).get("max_recursion_depth", 5)
     recommendations = analysis.get("recommendations", {})
 
     print(f"📊 Overall fidelity : {overall_fidelity:.3f}")
@@ -698,7 +702,7 @@ def apply_adaptation(
     _apply_recommendation_rules(config, recommendations, max_iters_current, changes)
     _apply_trigger_rules(config, trigger, max_iters_current, lr_current, changes)
     if eval_report:
-        _apply_eval_report_rules(config, eval_report, changes)
+        _apply_eval_report_rules(config, eval_report, depth_current, changes)
         _apply_spectral_radius_rules(config, eval_report, changes)
     else:
         # Still check spectral radius from config even without eval report

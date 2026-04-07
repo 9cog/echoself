@@ -1003,6 +1003,42 @@ jobs:
         cd echoself/NanEcho
         python analyze_training_triggers.py automation_analysis.json ${{ github.event_name }} ${{ github.event.inputs.relentless_training }}
 
+    - name: Commit adaptation results to repository
+      if: always()
+      continue-on-error: true
+      run: |
+        cd echoself
+        git config --local user.email "agent-neuro@echocog.xyz"
+        git config --local user.name "Agent-Neuro Training Orchestrator"
+
+        # Add adaptation artifacts (eval history, adapted config, halt flag)
+        git add .training-progress/ || echo "No training progress to add"
+        git add nanecho_config.json || echo "No nanecho_config.json changes to add"
+        git add NanEcho/adapted_config.json || echo "No adapted_config.json to add"
+        git add NanEcho/adapted_config_summary.json || echo "No adaptation summary to add"
+        git add NanEcho/halt_adaptation.flag || echo "No halt flag to add"
+
+        if git diff --staged --quiet; then
+          echo "ℹ️ No adaptation changes to commit"
+        else
+          git commit -m "🧠 Agent-Neuro: Adaptation results from training cycle
+
+        - Updated adapted_config.json with cycle adaptations
+        - Updated adaptation_history.jsonl with cycle metrics
+        - Training run: ${{ github.run_number }}"
+
+          # Push with retry
+          for i in 1 2 3; do
+            git pull --rebase origin ${{ github.ref_name }} 2>/dev/null || true
+            if git push origin HEAD:${{ github.ref_name }}; then
+              echo "✅ Adaptation results pushed successfully"
+              break
+            fi
+            echo "⚠️ Push attempt $i failed, retrying..."
+            sleep 5
+          done
+        fi
+
     - name: Upload trained Deep Tree Echo model
       uses: actions/upload-artifact@v4
       with:
