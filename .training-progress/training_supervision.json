@@ -3,11 +3,11 @@
   "persona_enforced": "Deep Tree Echo",
   "session_log": [
     {
-      "timestamp": "2026-04-08T16:28:50.348926",
+      "timestamp": "2026-04-08T16:51:44.496860",
       "phase": "training",
       "config": {
-        "relentless_mode": "True",
-        "deep_tree_echo_weight": "0.9",
+        "relentless_mode": "False",
+        "deep_tree_echo_weight": "0.7",
         "n_embd": "256",
         "n_layer": "4",
         "max_iters": "200",
