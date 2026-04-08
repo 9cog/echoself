@@ -1,27 +1,32 @@
 {
-  "timestamp": "2026-04-08T00:32:45.960636+00:00",
+  "timestamp": "2026-04-08T12:33:54.865072+00:00",
   "analysis_source": "automation_analysis.json",
   "trigger_source": "next_cycle_trigger.json",
   "eval_report_used": true,
-  "overall_fidelity": 0.49396666666666667,
+  "overall_fidelity": 0.4737444444444444,
   "changes_applied": [
+    "max_iters \u2192 200000 (fidelity < 0.65) [clamped]",
     "Rebalanced dimension_weights (dimension_coverage=0.00 < 0.50)"
   ],
   "changes_delta": {
+    "training": {
+      "max_iters": 200000,
+      "lr_decay_iters": 200000
+    },
     "echo_self": {
       "dimension_weights": {
-        "cognitive": 0.1263,
-        "introspective": 0.1263,
-        "adaptive": 0.1263,
-        "recursive": 0.1263,
-        "synergistic": 0.1237,
-        "holographic": 0.1237,
-        "neural_symbolic": 0.1237,
-        "dynamic": 0.1237
+        "cognitive": 0.1277,
+        "introspective": 0.1277,
+        "adaptive": 0.1277,
+        "recursive": 0.1277,
+        "synergistic": 0.1223,
+        "holographic": 0.1223,
+        "neural_symbolic": 0.1223,
+        "dynamic": 0.1223
       }
     }
   },
-  "total_changes": 1,
+  "total_changes": 2,
   "config_output": "adapted_config.json",
   "delta_clamp": 0.2
 }
