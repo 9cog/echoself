@@ -6,9 +6,17 @@ import { getScriptRunnerService } from "~/services/scriptRunner.server";
 import { getPythonRunnerService } from "~/services/pythonRunner.server";
 import process from "node:process";
 
-const TerminalComponent = lazy(() => import("~/components/TerminalComponent.client"));
+const TerminalComponent = lazy(
+  () => import("~/components/TerminalComponent.client")
+);
 
-function ClientOnly({ children, fallback }: { children: () => React.ReactNode; fallback?: React.ReactNode }) {
+function ClientOnly({
+  children,
+  fallback,
+}: {
+  children: () => React.ReactNode;
+  fallback?: React.ReactNode;
+}) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   return mounted ? <>{children()}</> : <>{fallback}</>;
@@ -202,9 +210,21 @@ export default function TerminalPage() {
       </header>
 
       <main className="flex-1 overflow-hidden">
-        <ClientOnly fallback={<div className="h-full w-full flex items-center justify-center text-sm opacity-50">Loading terminal...</div>}>
+        <ClientOnly
+          fallback={
+            <div className="h-full w-full flex items-center justify-center text-sm opacity-50">
+              Loading terminal...
+            </div>
+          }
+        >
           {() => (
-            <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-sm opacity-50">Loading terminal...</div>}>
+            <Suspense
+              fallback={
+                <div className="h-full w-full flex items-center justify-center text-sm opacity-50">
+                  Loading terminal...
+                </div>
+              }
+            >
               <TerminalComponent
                 onCommand={handleCommand}
                 initialOutput={output}

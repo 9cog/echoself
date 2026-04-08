@@ -34,15 +34,15 @@ python3 -m pytest --ignore=test_data_validation.py
 
 ## Key Routes to Test
 
-| Route | Feature | Navigation |
-|-------|---------|------------|
-| `/` | Homepage | Direct URL |
-| `/editor` | Monaco code editor | Click "Code Editor" link on homepage |
-| `/terminal` | xterm terminal emulator | Direct URL (no homepage link) |
-| `/chat` | AI Chat | Click "AI Chat" on homepage |
-| `/memory` | Memory System | Click "Memory System" on homepage |
-| `/layla` | EchoLayla AI | Click "EchoLayla AI" on homepage |
-| `/map` | Echo Home Map | Click "Echo Home Map" on homepage |
+| Route       | Feature                 | Navigation                           |
+| ----------- | ----------------------- | ------------------------------------ |
+| `/`         | Homepage                | Direct URL                           |
+| `/editor`   | Monaco code editor      | Click "Code Editor" link on homepage |
+| `/terminal` | xterm terminal emulator | Direct URL (no homepage link)        |
+| `/chat`     | AI Chat                 | Click "AI Chat" on homepage          |
+| `/memory`   | Memory System           | Click "Memory System" on homepage    |
+| `/layla`    | EchoLayla AI            | Click "EchoLayla AI" on homepage     |
+| `/map`      | Echo Home Map           | Click "Echo Home Map" on homepage    |
 
 ## Browser-Only Components
 
@@ -83,15 +83,15 @@ python3 NanEcho/apply_adaptation.py \
 
 ### Key Safety Features to Test
 
-| Feature | Trigger Condition | Key Assertion |
-|---------|------------------|---------------|
-| Delta Clamp | Any parameter change | Change ≤ 20% of original value |
-| n_embd/n_head Divisibility | n_embd and n_head both change | `n_embd % n_head == 0` after adaptation |
-| Weight Normalization | `dimension_coverage < 0.50` | `sum(weights.values()) == 1.0` |
-| Regression Detection | Current fidelity < prior fidelity (with prior changes > 0) | Both adapted_config.json AND nanecho_config.json reverted |
-| Coherence Halt | Fidelity < 0.20 for 2+ consecutive cycles | `halt_adaptation.flag` file created with `consecutive_crisis_cycles >= 2` |
-| Spectral Radius | `esn_telemetry.spectral_radius` outside [0.85, 0.95] | Adjusted toward 0.95 but clamped at 20% |
-| Compounding Prevention | Both fidelity + eval rules would modify same param | Only 1 change per parameter per cycle |
+| Feature                    | Trigger Condition                                          | Key Assertion                                                             |
+| -------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Delta Clamp                | Any parameter change                                       | Change ≤ 20% of original value                                            |
+| n_embd/n_head Divisibility | n_embd and n_head both change                              | `n_embd % n_head == 0` after adaptation                                   |
+| Weight Normalization       | `dimension_coverage < 0.50`                                | `sum(weights.values()) == 1.0`                                            |
+| Regression Detection       | Current fidelity < prior fidelity (with prior changes > 0) | Both adapted_config.json AND nanecho_config.json reverted                 |
+| Coherence Halt             | Fidelity < 0.20 for 2+ consecutive cycles                  | `halt_adaptation.flag` file created with `consecutive_crisis_cycles >= 2` |
+| Spectral Radius            | `esn_telemetry.spectral_radius` outside [0.85, 0.95]       | Adjusted toward 0.95 but clamped at 20%                                   |
+| Compounding Prevention     | Both fidelity + eval rules would modify same param         | Only 1 change per parameter per cycle                                     |
 
 ### Testing Tips
 
@@ -116,4 +116,5 @@ The local dev server has no authentication. Supabase credentials in `.env` are o
 ## Devin Secrets Needed
 
 None required for local testing. Optional:
+
 - `SUPABASE_URL` and `SUPABASE_ANON_KEY` for full Supabase functionality
