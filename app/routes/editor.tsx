@@ -12,7 +12,13 @@ export async function loader() {
   });
 }
 
-function ClientOnly({ children, fallback }: { children: () => React.ReactNode; fallback?: React.ReactNode }) {
+function ClientOnly({
+  children,
+  fallback,
+}: {
+  children: () => React.ReactNode;
+  fallback?: React.ReactNode;
+}) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   return mounted ? <>{children()}</> : <>{fallback}</>;
@@ -72,9 +78,21 @@ export default function EditorPage() {
       </header>
 
       <div className="flex-1 overflow-hidden">
-        <ClientOnly fallback={<div className="h-full w-full flex items-center justify-center text-sm opacity-50">Loading editor...</div>}>
+        <ClientOnly
+          fallback={
+            <div className="h-full w-full flex items-center justify-center text-sm opacity-50">
+              Loading editor...
+            </div>
+          }
+        >
           {() => (
-            <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-sm opacity-50">Loading editor...</div>}>
+            <Suspense
+              fallback={
+                <div className="h-full w-full flex items-center justify-center text-sm opacity-50">
+                  Loading editor...
+                </div>
+              }
+            >
               <MonacoEditor
                 value={code}
                 onChange={setCode}
