@@ -1,1 +1,18 @@
-{}
+{
+  "training": {
+    "max_iters": 200000,
+    "lr_decay_iters": 200000
+  },
+  "echo_self": {
+    "dimension_weights": {
+      "cognitive": 0.1263,
+      "introspective": 0.1263,
+      "adaptive": 0.1263,
+      "recursive": 0.1263,
+      "synergistic": 0.1237,
+      "holographic": 0.1237,
+      "neural_symbolic": 0.1237,
+      "dynamic": 0.1237
+    }
+  }
+}
