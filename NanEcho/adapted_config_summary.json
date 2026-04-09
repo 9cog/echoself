@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-04-09T00:38:48.524060+00:00",
+  "timestamp": "2026-04-09T05:05:36.398779+00:00",
   "analysis_source": "automation_analysis.json",
   "trigger_source": "next_cycle_trigger.json",
   "eval_report_used": true,
-  "overall_fidelity": 0.48785555555555554,
+  "overall_fidelity": 0.48952222222222225,
   "changes_applied": [
     "max_iters \u2192 200000 (fidelity < 0.65) [clamped]",
     "Rebalanced dimension_weights (dimension_coverage=0.00 < 0.50)"
