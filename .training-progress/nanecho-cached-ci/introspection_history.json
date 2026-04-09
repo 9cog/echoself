@@ -1,16 +1,16 @@
 [
   {
-    "iteration": 29000,
+    "iteration": 30000,
     "echo_identity": 0.0,
     "persona_consistency": 0.0,
     "connection_ratio": 1.0,
-    "training_progress": 58.0
+    "training_progress": 60.0
   },
   {
-    "iteration": 29000,
+    "iteration": 30000,
     "echo_identity": 0.0,
     "persona_consistency": 0.0,
     "connection_ratio": 1.0,
-    "training_progress": 58.0
+    "training_progress": 60.0
   }
 ]
