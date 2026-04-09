@@ -677,6 +677,16 @@ jobs:
     - name: Create Deep Tree Echo training config
       run: |
         mkdir -p nanoGPT/config
+
+        # Determine init_from based on checkpoint restoration
+        if [ "${{ steps.restore_checkpoint.outputs.checkpoint_restored }}" = "true" ]; then
+          INIT_FROM="resume"
+          echo "🔄 Training will RESUME from restored checkpoint"
+        else
+          INIT_FROM="scratch"
+          echo "🆕 Training will start from scratch (first-ever run)"
+        fi
+
         cat > nanoGPT/config/train_nanecho_ci.py << EOL
         # Deep Tree Echo (NanEcho) training configuration for relentless persona fine-tuning
         # This config ensures the model embodies Deep Tree Echo characteristics even without system prompts
@@ -684,6 +694,11 @@ jobs:
         eval_interval = 25
         eval_iters = 10
         log_interval = 5
+
+        # CRITICAL: Resume from checkpoint to continue cumulative training
+        # Never default to 'scratch' — that discards all previous training progress
+        init_from = '${INIT_FROM}'
+        always_save_checkpoint = True  # NEVER skip saving — prevents checkpoint loss
 
         # Data - Deep Tree Echo focused dataset
         dataset = 'nanecho'
