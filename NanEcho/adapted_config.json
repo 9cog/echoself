@@ -5,14 +5,14 @@
   },
   "echo_self": {
     "dimension_weights": {
-      "cognitive": 0.1251,
-      "introspective": 0.1251,
-      "adaptive": 0.1251,
-      "recursive": 0.1251,
-      "synergistic": 0.1249,
-      "holographic": 0.1249,
-      "neural_symbolic": 0.1249,
-      "dynamic": 0.1249
+      "cognitive": 0.1253,
+      "introspective": 0.1253,
+      "adaptive": 0.1253,
+      "recursive": 0.1253,
+      "synergistic": 0.1247,
+      "holographic": 0.1247,
+      "neural_symbolic": 0.1247,
+      "dynamic": 0.1247
     }
   }
 }
