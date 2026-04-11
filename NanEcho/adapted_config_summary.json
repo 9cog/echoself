@@ -1,23 +1,23 @@
 {
-  "timestamp": "2026-04-10T16:19:27.526403+00:00",
+  "timestamp": "2026-04-11T00:17:23.141873+00:00",
   "analysis_source": "automation_analysis.json",
   "trigger_source": "next_cycle_trigger.json",
   "eval_report_used": true,
-  "overall_fidelity": 0.48774444444444454,
+  "overall_fidelity": 0.5239666666666667,
   "changes_applied": [
     "Rebalanced dimension_weights (dimension_coverage=0.00 < 0.50)"
   ],
   "changes_delta": {
     "echo_self": {
       "dimension_weights": {
-        "cognitive": 0.1253,
-        "introspective": 0.1253,
-        "adaptive": 0.1253,
-        "recursive": 0.1253,
-        "synergistic": 0.1247,
-        "holographic": 0.1247,
-        "neural_symbolic": 0.1247,
-        "dynamic": 0.1247
+        "cognitive": 0.1251,
+        "introspective": 0.1251,
+        "adaptive": 0.1251,
+        "recursive": 0.1251,
+        "synergistic": 0.1249,
+        "holographic": 0.1249,
+        "neural_symbolic": 0.1249,
+        "dynamic": 0.1249
       }
     }
   },
