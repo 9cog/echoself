@@ -14,11 +14,11 @@
   "training": {
     "batch_size": 8,
     "gradient_accumulation_steps": 4,
-    "learning_rate": 6e-05,
+    "learning_rate": 6e-5,
     "max_iters": 200000,
     "warmup_iters": 5000,
     "lr_decay_iters": 200000,
-    "min_lr": 1e-05,
+    "min_lr": 1e-5,
     "weight_decay": 0.1,
     "grad_clip": 1.0,
     "eval_interval": 250,
