@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-04-10 03:01:17 UTC
+# Dependency Audit Report - 2026-04-11 02:59:48 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-04-10T03:01:15.506Z",
+  "timestamp": "2026-04-11T02:59:46.197Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -212,13 +212,13 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
 
 path-to-regexp  <0.1.13
 Severity: high
