@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-04-15 03:00:57 UTC
+# Dependency Audit Report - 2026-04-16 03:01:10 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-04-15T03:00:55.155Z",
+  "timestamp": "2026-04-16T03:01:08.585Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -112,13 +112,14 @@ node_modules/eslint-plugin-react/node_modules/brace-expansion
 node_modules/eslint/node_modules/brace-expansion
 node_modules/rimraf/node_modules/brace-expansion
 
-dompurify  <=3.3.1
+dompurify  <=3.3.3
 Severity: moderate
 DOMPurify contains a Cross-site Scripting vulnerability - https://github.com/advisories/GHSA-v8jm-5vwx-cfxm
 DOMPurify is vulnerable to mutation-XSS via Re-Contextualization  - https://github.com/advisories/GHSA-h8r8-wccr-v5f2
 DOMPurify contains a Cross-site Scripting vulnerability - https://github.com/advisories/GHSA-v2wj-7wpq-c8vv
 DOMPurify ADD_ATTR predicate skips URI validation - https://github.com/advisories/GHSA-cjmm-f4jc-qw8r
 DOMPurify USE_PROFILES prototype pollution allows event handlers - https://github.com/advisories/GHSA-cj63-jhhr-wcxv
+DOMPurify's ADD_TAGS function form bypasses FORBID_TAGS due to short-circuit evaluation - https://github.com/advisories/GHSA-39q2-94rc-95cp
 fix available via `npm audit fix`
 node_modules/dompurify
 
@@ -212,13 +213,13 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
 
 path-to-regexp  <0.1.13
 Severity: high
