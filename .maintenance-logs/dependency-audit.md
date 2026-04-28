@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-04-27 03:02:09 UTC
+# Dependency Audit Report - 2026-04-28 03:02:13 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-04-27T03:02:06.967Z",
+  "timestamp": "2026-04-28T03:02:11.077Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -97,6 +97,14 @@
 ## Security Audit
 ```
 # npm audit report
+
+@supabase/auth-js  <=2.69.1
+auth-js Vulnerable to Insecure Path Routing from Malformed User Input - https://github.com/advisories/GHSA-8r88-6cj9-9fh5
+fix available via `npm audit fix`
+node_modules/@supabase/auth-js
+  @supabase/supabase-js  2.41.1 - 2.49.10 || 2.58.1-canary.0
+  Depends on vulnerable versions of @supabase/auth-js
+  node_modules/@supabase/supabase-js
 
 brace-expansion  <1.1.13 || >=2.0.0 <2.0.3
 Severity: moderate
@@ -216,13 +224,13 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
 
 path-to-regexp  <0.1.13
 Severity: high
@@ -289,7 +297,7 @@ yaml is vulnerable to Stack Overflow via deeply nested YAML collections - https:
 fix available via `npm audit fix`
 node_modules/yaml
 
-32 vulnerabilities (12 moderate, 20 high)
+34 vulnerabilities (2 low, 12 moderate, 20 high)
 
 To address issues that do not require attention, run:
   npm audit fix
