@@ -532,14 +532,17 @@ class DeepTreeEchoTransformer(nn.Module):
             # Copy existing memories into the beginning of the new buffer
             new_mem[:old_size] = mb.memory.data
         else:
-            # Truncate: keep most recent `new_size` entries
+            # Truncate: keep most recent `new_size` entries.
+            # ptr is the write cursor; entries before ptr are the most recent.
             ptr = int(mb.memory_ptr.item())
-            if ptr <= new_size:
-                new_mem = mb.memory.data[:new_size].clone()
-            else:
-                # Circular copy preserving newest entries
+            if ptr >= new_size:
+                # Enough valid recent entries exist before ptr
                 tail = mb.memory.data[ptr - new_size : ptr].clone()
                 new_mem = tail
+            elif ptr > 0:
+                # ptr < new_size: the buffer hasn't fully wrapped, use all until ptr
+                new_mem[:ptr] = mb.memory.data[:ptr]
+            # else ptr == 0: buffer is empty or just reset; new_mem stays zeros
 
         mb.memory = nn.Parameter(new_mem, requires_grad=False)
         mb.memory_ptr = nn.Parameter(

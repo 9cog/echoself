@@ -206,7 +206,9 @@ class EchoReservoir:
             return current_sr
 
         scale = float(target_sr) / current_sr
-        self.W = self.W * scale
+        # Skip rescale if matrix is already at (or very close to) target SR
+        if abs(scale - 1.0) > 1e-6:
+            self.W = self.W * scale
         self.spectral_radius = float(target_sr)
         return float(target_sr)
 
@@ -255,7 +257,7 @@ class EchoReservoir:
                 init_weight = 0.01 * self.spectral_radius
                 for r, c in selected:
                     self.W[r, c] = rng.randn() * init_weight
-                # Re-scale to maintain spectral radius
+                # Re-scale to maintain spectral radius (recomputes eigenvalues once)
                 self.adapt_spectral_radius(self.spectral_radius)
         else:
             # Prune weakest connections
@@ -266,6 +268,7 @@ class EchoReservoir:
             if threshold_idx > 0:
                 threshold = np.sort(nonzero_flat[nonzero_flat > 0])[threshold_idx]
                 self.W[nonzero < threshold] = 0
+                # Re-scale to maintain spectral radius (recomputes eigenvalues once)
                 self.adapt_spectral_radius(self.spectral_radius)
 
         self.density = float(target_density)

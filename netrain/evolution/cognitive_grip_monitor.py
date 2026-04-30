@@ -230,7 +230,8 @@ class CognitiveGripMonitor:
             b = _DIM_BETA[dim] * (1.0 + 0.4 * (0.5 - opp_balance))
             g = _DIM_GAMMA[dim]
             # Bounded lyapunov contribution: prefer intermediate (0.3–0.7)
-            lya_term = -abs(lyapunov_index - 0.5)  # 0 at edges, -0.5 at centre
+            # lya_term = 0 at centre (0.5), -0.5 at edges (0 or 1)
+            lya_term = -abs(lyapunov_index - 0.5)  # 0 at centre, -0.5 at edges
             raw = a * cap_log + b * lya_term + g * (readiness - 0.5)
             grip[i] = _sigmoid(raw)
         return grip
@@ -266,10 +267,13 @@ class CognitiveGripMonitor:
             return 0.0
         recent = list(self._grip_history)
         steps = list(self._step_history)
-        g_new = np.mean(recent[-1])
-        g_old = np.mean(recent[max(0, len(recent) - 10)])
+        # Take the mean across the 7 persona dims to get a scalar grip value,
+        # then compare the most recent value against the value ~10 steps ago.
+        window = min(10, len(recent))
+        g_new = float(np.mean(recent[-1]))         # mean over 7-D at latest step
+        g_old = float(np.mean(recent[-window]))    # mean over 7-D at window start
         s_new = steps[-1]
-        s_old = steps[max(0, len(steps) - 10)]
+        s_old = steps[-window]
         delta_s = s_new - s_old
         if delta_s == 0:
             return 0.0

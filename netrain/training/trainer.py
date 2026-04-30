@@ -233,9 +233,10 @@ class EchoTrainer:
                     if hasattr(self.model, 'blocks'):
                         for blk in self.model.blocks:
                             norms = [
-                                p.grad.norm().item()
+                                float(p.grad.norm().item())
                                 for p in blk.parameters()
                                 if p.grad is not None
+                                and torch.isfinite(p.grad.norm())
                             ]
                             grad_norms.append(
                                 float(sum(norms) / max(len(norms), 1))

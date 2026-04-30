@@ -163,6 +163,9 @@ class TopologyEvolutionController:
             # ── Leak-rate adjustment based on lyapunov ────────────────
             # Too chaotic (lyapunov > 0.7) → slow down fast pool
             # Too frozen  (lyapunov < 0.3) → speed up fast pool
+            # Adjust leak rates via direct attribute assignment.
+            # EchoReservoir exposes leak_rate_fast/slow as plain float attrs;
+            # there is no side-effect setter, so direct assignment is safe.
             if lyapunov > 0.7 and reservoir.leak_rate_fast > 0.5:
                 reservoir.leak_rate_fast = max(0.5, reservoir.leak_rate_fast - 0.02)
                 changes["leak_rate_fast"] = reservoir.leak_rate_fast
@@ -176,11 +179,11 @@ class TopologyEvolutionController:
             current_perm = membrane.get_permeability_profile()
             mean_perm = sum(current_perm) / len(current_perm) if current_perm else 0.5
             if abs(mean_perm - target_perm) > 0.03:
-                # Nudge bias terms toward target
+                # Nudge bias terms toward target using in-place data update
                 direction = 1.0 if target_perm > mean_perm else -1.0
                 if hasattr(membrane, "bias_gate"):
                     for bias in membrane.bias_gate:
-                        bias += direction * 0.05
+                        bias += direction * 0.05  # numpy array, in-place is fine
                     changes["membrane_permeability"] = {
                         "mean_was": mean_perm, "target": target_perm
                     }

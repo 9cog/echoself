@@ -95,6 +95,7 @@ class EchobeatTrainer(EchoTrainer):
         self._beat_step: int = 0      # position within current 9-step cycle
         self._beat_count: int = 0     # total completed beats
         self._beat_accumulator: List[Dict[str, Any]] = []
+        self._accum_counter: int = 0  # dedicated gradient accumulation counter
 
         # Per-beat mini-validation buffer
         self._sim_loader_iter = None
@@ -231,13 +232,17 @@ class EchobeatTrainer(EchoTrainer):
 
     def _act(self, loss: torch.Tensor, acc_steps: int) -> None:
         """Backward pass + gradient step."""
-        # Apply adaptive LR multiplier
+        # Apply adaptive LR multiplier.
+        # Store base_lrs on the trainer (not in param_groups) to avoid
+        # interfering with scheduler's internal base_lrs tracking.
+        if not hasattr(self, "_base_lrs"):
+            self._base_lrs = [pg["lr"] for pg in self.optimizer.param_groups]
+
         lr_mult = self.phase_sequencer.lr_multiplier(
             self.grip_monitor.capacity_effectiveness_ratio
         )
-        for pg in self.optimizer.param_groups:
-            pg["_base_lr"] = pg.get("_base_lr", pg["lr"])
-            pg["lr"] = pg["_base_lr"] * lr_mult
+        for pg, base_lr in zip(self.optimizer.param_groups, self._base_lrs):
+            pg["lr"] = base_lr * lr_mult
 
         scaled_loss = loss / acc_steps
         if self.use_amp:
@@ -245,8 +250,11 @@ class EchobeatTrainer(EchoTrainer):
         else:
             scaled_loss.backward()
 
-        # Gradient accumulation cycle
-        if (self._beat_step % acc_steps) == 0:
+        # Dedicated accumulation counter — does not depend on _beat_step
+        self._accum_counter += 1
+        if self._accum_counter >= acc_steps:
+            self._accum_counter = 0
+
             grad_clip = self.training_config.get("gradient_clipping", 0)
             if grad_clip and float(grad_clip) > 0:
                 if self.use_amp:
@@ -261,7 +269,10 @@ class EchobeatTrainer(EchoTrainer):
             else:
                 self.optimizer.step()
 
+            # Sync base_lrs with the post-scheduler LR values
             self.scheduler.step()
+            self._base_lrs = [pg["lr"] for pg in self.optimizer.param_groups]
+
             self.optimizer.zero_grad()
             self.global_step += 1
 
