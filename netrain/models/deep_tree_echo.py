@@ -504,9 +504,9 @@ class DeepTreeEchoTransformer(nn.Module):
 
         if depth > old_depth:
             for _ in range(depth - old_depth):
-                new_cell = nn.GRUCell(n_embd, n_embd).to(
-                    next(el.parameters()).device
-                )
+                _first_param = next(iter(el.parameters()), None)
+                device = _first_param.device if _first_param is not None else torch.device("cpu")
+                new_cell = nn.GRUCell(n_embd, n_embd).to(device)
                 # Zero-init to be additive-safe
                 for p in new_cell.parameters():
                     nn.init.zeros_(p)

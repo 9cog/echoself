@@ -232,16 +232,22 @@ class EchobeatTrainer(EchoTrainer):
 
     def _act(self, loss: torch.Tensor, acc_steps: int) -> None:
         """Backward pass + gradient step."""
-        # Apply adaptive LR multiplier.
-        # Store base_lrs on the trainer (not in param_groups) to avoid
-        # interfering with scheduler's internal base_lrs tracking.
-        if not hasattr(self, "_base_lrs"):
-            self._base_lrs = [pg["lr"] for pg in self.optimizer.param_groups]
+        # Derive true base LRs from the scheduler's internal state so that
+        # the adaptive multiplier is always applied on top of the un-modified
+        # cosine/warmup schedule value, never compounded with previous multipliers.
+        if hasattr(self.scheduler, "base_lrs"):
+            base_lrs = self.scheduler.base_lrs
+        elif not hasattr(self, "_base_lrs"):
+            # Fall back to capturing LRs before any modification
+            base_lrs = [pg["lr"] for pg in self.optimizer.param_groups]
+            self._base_lrs = base_lrs
+        else:
+            base_lrs = self._base_lrs
 
         lr_mult = self.phase_sequencer.lr_multiplier(
             self.grip_monitor.capacity_effectiveness_ratio
         )
-        for pg, base_lr in zip(self.optimizer.param_groups, self._base_lrs):
+        for pg, base_lr in zip(self.optimizer.param_groups, base_lrs):
             pg["lr"] = base_lr * lr_mult
 
         scaled_loss = loss / acc_steps
@@ -269,10 +275,8 @@ class EchobeatTrainer(EchoTrainer):
             else:
                 self.optimizer.step()
 
-            # Sync base_lrs with the post-scheduler LR values
+            # Advance the LR schedule (updates scheduler.base_lrs if applicable)
             self.scheduler.step()
-            self._base_lrs = [pg["lr"] for pg in self.optimizer.param_groups]
-
             self.optimizer.zero_grad()
             self.global_step += 1
 
@@ -406,7 +410,10 @@ class EchobeatTrainer(EchoTrainer):
 
     def save_checkpoint(self, name: str) -> None:
         super().save_checkpoint(name)
-        # Amend checkpoint with evolution state
+        # Amend checkpoint with evolution state.
+        # weights_only=False is required here because the checkpoint contains
+        # non-tensor objects (config dicts, metrics dicts) written by the parent
+        # class. This matches the pattern established in EchoTrainer.
         import os
         from pathlib import Path
         ckpt_path = self.checkpoint_dir / f"{name}.pt"

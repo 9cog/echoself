@@ -185,11 +185,7 @@ class AdaptivePhaseSequencer:
 
         Returns (gate_open: bool, readiness_score: float in [0,1]).
         """
-        val_loss = (
-            float(np.mean(list(grip_monitor._val_losses)[-20:]))
-            if grip_monitor._val_losses
-            else float("inf")
-        )
+        val_loss = grip_monitor.recent_val_loss(20)
         lyapunov = grip_monitor.lyapunov_index
         grad_SNR = grip_monitor.gradient_SNR
         cer = grip_monitor.capacity_effectiveness_ratio

@@ -183,6 +183,16 @@ class CognitiveGripMonitor:
         if "val_loss" in val_metrics:
             self.record_val_loss(val_metrics["val_loss"])
 
+    def recent_val_loss(self, n: int = 20) -> float:
+        """Return mean validation loss over the last *n* recorded values.
+
+        Returns ``float('inf')`` when no validation losses have been recorded.
+        """
+        if not self._val_losses:
+            return float("inf")
+        vals = list(self._val_losses)
+        return float(sum(vals[-n:]) / max(len(vals[-n:]), 1))
+
     # ------------------------------------------------------------------
     # Computed properties
     # ------------------------------------------------------------------
@@ -229,9 +239,10 @@ class CognitiveGripMonitor:
             a = _DIM_ALPHA[dim] * (1.0 + 0.4 * (opp_balance - 0.5))
             b = _DIM_BETA[dim] * (1.0 + 0.4 * (0.5 - opp_balance))
             g = _DIM_GAMMA[dim]
-            # Bounded lyapunov contribution: prefer intermediate (0.3–0.7)
-            # lya_term = 0 at centre (0.5), -0.5 at edges (0 or 1)
-            lya_term = -abs(lyapunov_index - 0.5)  # 0 at centre, -0.5 at edges
+            # Bounded lyapunov contribution: prefer intermediate values (≈0.5).
+            # lya_term is 0 at centre (0.5) and -0.5 at the extremes (0 or 1),
+            # penalising both frozen (≈0) and fully chaotic (≈1) dynamics.
+            lya_term = -abs(lyapunov_index - 0.5)
             raw = a * cap_log + b * lya_term + g * (readiness - 0.5)
             grip[i] = _sigmoid(raw)
         return grip
