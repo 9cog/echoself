@@ -372,6 +372,226 @@ class DeepTreeEchoTransformer(nn.Module):
         
         return input_ids
     
+    # ------------------------------------------------------------------
+    # Topology instrumentation (Layer 0)
+    # ------------------------------------------------------------------
+
+    def get_topology_state(self) -> dict:
+        """Return a snapshot of current topology and per-block gradient norms.
+
+        Returns
+        -------
+        dict with keys:
+          n_layers, tree_depth, echo_layers, echo_depth_per_block,
+          memory_size, per_block_grad_norm
+        """
+        echo_layers = []
+        echo_depth_per_block = {}
+        per_block_grad_norm = {}
+
+        for idx, block in enumerate(self.blocks):
+            if block.use_tree_attention:
+                echo_layers.append(idx)
+            if block.echo_layer is not None:
+                echo_depth_per_block[idx] = block.echo_layer.echo_depth
+            # Per-block gradient norm (0.0 if no grads yet)
+            norms = [
+                p.grad.norm().item()
+                for p in block.parameters()
+                if p.grad is not None
+            ]
+            per_block_grad_norm[idx] = float(sum(norms) / max(len(norms), 1))
+
+        arch = self.config["architecture"]
+        tree_depth = arch.get("tree_depth", 1)
+
+        return {
+            "n_layers": self.n_layers,
+            "tree_depth": tree_depth,
+            "echo_layers": echo_layers,
+            "echo_depth_per_block": echo_depth_per_block,
+            "memory_size": (
+                self.memory_bank.memory_size
+                if self.memory_bank is not None
+                else 0
+            ),
+            "per_block_grad_norm": per_block_grad_norm,
+        }
+
+    def set_tree_depth(self, depth: int) -> None:
+        """Grow or shrink tree attention depth for all echo blocks in-place.
+
+        New projection heads are zero-initialised; removed heads are discarded.
+        The optimizer state for changed parameters is dropped (caller must
+        rebuild the optimizer if precise momentum continuity is required).
+        """
+        import copy
+
+        arch = self.config["architecture"]
+        old_depth = arch.get("tree_depth", 1)
+        if depth == old_depth:
+            return
+
+        arch["tree_depth"] = depth
+
+        for block in self.blocks:
+            if not block.use_tree_attention or not hasattr(block, "attention"):
+                continue
+            attn = block.attention
+            if not isinstance(attn, TreeAttention):
+                continue
+
+            n_embd = attn.n_embd
+            n_heads = attn.n_heads
+            dropout = attn.dropout.p
+
+            if depth > old_depth:
+                # Add new projection layers for the extra depths
+                for _ in range(depth - old_depth):
+                    new_proj = nn.ModuleDict(
+                        {
+                            "query": nn.Linear(n_embd, n_embd),
+                            "key":   nn.Linear(n_embd, n_embd),
+                            "value": nn.Linear(n_embd, n_embd),
+                        }
+                    )
+                    for m in new_proj.values():
+                        nn.init.zeros_(m.weight)
+                        if m.bias is not None:
+                            nn.init.zeros_(m.bias)
+                    attn.tree_projections.append(new_proj)
+                    attn.level_norms.append(nn.LayerNorm(n_embd))
+                # Add branch gates for the new intermediate levels
+                extra_gates = depth - 1 - len(attn.branch_gates)
+                for _ in range(max(0, extra_gates)):
+                    gate = nn.Linear(n_embd, attn.branch_factor)
+                    nn.init.zeros_(gate.weight)
+                    if gate.bias is not None:
+                        nn.init.zeros_(gate.bias)
+                    attn.branch_gates.append(gate)
+
+            else:
+                # Contract: keep only the first `depth` projections
+                attn.tree_projections = nn.ModuleList(
+                    list(attn.tree_projections)[:depth]
+                )
+                attn.level_norms = nn.ModuleList(
+                    list(attn.level_norms)[:depth]
+                )
+                attn.branch_gates = nn.ModuleList(
+                    list(attn.branch_gates)[: max(0, depth - 1)]
+                )
+
+            attn.tree_depth = depth
+
+    def set_echo_depth(self, block_idx: int, depth: int) -> None:
+        """Resize the EchoLayer GRU stack for a specific block.
+
+        Existing GRU cells are preserved; new cells are zero-initialised.
+        """
+        if block_idx >= len(self.blocks):
+            return
+        block = self.blocks[block_idx]
+        if block.echo_layer is None:
+            return
+
+        el = block.echo_layer
+        old_depth = el.echo_depth
+        if depth == old_depth:
+            return
+
+        n_embd = el.n_embd
+
+        if depth > old_depth:
+            for _ in range(depth - old_depth):
+                new_cell = nn.GRUCell(n_embd, n_embd).to(
+                    next(el.parameters()).device
+                )
+                # Zero-init to be additive-safe
+                for p in new_cell.parameters():
+                    nn.init.zeros_(p)
+                el.echo_cells.append(new_cell)
+        else:
+            el.echo_cells = nn.ModuleList(list(el.echo_cells)[:depth])
+
+        el.echo_depth = depth
+
+    def set_memory_size(self, new_size: int) -> None:
+        """Grow or shrink the MemoryBank while preserving stored memories."""
+        if self.memory_bank is None:
+            return
+        mb = self.memory_bank
+        old_size = mb.memory_size
+        if new_size == old_size:
+            return
+
+        device = mb.memory.device
+        new_mem = torch.zeros(new_size, mb.n_embd, device=device)
+
+        if new_size > old_size:
+            # Copy existing memories into the beginning of the new buffer
+            new_mem[:old_size] = mb.memory.data
+        else:
+            # Truncate: keep most recent `new_size` entries
+            ptr = int(mb.memory_ptr.item())
+            if ptr <= new_size:
+                new_mem = mb.memory.data[:new_size].clone()
+            else:
+                # Circular copy preserving newest entries
+                tail = mb.memory.data[ptr - new_size : ptr].clone()
+                new_mem = tail
+
+        mb.memory = nn.Parameter(new_mem, requires_grad=False)
+        mb.memory_ptr = nn.Parameter(
+            torch.zeros(1, dtype=torch.long, device=device), requires_grad=False
+        )
+        mb.memory_size = new_size
+
+    def activate_echo_layer(self, block_idx: int) -> None:
+        """Promote a standard MHA block to TreeAttention + EchoLayer mid-training.
+
+        The existing MHA weights are discarded; tree projections start
+        zero-initialised so the transition is gradual (additive to residual).
+        """
+        if block_idx >= len(self.blocks):
+            return
+        block = self.blocks[block_idx]
+        if block.use_tree_attention:
+            return  # already active
+
+        arch = self.config["architecture"]
+        n_embd = block.n_embd
+        n_heads = block.n_heads
+
+        # Replace attention module
+        block.attention = TreeAttention(
+            n_embd=n_embd,
+            n_heads=n_heads,
+            tree_depth=arch.get("tree_depth", 1),
+            branch_factor=arch.get("branch_factor", 4),
+            dropout=arch["attention"].get("attention_dropout", 0.1),
+        )
+        # Zero-init so initial contribution is near-zero
+        for m in block.attention.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.zeros_(m.weight)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+
+        # Add echo layer
+        if arch["echo"]["enable_recursive_attention"]:
+            block.echo_layer = EchoLayer(
+                n_embd=n_embd,
+                echo_depth=arch["echo"].get("echo_depth", 1),
+                echo_decay=arch["echo"].get("echo_decay", 0.95),
+            )
+
+        block.use_tree_attention = True
+
+    # ------------------------------------------------------------------
+    # End topology instrumentation
+    # ------------------------------------------------------------------
+
     def _top_k_top_p_filtering(
         self,
         logits: torch.Tensor,

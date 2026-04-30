@@ -457,6 +457,8 @@ def main():
                        help="Weight for Deep Tree Echo processing")
     parser.add_argument("--relentless_persona_mode", type=str, default="false",
                        help="Enable relentless persona mode (no system prompts needed)")
+    parser.add_argument("--topology_evolution", type=str, default="false",
+                       help="Enable adaptive topology evolution (Antikythera system)")
     
     args = parser.parse_args()
     
@@ -464,6 +466,24 @@ def main():
     deep_tree_echo_mode = args.deep_tree_echo_mode.lower() in ('true', '1', 'yes', 'on')
     no_system_prompt = args.no_system_prompt.lower() in ('true', '1', 'yes', 'on')
     relentless_persona_mode = args.relentless_persona_mode.lower() in ('true', '1', 'yes', 'on')
+    topology_evolution = args.topology_evolution.lower() in ('true', '1', 'yes', 'on')
+
+    # If topology evolution is requested, patch the config file to enable it
+    if topology_evolution:
+        import json as _json
+        _cfg_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "nanecho_config.json",
+        )
+        if os.path.exists(_cfg_path):
+            with open(_cfg_path, 'r') as _f:
+                _cfg = _json.load(_f)
+            _cfg.setdefault("topology_evolution", {})["enabled"] = True
+            with open(_cfg_path, 'w') as _f:
+                _json.dump(_cfg, _f, indent=2)
+            print("✅ topology_evolution.enabled set to true in nanecho_config.json")
+        else:
+            print("⚠️  nanecho_config.json not found; topology_evolution flag ignored")
     
     train_tokens, val_tokens = prepare_echo_self_dataset(
         echo_depth=args.echo_depth,
@@ -490,6 +510,7 @@ def main():
     print(f"   No System Prompt: {no_system_prompt}")
     print(f"   Deep Tree Echo Weight: {args.deep_tree_echo_weight}")
     print(f"   Relentless Persona Mode: {relentless_persona_mode}")
+    print(f"   Topology Evolution: {topology_evolution}")
     print(f"   Training Tokens: {train_tokens:,}")
     print(f"   Validation Tokens: {val_tokens:,}")
     print(f"   Output Directory: {args.output_dir}")

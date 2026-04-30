@@ -179,6 +179,99 @@ class EchoReservoir:
             "slow": np.zeros(self.slow_units),
         }
 
+    def adapt_spectral_radius(self, target_sr: float) -> float:
+        """Rescale the recurrent weight matrix to a new spectral radius.
+
+        The scaling is applied in-place.  If the reservoir is not yet
+        initialised the target is stored and applied at first use.
+
+        Parameters
+        ----------
+        target_sr : float
+            Desired spectral radius (typically in [0.80, 0.98]).
+
+        Returns
+        -------
+        float
+            Achieved spectral radius after rescaling.
+        """
+        if not self.initialized or self.W is None:
+            # Not initialised yet — just store the target
+            self.spectral_radius = float(target_sr)
+            return float(target_sr)
+
+        eigenvalues = np.abs(np.linalg.eigvals(self.W))
+        current_sr = float(np.max(eigenvalues)) if len(eigenvalues) > 0 else 1.0
+        if current_sr < 1e-10:
+            return current_sr
+
+        scale = float(target_sr) / current_sr
+        self.W = self.W * scale
+        self.spectral_radius = float(target_sr)
+        return float(target_sr)
+
+    def adapt_density(self, target_density: float, rng=None) -> float:
+        """Stochastically add or prune connections to approach a target density.
+
+        New connections are initialised at small weight (0.01 * spectral_radius).
+        Pruning removes the smallest-magnitude connections first.
+
+        Parameters
+        ----------
+        target_density : float
+            Desired connection fraction (0 < target_density ≤ 1).
+        rng : np.random.RandomState, optional
+            Random state for reproducibility.
+
+        Returns
+        -------
+        float
+            Actual density after adaptation.
+        """
+        if not self.initialized or self.W is None:
+            self.density = float(target_density)
+            return float(target_density)
+
+        if rng is None:
+            rng = np.random.RandomState()
+
+        n = self.units
+        mask = (self.W != 0).astype(float)
+        current_density = float(mask.sum()) / (n * n)
+
+        if target_density > current_density:
+            # Add connections
+            n_add = int((target_density - current_density) * n * n)
+            zero_positions = list(zip(*np.where(self.W == 0)))
+            if zero_positions:
+                selected = [
+                    zero_positions[i]
+                    for i in rng.choice(
+                        len(zero_positions),
+                        size=min(n_add, len(zero_positions)),
+                        replace=False,
+                    )
+                ]
+                init_weight = 0.01 * self.spectral_radius
+                for r, c in selected:
+                    self.W[r, c] = rng.randn() * init_weight
+                # Re-scale to maintain spectral radius
+                self.adapt_spectral_radius(self.spectral_radius)
+        else:
+            # Prune weakest connections
+            n_prune = int((current_density - target_density) * n * n)
+            nonzero = np.abs(self.W)
+            nonzero_flat = nonzero.ravel()
+            threshold_idx = min(n_prune, (nonzero_flat > 0).sum() - 1)
+            if threshold_idx > 0:
+                threshold = np.sort(nonzero_flat[nonzero_flat > 0])[threshold_idx]
+                self.W[nonzero < threshold] = 0
+                self.adapt_spectral_radius(self.spectral_radius)
+
+        self.density = float(target_density)
+        mask = (self.W != 0).astype(float)
+        return float(mask.sum()) / (n * n)
+
     def get_echo_state_property(self, X, n_washout=100):
         """Verify the echo state property by running from two random ICs.
 

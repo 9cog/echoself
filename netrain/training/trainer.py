@@ -14,6 +14,14 @@ import time
 from .optimizer import create_optimizer, create_scheduler
 from .metrics import MetricsTracker
 
+try:
+    from netrain.evolution.cognitive_grip_monitor import CognitiveGripMonitor
+    from netrain.evolution.topology_controller import TopologyEvolutionController
+    from netrain.evolution.phase_sequencer import AdaptivePhaseSequencer
+    _EVOLUTION_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    _EVOLUTION_AVAILABLE = False
+
 
 class EchoTrainer:
     """
@@ -87,6 +95,27 @@ class EchoTrainer:
         # Progressive depth training
         self.progressive_depth = self.echo_config['progressive_depth'].get('enable', False)
         self.current_depth = self.echo_config['progressive_depth'].get('initial_depth', 1)
+
+        # ── Adaptive evolution components (optional) ───────────────────
+        self.grip_monitor: Optional[CognitiveGripMonitor] = None
+        self.topology_controller: Optional[TopologyEvolutionController] = None
+        self.phase_sequencer: Optional[AdaptivePhaseSequencer] = None
+
+        if _EVOLUTION_AVAILABLE:
+            raw_config = getattr(config, 'config', {})
+            topo_cfg = raw_config.get('topology_evolution', {})
+            phase_cfg = raw_config.get('adaptive_phases', {})
+            if topo_cfg.get('enabled', False):
+                self.grip_monitor = CognitiveGripMonitor(
+                    window_size=topo_cfg.get('grip_window_size', 100),
+                )
+                self.topology_controller = TopologyEvolutionController(topo_cfg)
+                self.phase_sequencer = AdaptivePhaseSequencer(
+                    config=phase_cfg,
+                    transition_freeze_steps=topo_cfg.get(
+                        'transition_freeze_steps', 150
+                    ),
+                )
     
     def _create_dataloader(self, dataset: Any, shuffle: bool = True) -> DataLoader:
         """Create a DataLoader from a dataset."""
@@ -196,6 +225,47 @@ class EchoTrainer:
                 # Update metrics
                 self.metrics.update('train_loss', loss.item() * accumulation_steps)
                 self.metrics.update('learning_rate', self.scheduler.get_last_lr()[0])
+
+                # ── Evolution: record grip after each gradient step ───
+                if self.grip_monitor is not None:
+                    # Collect per-block grad norms
+                    grad_norms = []
+                    if hasattr(self.model, 'blocks'):
+                        for blk in self.model.blocks:
+                            norms = [
+                                p.grad.norm().item()
+                                for p in blk.parameters()
+                                if p.grad is not None
+                            ]
+                            grad_norms.append(
+                                float(sum(norms) / max(len(norms), 1))
+                            )
+                    self.grip_monitor.record(
+                        train_loss=loss.item() * accumulation_steps,
+                        grad_norms=grad_norms if grad_norms else None,
+                        step=self.global_step,
+                    )
+
+                # ── Evolution: phase sequencer + topology controller ──
+                if self.phase_sequencer is not None and self.grip_monitor is not None:
+                    self.phase_sequencer.step(
+                        self.grip_monitor,
+                        self.global_step,
+                        controller=self.topology_controller,
+                    )
+                if self.topology_controller is not None and self.grip_monitor is not None:
+                    self.topology_controller.maybe_mutate(
+                        model=self.model,
+                        reservoir=None,
+                        membrane=None,
+                        grip_monitor=self.grip_monitor,
+                        phase_topology_target=(
+                            self.phase_sequencer.topology_target
+                            if self.phase_sequencer is not None
+                            else {}
+                        ),
+                        step=self.global_step,
+                    )
                 
                 # Update progress bar
                 progress_bar.set_postfix({
@@ -239,8 +309,18 @@ class EchoTrainer:
         
         avg_loss = total_loss / max(n_batches, 1)
         self.metrics.update('val_loss', avg_loss)
-        
-        print(f"Validation loss: {avg_loss:.4f}")
+
+        # ── Evolution: record inference metrics ──────────────────────
+        if self.grip_monitor is not None:
+            self.grip_monitor.record_inference({'val_loss': avg_loss})
+            grip_summary = self.grip_monitor.summary()
+            print(
+                f"Validation loss: {avg_loss:.4f} | "
+                f"grip={grip_summary['grip_mean']:.3f} "
+                f"phase={grip_summary['current_phase']}"
+            )
+        else:
+            print(f"Validation loss: {avg_loss:.4f}")
         
         self.model.train()
         return avg_loss
@@ -273,6 +353,12 @@ class EchoTrainer:
         
         if self.use_amp and self.scaler is not None:
             checkpoint['scaler_state_dict'] = self.scaler.state_dict()
+
+        # Persist evolution state if active
+        if self.phase_sequencer is not None:
+            checkpoint['phase_sequencer_state'] = self.phase_sequencer.state_dict()
+        if self.grip_monitor is not None:
+            checkpoint['grip_summary'] = self.grip_monitor.summary()
         
         path = self.checkpoint_dir / f"{name}.pt"
         torch.save(checkpoint, path)
@@ -292,6 +378,10 @@ class EchoTrainer:
         
         if self.use_amp and 'scaler_state_dict' in checkpoint:
             self.scaler.load_state_dict(checkpoint['scaler_state_dict'])
-        
+
+        # Restore evolution state if available
+        if self.phase_sequencer is not None and 'phase_sequencer_state' in checkpoint:
+            self.phase_sequencer.load_state_dict(checkpoint['phase_sequencer_state'])
+
         print(f"Checkpoint loaded from {path}")
         print(f"Resuming from step {self.global_step}, epoch {self.epoch}")
