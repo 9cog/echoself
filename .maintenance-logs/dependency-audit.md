@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-05-05 03:01:33 UTC
+# Dependency Audit Report - 2026-05-06 03:01:55 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-05-05T03:01:31.437Z",
+  "timestamp": "2026-05-06T03:01:53.911Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -280,15 +280,11 @@ Undici has CRLF Injection in undici via `upgrade` option - https://github.com/ad
 fix available via `npm audit fix`
 node_modules/undici
 
-uuid  <14.0.0
+uuid  11.0.0 - 11.1.0
 Severity: moderate
 uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided - https://github.com/advisories/GHSA-w5hq-g745-h8pq
-fix available via `npm audit fix --force`
-Will install mermaid@9.1.7, which is a breaking change
+fix available via `npm audit fix`
 node_modules/uuid
-  mermaid  >=9.2.0-rc1
-  Depends on vulnerable versions of uuid
-  node_modules/mermaid
 
 
 yaml  2.0.0 - 2.8.2
@@ -297,13 +293,10 @@ yaml is vulnerable to Stack Overflow via deeply nested YAML collections - https:
 fix available via `npm audit fix`
 node_modules/yaml
 
-34 vulnerabilities (2 low, 12 moderate, 20 high)
+33 vulnerabilities (2 low, 11 moderate, 20 high)
 
 To address issues that do not require attention, run:
   npm audit fix
-
-To address all issues possible (including breaking changes), run:
-  npm audit fix --force
 
 Some issues need review, and may require choosing
 a different dependency.
