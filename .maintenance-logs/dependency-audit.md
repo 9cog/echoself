@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-05-07 03:02:24 UTC
+# Dependency Audit Report - 2026-05-08 04:48:59 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-05-07T03:02:22.918Z",
+  "timestamp": "2026-05-08T04:48:57.396Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -123,7 +123,6 @@ node_modules/rimraf/node_modules/brace-expansion
 dompurify  <=3.3.3
 Severity: moderate
 DOMPurify contains a Cross-site Scripting vulnerability - https://github.com/advisories/GHSA-v8jm-5vwx-cfxm
-DOMPurify is vulnerable to mutation-XSS via Re-Contextualization  - https://github.com/advisories/GHSA-h8r8-wccr-v5f2
 DOMPurify contains a Cross-site Scripting vulnerability - https://github.com/advisories/GHSA-v2wj-7wpq-c8vv
 DOMPurify ADD_ATTR predicate skips URI validation - https://github.com/advisories/GHSA-cjmm-f4jc-qw8r
 DOMPurify USE_PROFILES prototype pollution allows event handlers - https://github.com/advisories/GHSA-cj63-jhhr-wcxv
@@ -131,6 +130,7 @@ DOMPurify's ADD_TAGS function form bypasses FORBID_TAGS due to short-circuit eva
 DOMPurify: FORBID_TAGS bypassed by function-based ADD_TAGS predicate (asymmetry with FORBID_ATTR fix) - https://github.com/advisories/GHSA-h7mw-gpvr-xq4m
 DOMPurify has a SAFE_FOR_TEMPLATES bypass in RETURN_DOM mode - https://github.com/advisories/GHSA-crv5-9vww-q3g8
 DOMPurify: Prototype Pollution to XSS Bypass via CUSTOM_ELEMENT_HANDLING Fallback - https://github.com/advisories/GHSA-v9jr-rg53-9pgp
+DOMPurify is vulnerable to mutation-XSS via Re-Contextualization  - https://github.com/advisories/GHSA-h8r8-wccr-v5f2
 fix available via `npm audit fix`
 node_modules/dompurify
 
