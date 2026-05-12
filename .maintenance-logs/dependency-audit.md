@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-05-11 05:50:50 UTC
+# Dependency Audit Report - 2026-05-12 05:31:41 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-05-11T05:50:48.236Z",
+  "timestamp": "2026-05-12T05:31:39.962Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -207,6 +207,15 @@ node_modules/lodash-es
     Depends on vulnerable versions of chevrotain-allstar
     node_modules/langium
 
+mermaid  11.0.0-alpha.1 - 11.14.0
+Severity: moderate
+Mermaid: Improper sanitization of configuration leads to CSS injection - https://github.com/advisories/GHSA-87f9-hvmw-gh4p
+Mermaid Gantt Charts are vulnerable to an Infinite Loop DoS - https://github.com/advisories/GHSA-6m6c-36f7-fhxh
+Mermaid: Improper sanitization of `classDef` in state diagrams leads to HTML injection - https://github.com/advisories/GHSA-ghcm-xqfw-q4vr
+Mermaid: Improper sanitization of `classDefs` in diagrams leads to CSS injection - https://github.com/advisories/GHSA-xcj9-5m2h-648r
+fix available via `npm audit fix`
+node_modules/mermaid
+
 minimatch  9.0.0 - 9.0.6
 Severity: high
 minimatch has a ReDoS via repeated wildcards with non-matching literal in pattern - https://github.com/advisories/GHSA-3ppc-4f35-3m26
@@ -224,13 +233,13 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
 
 path-to-regexp  <0.1.13
 Severity: high
@@ -293,7 +302,7 @@ yaml is vulnerable to Stack Overflow via deeply nested YAML collections - https:
 fix available via `npm audit fix`
 node_modules/yaml
 
-33 vulnerabilities (2 low, 11 moderate, 20 high)
+34 vulnerabilities (2 low, 12 moderate, 20 high)
 
 To address issues that do not require attention, run:
   npm audit fix
