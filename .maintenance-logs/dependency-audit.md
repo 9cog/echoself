@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-05-12 05:31:41 UTC
+# Dependency Audit Report - 2026-05-13 05:41:15 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-05-12T05:31:39.962Z",
+  "timestamp": "2026-05-13T05:41:12.629Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -209,10 +209,10 @@ node_modules/lodash-es
 
 mermaid  11.0.0-alpha.1 - 11.14.0
 Severity: moderate
-Mermaid: Improper sanitization of configuration leads to CSS injection - https://github.com/advisories/GHSA-87f9-hvmw-gh4p
 Mermaid Gantt Charts are vulnerable to an Infinite Loop DoS - https://github.com/advisories/GHSA-6m6c-36f7-fhxh
-Mermaid: Improper sanitization of `classDef` in state diagrams leads to HTML injection - https://github.com/advisories/GHSA-ghcm-xqfw-q4vr
 Mermaid: Improper sanitization of `classDefs` in diagrams leads to CSS injection - https://github.com/advisories/GHSA-xcj9-5m2h-648r
+Mermaid: Improper sanitization of configuration leads to CSS injection - https://github.com/advisories/GHSA-87f9-hvmw-gh4p
+Mermaid: Improper sanitization of `classDef` in state diagrams leads to HTML injection - https://github.com/advisories/GHSA-ghcm-xqfw-q4vr
 fix available via `npm audit fix`
 node_modules/mermaid
 
@@ -233,13 +233,13 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
 
 path-to-regexp  <0.1.13
 Severity: high
