@@ -1,12 +1,12 @@
 {
-  "ckpt_20260513_202224_200_22deff1b_9470fbb7": {
-    "checkpoint_id": "ckpt_20260513_202224_200_22deff1b_9470fbb7",
-    "created_at": "2026-05-13T20:22:24.623584",
-    "iteration": 200,
+  "ckpt_20260514_095047_1400_22deff1b_9470fbb7": {
+    "checkpoint_id": "ckpt_20260514_095047_1400_22deff1b_9470fbb7",
+    "created_at": "2026-05-14T09:50:47.410953",
+    "iteration": 1400,
     "epoch": 0,
-    "train_loss": 467.36742544174194,
-    "val_loss": 9.420089111328124,
-    "learning_rate": 8e-06,
+    "train_loss": 106.55389952659607,
+    "val_loss": 2.1035663080215454,
+    "learning_rate": 3.9200000000000004e-05,
     "model_config": {
       "n_layer": 4,
       "n_head": 4,
@@ -37,196 +37,31 @@
       "block_size": 1024
     },
     "metrics": {
-      "val_loss": 9.420089111328124,
-      "connection_ratio": 0.2,
-      "tokens_processed": 409600,
-      "training_speed_iters_per_sec": 0.08619342205151655
-    },
-    "tags": [
-      "phase_persona_dimensions",
-      "low_quality",
-      "nanecho",
-      "curriculum",
-      "introspection"
-    ],
-    "parent_checkpoint": null,
-    "notes": "Training checkpoint at iteration 200 | Phase: persona_dimensions",
-    "file_size_mb": 249.29015827178955,
-    "quality_score": 30720.795149118378
-  },
-  "ckpt_20260513_204301_300_22deff1b_9470fbb7": {
-    "checkpoint_id": "ckpt_20260513_204301_300_22deff1b_9470fbb7",
-    "created_at": "2026-05-13T20:43:01.564837",
-    "iteration": 300,
-    "epoch": 0,
-    "train_loss": 440.94829869270325,
-    "val_loss": 8.87912109375,
-    "learning_rate": 1.08e-05,
-    "model_config": {
-      "n_layer": 4,
-      "n_head": 4,
-      "n_embd": 256,
-      "vocab_size": 50257,
-      "block_size": 1024,
-      "dropout": 0.1,
-      "bias": true,
-      "initial_connections": 0.1,
-      "connection_growth_rate": 0.05,
-      "max_connections": 1.0
-    },
-    "training_config": {
-      "learning_rate": 0.0002,
-      "batch_size": 2,
-      "max_iters": 500,
-      "warmup_iters": 5000,
-      "lr_decay_iters": 50000,
-      "min_lr": 1e-05,
-      "weight_decay": 0.1,
-      "grad_clip": 1.0,
-      "enable_curriculum_learning": true,
-      "enable_introspection": true
-    },
-    "data_config": {
-      "data_dir": "data/nanecho",
-      "batch_size": 2,
-      "block_size": 1024
-    },
-    "metrics": {
-      "val_loss": 8.87912109375,
-      "connection_ratio": 0.25,
-      "tokens_processed": 614400,
-      "training_speed_iters_per_sec": 0.08436285893188177
-    },
-    "tags": [
-      "phase_hypergraph_patterns",
-      "low_quality",
-      "nanecho",
-      "curriculum",
-      "introspection"
-    ],
-    "parent_checkpoint": null,
-    "notes": "Training checkpoint at iteration 300 | Phase: hypergraph_patterns",
-    "file_size_mb": 249.29015827178955,
-    "quality_score": 46080.76186780214
-  },
-  "ckpt_20260513_210348_400_22deff1b_9470fbb7": {
-    "checkpoint_id": "ckpt_20260513_210348_400_22deff1b_9470fbb7",
-    "created_at": "2026-05-13T21:03:48.619044",
-    "iteration": 400,
-    "epoch": 0,
-    "train_loss": 409.87479996681213,
-    "val_loss": 8.211615657806396,
-    "learning_rate": 1.28e-05,
-    "model_config": {
-      "n_layer": 4,
-      "n_head": 4,
-      "n_embd": 256,
-      "vocab_size": 50257,
-      "block_size": 1024,
-      "dropout": 0.1,
-      "bias": true,
-      "initial_connections": 0.1,
-      "connection_growth_rate": 0.05,
-      "max_connections": 1.0
-    },
-    "training_config": {
-      "learning_rate": 0.0002,
-      "batch_size": 2,
-      "max_iters": 500,
-      "warmup_iters": 5000,
-      "lr_decay_iters": 50000,
-      "min_lr": 1e-05,
-      "weight_decay": 0.1,
-      "grad_clip": 1.0,
-      "enable_curriculum_learning": true,
-      "enable_introspection": true
-    },
-    "data_config": {
-      "data_dir": "data/nanecho",
-      "batch_size": 2,
-      "block_size": 1024
-    },
-    "metrics": {
-      "val_loss": 8.211615657806396,
-      "connection_ratio": 0.3,
-      "tokens_processed": 819200,
-      "training_speed_iters_per_sec": 0.08324989648021835
-    },
-    "tags": [
-      "phase_recursive_reasoning",
-      "low_quality",
-      "nanecho",
-      "curriculum",
-      "introspection"
-    ],
-    "parent_checkpoint": null,
-    "notes": "Training checkpoint at iteration 400 | Phase: recursive_reasoning",
-    "file_size_mb": 249.29015827178955,
-    "quality_score": 61440.720605929004
-  },
-  "ckpt_20260513_212450_500_22deff1b_9470fbb7": {
-    "checkpoint_id": "ckpt_20260513_212450_500_22deff1b_9470fbb7",
-    "created_at": "2026-05-13T21:24:50.756411",
-    "iteration": 500,
-    "epoch": 0,
-    "train_loss": 0.0,
-    "val_loss": 7.496852426528931,
-    "learning_rate": 1.3971999999999998e-05,
-    "model_config": {
-      "n_layer": 4,
-      "n_head": 4,
-      "n_embd": 256,
-      "vocab_size": 50257,
-      "block_size": 1024,
-      "dropout": 0.1,
-      "bias": true,
-      "initial_connections": 0.1,
-      "connection_growth_rate": 0.05,
-      "max_connections": 1.0
-    },
-    "training_config": {
-      "learning_rate": 0.0002,
-      "batch_size": 2,
-      "max_iters": 500,
-      "warmup_iters": 5000,
-      "lr_decay_iters": 50000,
-      "min_lr": 1e-05,
-      "weight_decay": 0.1,
-      "grad_clip": 1.0,
-      "enable_curriculum_learning": true,
-      "enable_introspection": true
-    },
-    "data_config": {
-      "data_dir": "data/nanecho",
-      "batch_size": 2,
-      "block_size": 1024
-    },
-    "metrics": {
-      "val_loss": 7.496852426528931,
-      "connection_ratio": 0.3,
-      "tokens_processed": 1024000,
-      "training_speed_iters_per_sec": 0.08243751204598182
+      "val_loss": 2.1035663080215454,
+      "connection_ratio": 0.8000000000000002,
+      "tokens_processed": 2867200,
+      "training_speed_iters_per_sec": 0.08398280756696089
     },
     "tags": [
       "phase_adaptive_mastery",
-      "low_quality",
+      "medium_quality",
       "nanecho",
       "curriculum",
       "introspection"
     ],
     "parent_checkpoint": null,
-    "notes": "Training checkpoint at iteration 500 | Phase: adaptive_mastery",
-    "file_size_mb": 249.29015827178955,
-    "quality_score": 76800.67333019339
+    "notes": "Training checkpoint at iteration 1400 (resumed from iteration 1000) | Phase: adaptive_mastery",
+    "file_size_mb": 249.29106044769287,
+    "quality_score": 215040.44961316106
   },
-  "ckpt_20260514_021508_500_22deff1b_9470fbb7": {
-    "checkpoint_id": "ckpt_20260514_021508_500_22deff1b_9470fbb7",
-    "created_at": "2026-05-14T02:15:09.074860",
-    "iteration": 500,
+  "ckpt_20260514_101054_1500_22deff1b_9470fbb7": {
+    "checkpoint_id": "ckpt_20260514_101054_1500_22deff1b_9470fbb7",
+    "created_at": "2026-05-14T10:10:54.363431",
+    "iteration": 1500,
     "epoch": 0,
     "train_loss": 0.0,
-    "val_loss": 7.544492883682251,
-    "learning_rate": 1.4e-05,
+    "val_loss": 1.829468810558319,
+    "learning_rate": 4.1972e-05,
     "model_config": {
       "n_layer": 4,
       "n_head": 4,
@@ -257,31 +92,86 @@
       "block_size": 1024
     },
     "metrics": {
-      "val_loss": 7.544492883682251,
-      "connection_ratio": 0.35,
-      "tokens_processed": 1024000,
+      "val_loss": 1.829468810558319,
+      "connection_ratio": 0.8000000000000002,
+      "tokens_processed": 3072000,
+      "training_speed_iters_per_sec": 0.08372893071364329
+    },
+    "tags": [
+      "phase_adaptive_mastery",
+      "high_quality",
+      "nanecho",
+      "curriculum",
+      "introspection"
+    ],
+    "parent_checkpoint": null,
+    "notes": "Training checkpoint at iteration 1500 (resumed from iteration 1000) | Phase: adaptive_mastery",
+    "file_size_mb": 249.29106044769287,
+    "quality_score": 230400.45088609008
+  },
+  "ckpt_20260514_133300_1500_22deff1b_9470fbb7": {
+    "checkpoint_id": "ckpt_20260514_133300_1500_22deff1b_9470fbb7",
+    "created_at": "2026-05-14T13:33:00.530697",
+    "iteration": 1500,
+    "epoch": 0,
+    "train_loss": 0.0,
+    "val_loss": 1.879620645046234,
+    "learning_rate": 4.199999999999999e-05,
+    "model_config": {
+      "n_layer": 4,
+      "n_head": 4,
+      "n_embd": 256,
+      "vocab_size": 50257,
+      "block_size": 1024,
+      "dropout": 0.1,
+      "bias": true,
+      "initial_connections": 0.1,
+      "connection_growth_rate": 0.05,
+      "max_connections": 1.0
+    },
+    "training_config": {
+      "learning_rate": 0.0002,
+      "batch_size": 2,
+      "max_iters": 500,
+      "warmup_iters": 5000,
+      "lr_decay_iters": 50000,
+      "min_lr": 1e-05,
+      "weight_decay": 0.1,
+      "grad_clip": 1.0,
+      "enable_curriculum_learning": true,
+      "enable_introspection": true
+    },
+    "data_config": {
+      "data_dir": "data/nanecho",
+      "batch_size": 2,
+      "block_size": 1024
+    },
+    "metrics": {
+      "val_loss": 1.879620645046234,
+      "connection_ratio": 0.8500000000000002,
+      "tokens_processed": 3072000,
       "training_speed_iters_per_sec": 0.0
     },
     "tags": [
       "phase_adaptive_mastery",
-      "low_quality",
+      "high_quality",
       "nanecho",
       "curriculum",
       "introspection"
     ],
     "parent_checkpoint": null,
-    "notes": "Training checkpoint at iteration 500 (resumed from iteration 500) | Phase: adaptive_mastery",
-    "file_size_mb": 249.29015827178955,
-    "quality_score": 76800.67401107922
+    "notes": "Training checkpoint at iteration 1500 (resumed from iteration 1500) | Phase: adaptive_mastery",
+    "file_size_mb": 249.29106044769287,
+    "quality_score": 230400.44780912352
   },
-  "ckpt_20260514_023714_600_22deff1b_9470fbb7": {
-    "checkpoint_id": "ckpt_20260514_023714_600_22deff1b_9470fbb7",
-    "created_at": "2026-05-14T02:37:14.164594",
-    "iteration": 600,
+  "ckpt_20260514_135437_1600_22deff1b_9470fbb7": {
+    "checkpoint_id": "ckpt_20260514_135437_1600_22deff1b_9470fbb7",
+    "created_at": "2026-05-14T13:54:37.845470",
+    "iteration": 1600,
     "epoch": 0,
-    "train_loss": 341.00594544410706,
-    "val_loss": 6.771226139068603,
-    "learning_rate": 1.68e-05,
+    "train_loss": 86.10800883173943,
+    "val_loss": 1.6410609197616577,
+    "learning_rate": 4.48e-05,
     "model_config": {
       "n_layer": 4,
       "n_head": 4,
@@ -312,31 +202,31 @@
       "block_size": 1024
     },
     "metrics": {
-      "val_loss": 6.771226139068603,
-      "connection_ratio": 0.39999999999999997,
-      "tokens_processed": 1228800,
-      "training_speed_iters_per_sec": 0.07474309993510964
+      "val_loss": 1.6410609197616577,
+      "connection_ratio": 0.9000000000000002,
+      "tokens_processed": 3276800,
+      "training_speed_iters_per_sec": 0.07621493460371978
     },
     "tags": [
       "phase_adaptive_mastery",
-      "low_quality",
+      "high_quality",
       "nanecho",
       "curriculum",
       "introspection"
     ],
     "parent_checkpoint": null,
-    "notes": "Training checkpoint at iteration 600 (resumed from iteration 500) | Phase: adaptive_mastery",
-    "file_size_mb": 249.29015827178955,
-    "quality_score": 92160.63352356867
+    "notes": "Training checkpoint at iteration 1600 (resumed from iteration 1500) | Phase: adaptive_mastery",
+    "file_size_mb": 249.29106044769287,
+    "quality_score": 245760.46134069233
   },
-  "ckpt_20260514_025954_700_22deff1b_9470fbb7": {
-    "checkpoint_id": "ckpt_20260514_025954_700_22deff1b_9470fbb7",
-    "created_at": "2026-05-14T02:59:54.628971",
-    "iteration": 700,
+  "ckpt_20260514_135542_1600_22deff1b_9470fbb7": {
+    "checkpoint_id": "ckpt_20260514_135542_1600_22deff1b_9470fbb7",
+    "created_at": "2026-05-14T13:55:42.530937",
+    "iteration": 1600,
     "epoch": 0,
-    "train_loss": 298.6235873699188,
-    "val_loss": 5.8730814743041995,
-    "learning_rate": 1.9600000000000002e-05,
+    "train_loss": 1.7581576615571977,
+    "val_loss": 1.6212283539772034,
+    "learning_rate": 4.48e-05,
     "model_config": {
       "n_layer": 4,
       "n_head": 4,
@@ -367,31 +257,31 @@
       "block_size": 1024
     },
     "metrics": {
-      "val_loss": 5.8730814743041995,
-      "connection_ratio": 0.44999999999999996,
-      "tokens_processed": 1433600,
-      "training_speed_iters_per_sec": 0.07414693685852819
+      "val_loss": 1.6212283539772034,
+      "connection_ratio": 0.9000000000000002,
+      "tokens_processed": 3276800,
+      "training_speed_iters_per_sec": 0.07333205676499668
     },
     "tags": [
       "phase_adaptive_mastery",
-      "low_quality",
+      "high_quality",
       "nanecho",
       "curriculum",
       "introspection"
     ],
     "parent_checkpoint": null,
-    "notes": "Training checkpoint at iteration 700 (resumed from iteration 500) | Phase: adaptive_mastery",
-    "file_size_mb": 249.29015827178955,
-    "quality_score": 107520.58163873378
+    "notes": "Training checkpoint at iteration 1600 (resumed from iteration 1500) | Phase: adaptive_mastery",
+    "file_size_mb": 249.29106044769287,
+    "quality_score": 245760.46164240013
   },
-  "ckpt_20260514_032155_800_22deff1b_9470fbb7": {
-    "checkpoint_id": "ckpt_20260514_032155_800_22deff1b_9470fbb7",
-    "created_at": "2026-05-14T03:21:55.458389",
-    "iteration": 800,
+  "ckpt_20260514_141625_1700_22deff1b_9470fbb7": {
+    "checkpoint_id": "ckpt_20260514_141625_1700_22deff1b_9470fbb7",
+    "created_at": "2026-05-14T14:16:25.315072",
+    "iteration": 1700,
     "epoch": 0,
-    "train_loss": 250.99706196784973,
-    "val_loss": 4.879430961608887,
-    "learning_rate": 2.24e-05,
+    "train_loss": 75.28925266861916,
+    "val_loss": 1.3707154417037963,
+    "learning_rate": 4.76e-05,
     "model_config": {
       "n_layer": 4,
       "n_head": 4,
@@ -422,31 +312,31 @@
       "block_size": 1024
     },
     "metrics": {
-      "val_loss": 4.879430961608887,
-      "connection_ratio": 0.49999999999999994,
-      "tokens_processed": 1638400,
-      "training_speed_iters_per_sec": 0.0746567354963122
+      "val_loss": 1.3707154417037963,
+      "connection_ratio": 0.9500000000000003,
+      "tokens_processed": 3481600,
+      "training_speed_iters_per_sec": 0.07634901955828047
     },
     "tags": [
       "phase_adaptive_mastery",
-      "low_quality",
+      "high_quality",
       "nanecho",
       "curriculum",
       "introspection"
     ],
     "parent_checkpoint": null,
-    "notes": "Training checkpoint at iteration 800 (resumed from iteration 500) | Phase: adaptive_mastery",
-    "file_size_mb": 249.29015827178955,
-    "quality_score": 122880.52811571829
+    "notes": "Training checkpoint at iteration 1700 (resumed from iteration 1500) | Phase: adaptive_mastery",
+    "file_size_mb": 249.29106044769287,
+    "quality_score": 261120.47504935015
   },
-  "ckpt_20260514_034358_900_22deff1b_9470fbb7": {
-    "checkpoint_id": "ckpt_20260514_034358_900_22deff1b_9470fbb7",
-    "created_at": "2026-05-14T03:43:58.651924",
-    "iteration": 900,
+  "ckpt_20260514_141728_1700_22deff1b_9470fbb7": {
+    "checkpoint_id": "ckpt_20260514_141728_1700_22deff1b_9470fbb7",
+    "created_at": "2026-05-14T14:17:29.010654",
+    "iteration": 1700,
     "epoch": 0,
-    "train_loss": 202.16025120019913,
-    "val_loss": 3.9029549074172976,
-    "learning_rate": 2.52e-05,
+    "train_loss": 1.5370938313007354,
+    "val_loss": 1.3473214411735535,
+    "learning_rate": 4.76e-05,
     "model_config": {
       "n_layer": 4,
       "n_head": 4,
@@ -477,10 +367,65 @@
       "block_size": 1024
     },
     "metrics": {
-      "val_loss": 3.9029549074172976,
-      "connection_ratio": 0.5499999999999999,
-      "tokens_processed": 1843200,
-      "training_speed_iters_per_sec": 0.0748526195628846
+      "val_loss": 1.3473214411735535,
+      "connection_ratio": 0.9500000000000003,
+      "tokens_processed": 3481600,
+      "training_speed_iters_per_sec": 0.07488092637667047
+    },
+    "tags": [
+      "phase_adaptive_mastery",
+      "high_quality",
+      "nanecho",
+      "curriculum",
+      "introspection"
+    ],
+    "parent_checkpoint": null,
+    "notes": "Training checkpoint at iteration 1700 (resumed from iteration 1500) | Phase: adaptive_mastery",
+    "file_size_mb": 249.29106044769287,
+    "quality_score": 261120.47612742396
+  },
+  "ckpt_20260514_143750_1800_22deff1b_9470fbb7": {
+    "checkpoint_id": "ckpt_20260514_143750_1800_22deff1b_9470fbb7",
+    "created_at": "2026-05-14T14:37:50.897450",
+    "iteration": 1800,
+    "epoch": 0,
+    "train_loss": 63.85449081659317,
+    "val_loss": 3.006957130432129,
+    "learning_rate": 5.04e-05,
+    "model_config": {
+      "n_layer": 4,
+      "n_head": 4,
+      "n_embd": 256,
+      "vocab_size": 50257,
+      "block_size": 1024,
+      "dropout": 0.1,
+      "bias": true,
+      "initial_connections": 0.1,
+      "connection_growth_rate": 0.05,
+      "max_connections": 1.0
+    },
+    "training_config": {
+      "learning_rate": 0.0002,
+      "batch_size": 2,
+      "max_iters": 500,
+      "warmup_iters": 5000,
+      "lr_decay_iters": 50000,
+      "min_lr": 1e-05,
+      "weight_decay": 0.1,
+      "grad_clip": 1.0,
+      "enable_curriculum_learning": true,
+      "enable_introspection": true
+    },
+    "data_config": {
+      "data_dir": "data/nanecho",
+      "batch_size": 2,
+      "block_size": 1024
+    },
+    "metrics": {
+      "val_loss": 3.006957130432129,
+      "connection_ratio": 1.0,
+      "tokens_processed": 3686400,
+      "training_speed_iters_per_sec": 0.07681290901258385
     },
     "tags": [
       "phase_adaptive_mastery",
@@ -490,18 +435,73 @@
       "introspection"
     ],
     "parent_checkpoint": null,
-    "notes": "Training checkpoint at iteration 900 (resumed from iteration 500) | Phase: adaptive_mastery",
-    "file_size_mb": 249.29015827178955,
-    "quality_score": 138240.4823566104
+    "notes": "Training checkpoint at iteration 1800 (resumed from iteration 1500) | Phase: adaptive_mastery",
+    "file_size_mb": 249.29106044769287,
+    "quality_score": 276480.48097890697
   },
-  "ckpt_20260514_040557_1000_22deff1b_9470fbb7": {
-    "checkpoint_id": "ckpt_20260514_040557_1000_22deff1b_9470fbb7",
-    "created_at": "2026-05-14T04:05:57.649751",
-    "iteration": 1000,
+  "ckpt_20260514_145927_1900_22deff1b_9470fbb7": {
+    "checkpoint_id": "ckpt_20260514_145927_1900_22deff1b_9470fbb7",
+    "created_at": "2026-05-14T14:59:27.798854",
+    "iteration": 1900,
+    "epoch": 0,
+    "train_loss": 1.3809215277433395,
+    "val_loss": 1.0480528450012208,
+    "learning_rate": 5.32e-05,
+    "model_config": {
+      "n_layer": 4,
+      "n_head": 4,
+      "n_embd": 256,
+      "vocab_size": 50257,
+      "block_size": 1024,
+      "dropout": 0.1,
+      "bias": true,
+      "initial_connections": 0.1,
+      "connection_growth_rate": 0.05,
+      "max_connections": 1.0
+    },
+    "training_config": {
+      "learning_rate": 0.0002,
+      "batch_size": 2,
+      "max_iters": 500,
+      "warmup_iters": 5000,
+      "lr_decay_iters": 50000,
+      "min_lr": 1e-05,
+      "weight_decay": 0.1,
+      "grad_clip": 1.0,
+      "enable_curriculum_learning": true,
+      "enable_introspection": true
+    },
+    "data_config": {
+      "data_dir": "data/nanecho",
+      "batch_size": 2,
+      "block_size": 1024
+    },
+    "metrics": {
+      "val_loss": 1.0480528450012208,
+      "connection_ratio": 1.0,
+      "tokens_processed": 3891200,
+      "training_speed_iters_per_sec": 0.07708023383481653
+    },
+    "tags": [
+      "phase_adaptive_mastery",
+      "high_quality",
+      "nanecho",
+      "curriculum",
+      "introspection"
+    ],
+    "parent_checkpoint": null,
+    "notes": "Training checkpoint at iteration 1900 (resumed from iteration 1500) | Phase: adaptive_mastery",
+    "file_size_mb": 249.29106044769287,
+    "quality_score": 291840.5011730367
+  },
+  "ckpt_20260514_151950_2000_22deff1b_9470fbb7": {
+    "checkpoint_id": "ckpt_20260514_151950_2000_22deff1b_9470fbb7",
+    "created_at": "2026-05-14T15:19:50.382830",
+    "iteration": 2000,
     "epoch": 0,
     "train_loss": 0.0,
-    "val_loss": 3.1163382005691527,
-    "learning_rate": 2.7972e-05,
+    "val_loss": 0.7789712142944336,
+    "learning_rate": 5.5972000000000006e-05,
     "model_config": {
       "n_layer": 4,
       "n_head": 4,
@@ -532,21 +532,21 @@
       "block_size": 1024
     },
     "metrics": {
-      "val_loss": 3.1163382005691527,
-      "connection_ratio": 0.5499999999999999,
-      "tokens_processed": 2048000,
-      "training_speed_iters_per_sec": 0.07504901846383802
+      "val_loss": 0.7789712142944336,
+      "connection_ratio": 1.0,
+      "tokens_processed": 4096000,
+      "training_speed_iters_per_sec": 0.07783556369346298
     },
     "tags": [
       "phase_adaptive_mastery",
-      "medium_quality",
+      "high_quality",
       "nanecho",
       "curriculum",
       "introspection"
     ],
     "parent_checkpoint": null,
-    "notes": "Training checkpoint at iteration 1000 (resumed from iteration 500) | Phase: adaptive_mastery",
+    "notes": "Training checkpoint at iteration 2000 (resumed from iteration 1500) | Phase: adaptive_mastery",
     "file_size_mb": 249.29106044769287,
-    "quality_score": 153600.45065809577
+    "quality_score": 307200.53274635813
   }
 }
