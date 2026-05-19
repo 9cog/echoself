@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-05-18 06:04:05 UTC
+# Dependency Audit Report - 2026-05-19 03:02:30 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-05-18T06:04:03.692Z",
+  "timestamp": "2026-05-19T03:02:28.013Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -233,13 +233,13 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
 
 path-to-regexp  <0.1.13
 Severity: high
@@ -296,13 +296,19 @@ fix available via `npm audit fix`
 node_modules/uuid
 
 
+ws  8.0.0 - 8.20.0
+Severity: moderate
+ws: Uninitialized memory disclosure - https://github.com/advisories/GHSA-58qx-3vcg-4xpx
+fix available via `npm audit fix`
+node_modules/ws
+
 yaml  2.0.0 - 2.8.2
 Severity: moderate
 yaml is vulnerable to Stack Overflow via deeply nested YAML collections - https://github.com/advisories/GHSA-48c2-rrv3-qjmp
 fix available via `npm audit fix`
 node_modules/yaml
 
-34 vulnerabilities (2 low, 12 moderate, 20 high)
+35 vulnerabilities (2 low, 13 moderate, 20 high)
 
 To address issues that do not require attention, run:
   npm audit fix
