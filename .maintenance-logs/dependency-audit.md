@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-05-21 03:02:52 UTC
+# Dependency Audit Report - 2026-05-22 03:03:00 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-05-21T03:02:50.320Z",
+  "timestamp": "2026-05-22T03:02:58.177Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -233,13 +233,13 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
 
 path-to-regexp  <0.1.13
 Severity: high
@@ -289,7 +289,7 @@ Undici has CRLF Injection in undici via `upgrade` option - https://github.com/ad
 fix available via `npm audit fix`
 node_modules/undici
 
-uuid  11.0.0 - 11.1.0
+uuid  <11.1.1
 Severity: moderate
 uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided - https://github.com/advisories/GHSA-w5hq-g745-h8pq
 fix available via `npm audit fix`
