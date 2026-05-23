@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-05-22 03:03:00 UTC
+# Dependency Audit Report - 2026-05-23 03:01:42 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-05-22T03:02:58.177Z",
+  "timestamp": "2026-05-23T03:01:40.523Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -263,6 +263,18 @@ PostCSS has XSS via Unescaped </style> in its CSS Stringify Output - https://git
 fix available via `npm audit fix`
 node_modules/postcss
 
+qs  6.11.1 - 6.15.1
+Severity: moderate
+qs has a remotely triggerable DoS: qs.stringify crashes with TypeError on null/undefined entries in comma-format arrays when encodeValuesOnly is set - https://github.com/advisories/GHSA-q8mj-m7cp-5q26
+fix available via `npm audit fix`
+node_modules/qs
+  body-parser  1.20.3 - 1.20.4 || 2.0.0-beta.1 - 2.0.2
+  Depends on vulnerable versions of qs
+  node_modules/body-parser
+  express  4.21.0 - 4.22.1 || 5.0.0-alpha.1 - 5.0.1
+  Depends on vulnerable versions of qs
+  node_modules/express
+
 tar  <=7.5.10
 Severity: high
 node-tar Vulnerable to Arbitrary File Creation/Overwrite via Hardlink Path Traversal - https://github.com/advisories/GHSA-34x7-hfp2-rc4v
@@ -308,7 +320,7 @@ yaml is vulnerable to Stack Overflow via deeply nested YAML collections - https:
 fix available via `npm audit fix`
 node_modules/yaml
 
-35 vulnerabilities (2 low, 13 moderate, 20 high)
+38 vulnerabilities (2 low, 16 moderate, 20 high)
 
 To address issues that do not require attention, run:
   npm audit fix
