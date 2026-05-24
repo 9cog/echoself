@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-05-23T20:21:12.479808+00:00",
+  "timestamp": "2026-05-24T00:32:56.052812+00:00",
   "analysis_source": "automation_analysis.json",
   "trigger_source": "next_cycle_trigger.json",
   "eval_report_used": true,
-  "overall_fidelity": 0.48396666666666666,
+  "overall_fidelity": 0.5056333333333334,
   "changes_applied": [],
   "changes_delta": {},
   "total_changes": 0,
