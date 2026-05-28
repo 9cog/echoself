@@ -112,5 +112,81 @@
     "ddp": false,
     "out_dir": "out-nanecho",
     "eval_dir": "eval-nanecho"
+  },
+  "topology_evolution": {
+    "enabled": true,
+    "echobeat_period": 9,
+    "topology_epoch_beats": 100,
+    "mutation_cooldown_steps": 500,
+    "grip_velocity_threshold": 0.02,
+    "transition_freeze_steps": 150,
+    "grip_window_size": 100,
+    "oeis_a000081_ladder": [1, 1, 2, 4, 9, 20, 48],
+    "spectral_radius_range": [0.80, 0.98],
+    "entropy_target_by_phase": {
+      "basic_awareness": 0.8,
+      "persona_dimensions": 0.75,
+      "hypergraph_patterns": 0.7,
+      "recursive_reasoning": 0.65,
+      "adaptive_mastery": 0.6
+    },
+    "mutation_gate": {
+      "min_grip_velocity": 0.01,
+      "max_grip_velocity": 0.3,
+      "cooldown_steps": 500
+    }
+  },
+  "adaptive_phases": {
+    "patience_steps": 200,
+    "transition_freeze_steps": 150,
+    "base_lr_multipliers": {
+      "basic_awareness": 1.2,
+      "persona_dimensions": 1.0,
+      "hypergraph_patterns": 0.9,
+      "recursive_reasoning": 0.8,
+      "adaptive_mastery": 0.7
+    },
+    "topology_targets": {
+      "basic_awareness": {
+        "spectral_radius": 0.95,
+        "tree_depth": 1,
+        "echo_depth": 1,
+        "memory_size": 128,
+        "permeability": 0.8,
+        "active_echo_layers": 2
+      },
+      "persona_dimensions": {
+        "spectral_radius": 0.93,
+        "tree_depth": 2,
+        "echo_depth": 2,
+        "memory_size": 256,
+        "permeability": 0.7,
+        "active_echo_layers": 4
+      },
+      "hypergraph_patterns": {
+        "spectral_radius": 0.90,
+        "tree_depth": 4,
+        "echo_depth": 3,
+        "memory_size": 512,
+        "permeability": 0.6,
+        "active_echo_layers": 6
+      },
+      "recursive_reasoning": {
+        "spectral_radius": 0.88,
+        "tree_depth": 9,
+        "echo_depth": 5,
+        "memory_size": 512,
+        "permeability": 0.5,
+        "active_echo_layers": 8
+      },
+      "adaptive_mastery": {
+        "spectral_radius": 0.85,
+        "tree_depth": 9,
+        "echo_depth": 7,
+        "memory_size": 1024,
+        "permeability": 0.5,
+        "active_echo_layers": 12
+      }
+    }
   }
 }
