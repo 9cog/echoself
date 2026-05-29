@@ -122,7 +122,7 @@
     "transition_freeze_steps": 150,
     "grip_window_size": 100,
     "oeis_a000081_ladder": [1, 1, 2, 4, 9, 20, 48],
-    "spectral_radius_range": [0.80, 0.98],
+    "spectral_radius_range": [0.8, 0.98],
     "entropy_target_by_phase": {
       "basic_awareness": 0.8,
       "persona_dimensions": 0.75,
@@ -164,7 +164,7 @@
         "active_echo_layers": 4
       },
       "hypergraph_patterns": {
-        "spectral_radius": 0.90,
+        "spectral_radius": 0.9,
         "tree_depth": 4,
         "echo_depth": 3,
         "memory_size": 512,
