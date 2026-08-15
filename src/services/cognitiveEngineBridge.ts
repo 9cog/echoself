@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-node-globals
 /**
  * Cognitive Engine Bridge - Python-TypeScript interop for cognitive engines
  *

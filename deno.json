@@ -6,6 +6,14 @@
     "format:check": "deno fmt --check"
   },
   "lint": {
+    "exclude": [
+      "build/",
+      "public/build/",
+      "node_modules/",
+      "dist/",
+      "out-*/",
+      "**/node_modules/"
+    ],
     "rules": {
       "tags": ["recommended"],
       "exclude": [

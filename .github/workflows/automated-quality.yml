@@ -168,6 +168,22 @@ jobs:
             echo "" >> .maintenance-logs/latest-report.md
           fi
 
+          if [ "${{ steps.remaining_issues.outputs.prettier_errors }}" = "true" ]; then
+            echo "## ⚠️ Prettier Errors Requiring Manual Intervention" >> .maintenance-logs/latest-report.md
+            echo '```' >> .maintenance-logs/latest-report.md
+            head -50 prettier.log >> .maintenance-logs/latest-report.md || echo "No prettier.log found" >> .maintenance-logs/latest-report.md
+            echo '```' >> .maintenance-logs/latest-report.md
+            echo "" >> .maintenance-logs/latest-report.md
+          fi
+
+          if [ "${{ steps.remaining_issues.outputs.deno_errors }}" = "true" ]; then
+            echo "## ⚠️ Deno Lint Errors Requiring Manual Intervention" >> .maintenance-logs/latest-report.md
+            echo '```' >> .maintenance-logs/latest-report.md
+            head -50 deno_lint.log >> .maintenance-logs/latest-report.md || echo "No deno_lint.log found" >> .maintenance-logs/latest-report.md
+            echo '```' >> .maintenance-logs/latest-report.md
+            echo "" >> .maintenance-logs/latest-report.md
+          fi
+
       - name: Create issue for unfixable errors
         if: steps.remaining_issues.outputs.typecheck_errors == 'true' || steps.remaining_issues.outputs.eslint_errors == 'true' || steps.remaining_issues.outputs.prettier_errors == 'true' || steps.remaining_issues.outputs.deno_errors == 'true'
         uses: actions/github-script@v7
