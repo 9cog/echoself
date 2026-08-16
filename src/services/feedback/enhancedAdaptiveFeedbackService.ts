@@ -220,18 +220,21 @@ export class EnhancedAdaptiveFeedbackService {
     const startTime = Date.now();
 
     // Simple heuristic scoring
-    const scored = models.map(model => ({
-      model,
-      rrScore: this.calculateFallbackScore(model),
-      criteria: {
-        goal_alignment: model.salienceScore * 0.3,
-        predictive_power: 0.5,
-        cognitive_economy: Math.min(1, 1 / (1 + model.usageCount * 0.1)),
-        novelty_value: model.salienceScore > 0.5 ? 0.7 : 0.3,
-        contextual_fit: 0.5,
-      },
-      future_relevance: model.salienceScore * 0.8,
-    }));
+    const scored = models.map(model => {
+      const salience = model.salienceScore ?? 0.5;
+      return {
+        model,
+        rrScore: this.calculateFallbackScore(model),
+        criteria: {
+          goal_alignment: salience * 0.3,
+          predictive_power: 0.5,
+          cognitive_economy: Math.min(1, 1 / (1 + model.usageCount * 0.1)),
+          novelty_value: salience > 0.5 ? 0.7 : 0.3,
+          contextual_fit: 0.5,
+        },
+        future_relevance: salience * 0.8,
+      };
+    });
 
     // Sort by score and take top items
     scored.sort((a, b) => b.rrScore - a.rrScore);
@@ -261,7 +264,7 @@ export class EnhancedAdaptiveFeedbackService {
       0.3
     );
     const usageWeight = Math.min(model.usageCount * 0.05, 0.2);
-    return model.salienceScore * 0.5 + feedbackWeight + usageWeight;
+    return (model.salienceScore ?? 0.5) * 0.5 + feedbackWeight + usageWeight;
   }
 
   /**
