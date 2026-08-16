@@ -1,0 +1,83 @@
+{
+  "version": "1.0.0",
+  "description": "Cumulative training progress tracking for Deep Tree Echo persona",
+  "total_iterations_completed": 200,
+  "total_sessions": 1,
+  "current_model_params": {
+    "n_layer": 4,
+    "n_head": 4,
+    "n_embd": 256,
+    "block_size": 1024,
+    "vocab_size": 50304
+  },
+  "best_metrics": {
+    "best_val_loss": 1.9703,
+    "final_train_loss": 2.2247
+  },
+  "scaling_schedule": {
+    "description": "Model scaling based on cumulative training progress",
+    "thresholds": [
+      {
+        "iterations": 0,
+        "n_layer": 4,
+        "n_head": 4,
+        "n_embd": 256,
+        "learning_rate": "2e-4",
+        "batch_size": 2
+      },
+      {
+        "iterations": 500,
+        "n_layer": 6,
+        "n_head": 6,
+        "n_embd": 384,
+        "learning_rate": "1e-4",
+        "batch_size": 4
+      },
+      {
+        "iterations": 2000,
+        "n_layer": 8,
+        "n_head": 8,
+        "n_embd": 512,
+        "learning_rate": "6e-5",
+        "batch_size": 6
+      },
+      {
+        "iterations": 10000,
+        "n_layer": 12,
+        "n_head": 12,
+        "n_embd": 768,
+        "learning_rate": "3e-5",
+        "batch_size": 8
+      },
+      {
+        "iterations": 50000,
+        "n_layer": 16,
+        "n_head": 16,
+        "n_embd": 1024,
+        "learning_rate": "1e-5",
+        "batch_size": 12
+      }
+    ]
+  },
+  "session_history": [
+    {
+      "session_id": "initial",
+      "timestamp": "2026-06-11T11:32:44Z",
+      "iterations_start": 0,
+      "iterations_end": 200,
+      "iterations_this_session": 200,
+      "model_params": {
+        "n_layer": 4,
+        "n_head": 4,
+        "n_embd": 256
+      },
+      "metrics": {
+        "final_train_loss": 2.2247,
+        "best_val_loss": 1.9703
+      },
+      "workflow": "agent-neuro-train.yml",
+      "trigger": "ci"
+    }
+  ],
+  "last_updated": "2026-06-11T11:32:44Z"
+}
