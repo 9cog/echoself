@@ -258,9 +258,9 @@ def main(argv: list[str] | None = None) -> int:
         else:
             i += 1
     server = make_server(host, port, data_dir, seed=seed)
-    print(f"mech0 (ech0-mem0) listening on http://{host}:{port}")
-    print(f"data: {server.mech0_store.db_path}")  # type: ignore[attr-defined]
-    print("cloud Mem0 is not required")
+    print(f"mech0 (ech0-mem0) listening on http://{host}:{port}", flush=True)
+    print(f"data: {server.mech0_store.db_path}", flush=True)  # type: ignore[attr-defined]
+    print("cloud Mem0 is not required", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

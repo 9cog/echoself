@@ -12,6 +12,7 @@ export { default as MardukScientistService } from "./mardukScientistService";
 
 // Other services
 export * from "./stackblitzService";
+export { Mech0Client, getMech0Client } from "./mech0Client";
 
 // Types
 export type {
