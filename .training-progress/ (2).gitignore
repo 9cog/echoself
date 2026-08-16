@@ -1,9 +1,0 @@
-# Exclude large model checkpoint files
-*.pt
-*.pth
-*.bin
-
-# Keep important metadata and summaries
-!**/metadata.json
-!**/training_summary.json
-!**/cache_stats.json

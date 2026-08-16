@@ -9,6 +9,19 @@ export interface VectorSearchResult {
   similarity: number;
 }
 
+// Type definitions for Supabase operations (client is untyped)
+interface EmbeddingUpdatePayload {
+  embedding: number[];
+}
+
+interface MatchMemoriesParams {
+  query_embedding: number[];
+  match_threshold: number;
+  match_count: number;
+  user_id: string;
+  filter_type: string | undefined;
+}
+
 export class VectorStoreService {
   private static instance: VectorStoreService;
   private supabase: ReturnType<typeof createClient>;
@@ -104,11 +117,13 @@ export class VectorStoreService {
 
     try {
       // Add to Supabase
-      const { error } = await this.supabase
+      // Note: Type assertion needed because Supabase client is created without typed database schema
+      const updatePayload: EmbeddingUpdatePayload = { embedding };
+      const { error } = (await this.supabase
         .from("memories")
-        .update({ embedding })
+        .update(updatePayload as unknown as never)
         .eq("user_id", userId)
-        .eq("content", content);
+        .eq("content", content)) as { error: Error | null };
 
       if (error) {
         throw error;
@@ -144,13 +159,19 @@ export class VectorStoreService {
 
     try {
       // Search in Supabase
-      const { data, error } = await this.supabase.rpc("match_memories", {
+      // Note: Type assertion needed because Supabase client is created without typed database schema
+      const rpcParams: MatchMemoriesParams = {
         query_embedding: embedding,
         match_threshold: threshold,
         match_count: limit,
         user_id: userId,
         filter_type: options.type,
-      });
+      };
+
+      const { data, error } = (await this.supabase.rpc(
+        "match_memories",
+        rpcParams as unknown as never
+      )) as { data: VectorSearchResult[] | null; error: Error | null };
 
       if (error) {
         throw error;

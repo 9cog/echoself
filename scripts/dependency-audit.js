@@ -38,7 +38,7 @@ function checkDependencyUsage(deps, searchDirs = ["app", "src"]) {
 
         const files = result.split("\n").filter(f => f.trim());
         usageCount[dep] += files.length;
-      } catch (error) {
+      } catch (_error) {
         // Ignore grep errors
       }
     }

@@ -54,6 +54,7 @@ npm run lint:fix         # Auto-fix ESLint issues
 npm run format           # Prettier formatting
 npm run format:check     # Check formatting
 npm run typecheck        # TypeScript compilation
+deno lint                # Deno linting (for .ts files)
 
 # Training (NanEcho)
 cd NanEcho

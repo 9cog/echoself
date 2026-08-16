@@ -12,4 +12,10 @@ coverage
 .github/
 public/build/
 .maintenance-logs/
-.training-progress/
+
+# Machine-generated training artifacts committed by CI training workflows
+.training-progress/**/cache/
+.training-progress/**/metadata.json
+.training-progress/**/introspection_history.json
+.training-progress/**/training_summary.json
+.training-progress/**/*_summary.json

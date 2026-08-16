@@ -5,6 +5,8 @@
  * outlined in echoself.md and COGPRIME_ARCHITECTURE_DIAGRAM.md
  */
 
+import { getConfig, setConfig } from "../evolutionaryConfig";
+
 // Types for hypergraph node representation
 export interface HypergraphNode {
   id: string;
@@ -41,7 +43,11 @@ export interface SalienceMetrics {
 export class HypergraphSchemeCore {
   private atomSpace: Map<string, HypergraphNode> = new Map();
   private patterns: Map<string, CognitivePattern> = new Map();
-  private attentionThreshold: number = 0.5;
+  private localAttentionThreshold: number | null = null;
+
+  private get attentionThreshold(): number {
+    return this.localAttentionThreshold ?? getConfig("attentionThreshold");
+  }
 
   constructor() {
     this.initializeAtomSpace();
@@ -98,15 +104,16 @@ export class HypergraphSchemeCore {
    * Implements the salience heuristics from echoself.md
    */
   private calculateSemanticSalience(id: string, content: any): number {
-    let salience = 0.5; // Base salience
+    const baseSalience = getConfig("confidenceBaseline");
+    let salience = baseSalience;
 
     // Core directories/files get higher salience (from echoself.md)
     if (id.includes("AtomSpace") || id.includes("core")) {
-      salience = 0.95;
+      salience = getConfig("resonanceIntensityMax") + 0.05;
     } else if (id.includes("src") || id.includes("models")) {
-      salience = 0.85;
+      salience = getConfig("resonanceIntensityMax") - 0.05;
     } else if (id.includes("README") || id.includes("docs")) {
-      salience = 0.8;
+      salience = getConfig("resonanceIntensityMin") + 0.1;
     }
 
     // Content-based salience adjustments
@@ -125,8 +132,9 @@ export class HypergraphSchemeCore {
     currentLoad: number,
     recentActivity: number
   ): number {
-    // High load or low activity leads to higher threshold (less data)
-    return 0.5 + currentLoad * 0.3 + (0.2 - recentActivity);
+    const baseThreshold = this.attentionThreshold;
+    const loadFactor = getConfig("cognitiveLoadFactor");
+    return baseThreshold + currentLoad * loadFactor + (0.2 - recentActivity);
   }
 
   /**
@@ -135,8 +143,10 @@ export class HypergraphSchemeCore {
    */
   public spreadAttention(
     sourceNodeId: string,
-    spreadingFactor: number = 0.1
+    spreadingFactor?: number
   ): void {
+    const effectiveSpreadFactor =
+      spreadingFactor ?? getConfig("spreadingFactor");
     const sourceNode = this.atomSpace.get(sourceNodeId);
     if (!sourceNode) return;
 
@@ -144,7 +154,7 @@ export class HypergraphSchemeCore {
     sourceNode.links.forEach(linkedNodeId => {
       const linkedNode = this.atomSpace.get(linkedNodeId);
       if (linkedNode) {
-        const spreadAmount = sourceNode.attention * spreadingFactor;
+        const spreadAmount = sourceNode.attention * effectiveSpreadFactor;
         linkedNode.attention += spreadAmount;
         linkedNode.attention = Math.min(linkedNode.attention, 1.0);
       }
@@ -167,15 +177,17 @@ export class HypergraphSchemeCore {
    * (define (mine-cognitive-patterns atomspace pattern-threshold))
    */
   public mineCognitivePatterns(
-    patternThreshold: number = 0.7
+    patternThreshold?: number
   ): CognitivePattern[] {
+    const effectiveThreshold =
+      patternThreshold ?? getConfig("patternThreshold");
     const discoveredPatterns: CognitivePattern[] = [];
     const nodes = Array.from(this.atomSpace.values());
 
     // Find frequent subgraph patterns
     const frequentSubgraphs = this.findFrequentSubgraphs(
       nodes,
-      patternThreshold
+      effectiveThreshold
     );
 
     frequentSubgraphs.forEach((pattern, index) => {
@@ -257,7 +269,9 @@ export class HypergraphSchemeCore {
    * Update attention threshold dynamically
    */
   public updateAttentionThreshold(threshold: number): void {
-    this.attentionThreshold = Math.max(0.1, Math.min(threshold, 1.0));
+    const clampedThreshold = Math.max(0.1, Math.min(threshold, 1.0));
+    this.localAttentionThreshold = clampedThreshold;
+    setConfig("attentionThreshold", clampedThreshold);
   }
 
   /**

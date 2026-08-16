@@ -7,6 +7,7 @@ on:
       - 'NanEcho/**'
       - 'echoself.md'
       - 'echo/**'
+      - 'echogenesis/**'
       - 'training_cache.py'
       - 'train_cached.py'
       - '.github/workflows/netrain-cached.yml'
@@ -16,6 +17,7 @@ on:
       - 'NanEcho/**'
       - 'echoself.md'
       - 'echo/**'
+      - 'echogenesis/**'
       - 'training_cache.py'
       - 'train_cached.py'
       - '.github/workflows/netrain-cached.yml'
@@ -68,6 +70,10 @@ on:
         default: ''
         type: string
 
+env:
+  # Use Node.js 24 for GitHub Actions to address deprecation warnings
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   train:
     runs-on: ubuntu-latest
@@ -90,7 +96,7 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip'
@@ -238,6 +244,19 @@ jobs:
         echo "force_fresh_start=${{ steps.safety_check.outputs.allow_fresh_start }}" >> $GITHUB_OUTPUT
         echo "max_checkpoints=${{ github.event.inputs.max_checkpoints || '10' }}" >> $GITHUB_OUTPUT
         echo "max_cache_size_gb=${{ github.event.inputs.max_cache_size_gb || '5.0' }}" >> $GITHUB_OUTPUT
+
+    - name: Sanitize artifact name
+      id: artifact
+      env:
+        RAW_NAME: ${{ steps.params.outputs.output_dir }}
+      run: |
+        # Artifact names cannot contain: " : < > | * ? \r \n \ /
+        # Auto-correct any invalid character to an underscore so artifact
+        # uploads never fail due to naming restrictions.
+        sanitized=$(printf '%s' "$RAW_NAME" | tr '":<>|*?/\\\r\n' '_')
+        echo "name=${sanitized}" >> $GITHUB_OUTPUT
+        echo "Sanitized artifact name suffix: ${sanitized}"
+
 
     - name: Prepare directory structure
       run: |

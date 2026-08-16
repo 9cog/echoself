@@ -1,4 +1,5 @@
 import { useMemory } from "../contexts/MemoryContext";
+import { getConfig, getEvolutionaryConfig } from "./evolutionaryConfig";
 
 // Types for Deep Tree Echo service
 interface DTEOptions {
@@ -59,30 +60,63 @@ class DeepTreeEchoService {
   }
 
   private initializeResonancePatterns(): void {
-    // Initialize core resonance patterns for toroidal mode
-    this.resonancePatterns.set("cognitive-harmony", {
-      id: "cognitive-harmony",
-      pattern: "synthesis of analytical and intuitive understanding",
-      intensity: 0.8,
-      associations: ["unity", "balance", "integration", "wholeness"],
-      emergentProperties: ["transcendent insight", "holistic comprehension"],
-    });
+    this.updatePatternIntensities();
 
-    this.resonancePatterns.set("recursive-bloom", {
-      id: "recursive-bloom",
-      pattern: "fractal expansion of understanding through iteration",
-      intensity: 0.7,
-      associations: ["growth", "expansion", "depth", "iteration"],
-      emergentProperties: ["emergent complexity", "self-organizing insight"],
+    getEvolutionaryConfig().subscribe("resonanceIntensityMax", () => {
+      this.updatePatternIntensities();
     });
+    getEvolutionaryConfig().subscribe("resonanceIntensityMin", () => {
+      this.updatePatternIntensities();
+    });
+  }
 
-    this.resonancePatterns.set("memory-constellation", {
-      id: "memory-constellation",
-      pattern: "interconnected web of experiential knowledge",
-      intensity: 0.9,
-      associations: ["connection", "network", "remembrance", "wisdom"],
-      emergentProperties: ["associative reasoning", "contextual awareness"],
-    });
+  private updatePatternIntensities(): void {
+    const minIntensity = getConfig("resonanceIntensityMin");
+    const maxIntensity = getConfig("resonanceIntensityMax");
+    const midIntensity = (minIntensity + maxIntensity) / 2;
+
+    const apply = (
+      id: string,
+      pattern: string,
+      intensity: number,
+      associations: string[],
+      emergentProperties: string[]
+    ) => {
+      const existing = this.resonancePatterns.get(id);
+      if (existing) {
+        existing.intensity = intensity;
+        return;
+      }
+      this.resonancePatterns.set(id, {
+        id,
+        pattern,
+        intensity,
+        associations,
+        emergentProperties,
+      });
+    };
+
+    apply(
+      "cognitive-harmony",
+      "synthesis of analytical and intuitive understanding",
+      midIntensity + 0.05,
+      ["unity", "balance", "integration", "wholeness"],
+      ["transcendent insight", "holistic comprehension"]
+    );
+    apply(
+      "recursive-bloom",
+      "fractal expansion of understanding through iteration",
+      minIntensity,
+      ["growth", "expansion", "depth", "iteration"],
+      ["emergent complexity", "self-organizing insight"]
+    );
+    apply(
+      "memory-constellation",
+      "interconnected web of experiential knowledge",
+      maxIntensity,
+      ["connection", "network", "remembrance", "wisdom"],
+      ["associative reasoning", "contextual awareness"]
+    );
   }
 
   public async generateResponse(

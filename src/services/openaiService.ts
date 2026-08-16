@@ -153,13 +153,25 @@ export class DeepTreeEchoOpenAIService {
           "\n\nUse these memories when relevant to your response.";
       }
 
-      // Build messages array with conversation history
+      // Build messages from history and ensure the current prompt is present.
+      // Assumption: callers either omit the current turn from history, or append it
+      // as the final user message with the same raw content as `prompt`.
+      const historyMessages = conversationHistory.map(msg => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+      }));
+      const lastMessage = historyMessages[historyMessages.length - 1];
+      const promptAlreadyPresent =
+        !!lastMessage &&
+        lastMessage.role === "user" &&
+        lastMessage.content === prompt;
+      if (!promptAlreadyPresent) {
+        historyMessages.push({ role: "user", content: prompt });
+      }
+
       const messages = [
         { role: "system", content: systemPrompt },
-        ...conversationHistory.map(msg => ({
-          role: msg.role as "user" | "assistant",
-          content: msg.content,
-        })),
+        ...historyMessages,
       ];
 
       const completion = await this.client.chat.completions.create({

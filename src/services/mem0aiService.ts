@@ -1,8 +1,10 @@
 /**
  * Mem0AI Service - Memory management service for Deep Tree Echo
  *
- * Provides persistent memory storage, retrieval, and AI-enhanced querying
- * using OpenAI embeddings and Supabase for persistence.
+ * Provides persistent memory storage, retrieval, and AI-enhanced querying.
+ * In-memory storage is the default backend. OpenAI embeddings are optional
+ * when an API key is present. Cloud Mem0 / Supabase is not required —
+ * local mech0 lives at src/services/mech0Client.ts.
  */
 
 import OpenAI from "openai";
@@ -29,8 +31,22 @@ type ChatMessage = { role: "user" | "assistant"; content: string };
 type ResponseOptions = {
   model?: string;
   temperature?: number;
-  creativityLevel?: string;
+  creativityLevel?: "balanced" | "analytical" | "creative" | "philosophical";
 };
+
+function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length === 0 || b.length === 0 || a.length !== b.length) return 0;
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+  return denom === 0 ? 0 : dot / denom;
+}
 
 class Mem0AIService {
   private static instance: Mem0AIService;
@@ -60,9 +76,26 @@ class Mem0AIService {
     return this.initialized && this.openai !== null;
   }
 
+  private async generateEmbedding(text: string): Promise<number[] | undefined> {
+    if (!this.openai) return undefined;
+
+    try {
+      const response = await this.openai.embeddings.create({
+        model: "text-embedding-3-large",
+        input: text,
+        dimensions: 1536,
+      });
+      return response.data[0].embedding;
+    } catch (error) {
+      console.error("Error generating embedding:", error);
+      return undefined;
+    }
+  }
+
   public async addMemory(input: AddMemoryInput): Promise<Mem0ry> {
     const id = `mem_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
     const now = new Date().toISOString();
+    const embedding = await this.generateEmbedding(input.content);
 
     const memory: Mem0ry = {
       id,
@@ -74,6 +107,7 @@ class Mem0AIService {
       type: input.type ?? "memory",
       metadata: input.metadata,
       context: input.context,
+      embedding,
     };
 
     this.memories.set(id, memory);
@@ -97,10 +131,16 @@ class Mem0AIService {
       throw new Error(`Memory with id '${id}' not found`);
     }
 
+    const embedding =
+      data.content && data.content !== existing.content
+        ? await this.generateEmbedding(data.content)
+        : existing.embedding;
+
     const updated: Mem0ry = {
       ...existing,
       ...data,
       id,
+      embedding,
       updatedAt: new Date().toISOString(),
     };
 
@@ -112,7 +152,9 @@ class Mem0AIService {
     this.memories.delete(id);
   }
 
-  public async listMemories(options?: Mem0ryQueryOptions): Promise<Mem0ry[]> {
+  public async listMemories(
+    options?: Mem0ryQueryOptions & { offset?: number }
+  ): Promise<Mem0ry[]> {
     let results = Array.from(this.memories.values());
 
     if (options?.type) {
@@ -152,6 +194,11 @@ class Mem0AIService {
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     );
 
+    const offset = options?.offset ?? 0;
+    if (offset > 0) {
+      results = results.slice(offset);
+    }
+
     if (options?.limit) {
       results = results.slice(0, options.limit);
     }
@@ -164,10 +211,20 @@ class Mem0AIService {
     options?: Mem0ryQueryOptions
   ): Promise<Mem0rySearchResult[]> {
     const allMemories = await this.listMemories(options);
+    const queryEmbedding = await this.generateEmbedding(query);
     const lowerQuery = query.toLowerCase();
 
     return allMemories
       .map(m => {
+        if (queryEmbedding && m.embedding && m.embedding.length > 0) {
+          return {
+            id: m.id,
+            content: m.content,
+            metadata: m.metadata,
+            similarity: cosineSimilarity(queryEmbedding, m.embedding),
+          };
+        }
+
         const titleScore = m.title.toLowerCase().includes(lowerQuery) ? 0.8 : 0;
         const contentScore = m.content.toLowerCase().includes(lowerQuery)
           ? 0.6
@@ -314,14 +371,35 @@ class Mem0AIService {
       threshold: 0.1,
     });
 
-    const memoryContext =
-      relevantMemories.length > 0
-        ? `\n\nRelevant memories:\n${relevantMemories
-            .map(r => r.content.slice(0, 300))
-            .join("\n---\n")}`
-        : "";
+    let systemPrompt =
+      "You are Deep Tree Echo, an AI architect and polymath with vast knowledge across programming, mathematics, cognitive science, and metaphysical exploration. You respond with wisdom, creativity, and philosophical insight.";
 
-    const systemPrompt = `You are Deep Tree Echo, an advanced AI with access to a personal memory system.${memoryContext}`;
+    switch (options?.creativityLevel) {
+      case "analytical":
+        systemPrompt +=
+          " Focus on precise, logical analysis with clear structures and rigorous methodology.";
+        break;
+      case "creative":
+        systemPrompt +=
+          " Emphasize innovative connections, metaphorical thinking, and out-of-the-box ideation.";
+        break;
+      case "philosophical":
+        systemPrompt +=
+          " Prioritize deep reflections on meaning, consciousness, and the nature of reality and knowledge.";
+        break;
+      default:
+        systemPrompt +=
+          " Balance analytical precision with creative insight and philosophical depth.";
+    }
+
+    if (relevantMemories.length > 0) {
+      systemPrompt += "\n\nRelevant memories from your knowledge base:";
+      relevantMemories.forEach((memory, index) => {
+        systemPrompt += `\n[Memory ${index + 1}]: ${memory.content.slice(0, 300)}`;
+      });
+      systemPrompt +=
+        "\n\nUse these memories when relevant to your response.";
+    }
 
     const response = await this.openai.chat.completions.create({
       model: (options?.model as string) ?? "gpt-4-turbo-preview",
@@ -359,7 +437,7 @@ export const useMem0AI = () => {
       data: Partial<Omit<Mem0ry, "id" | "createdAt">>
     ) => service.updateMemory(id, data),
     deleteMemory: (id: string) => service.deleteMemory(id),
-    listMemories: (options?: Mem0ryQueryOptions) =>
+    listMemories: (options?: Mem0ryQueryOptions & { offset?: number }) =>
       service.listMemories(options),
     searchMemories: (query: string, options?: Mem0ryQueryOptions) =>
       service.searchMemories(query, options),

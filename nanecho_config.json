@@ -188,5 +188,73 @@
         "active_echo_layers": 12
       }
     }
+  },
+  "evolution": {
+    "_comment": "Evolutionary configuration system - parameters adapt based on training performance",
+    "enable_evolutionary_adaptation": true,
+    "evolution_cycle_interval": 300000,
+    "parameter_bounds": {
+      "learning_rate": {
+        "min": 0.00001,
+        "max": 0.001,
+        "mutation_rate": 0.1,
+        "decay_factor": 0.99
+      },
+      "dropout": {
+        "min": 0.0,
+        "max": 0.3,
+        "mutation_rate": 0.05
+      },
+      "attention_threshold": {
+        "min": 0.1,
+        "max": 0.95,
+        "mutation_rate": 0.05,
+        "decay_factor": 0.98
+      },
+      "cognitive_load_factor": {
+        "min": 0.1,
+        "max": 0.8,
+        "mutation_rate": 0.08
+      },
+      "pattern_injection_rate": {
+        "min": 0.05,
+        "max": 0.5,
+        "mutation_rate": 0.1
+      },
+      "recursion_decay": {
+        "min": 0.5,
+        "max": 0.95,
+        "mutation_rate": 0.05
+      }
+    },
+    "fitness_weights": {
+      "loss_improvement": 0.3,
+      "persona_fidelity": 0.25,
+      "pattern_diversity": 0.2,
+      "training_stability": 0.15,
+      "memory_efficiency": 0.1
+    },
+    "evolution_strategies": {
+      "explore": {
+        "description": "Low fitness - explore parameter space widely",
+        "fitness_threshold_max": 0.3,
+        "mutation_multiplier": 2.0
+      },
+      "exploit": {
+        "description": "Moderate fitness - refine current direction",
+        "fitness_threshold_min": 0.3,
+        "fitness_threshold_max": 0.7,
+        "mutation_multiplier": 1.0
+      },
+      "stabilize": {
+        "description": "High fitness - minor adjustments only",
+        "fitness_threshold_min": 0.7,
+        "mutation_multiplier": 0.2
+      }
+    },
+    "history_retention": {
+      "max_snapshots": 100,
+      "trim_to": 50
+    }
   }
 }

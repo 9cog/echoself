@@ -32,6 +32,31 @@ export interface MemorySearchResult {
   similarity: number;
 }
 
+// Type definitions for Supabase operations (client is untyped)
+// Memory record as stored in database
+interface MemoryRecord {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  embedding: number[] | null;
+  created_at: string;
+  updated_at: string;
+  metadata: Record<string, unknown>;
+  context: string | null;
+  type: string;
+}
+
+// Type for getMemoryStats aggregation queries
+interface TypeDataItem {
+  type?: string;
+}
+
+interface TagDataItem {
+  tags?: string[];
+}
+
 export class MemoryService {
   private supabase: ReturnType<typeof createClient>;
   private openai: OpenAI | null = null;
@@ -70,22 +95,28 @@ export class MemoryService {
     const now = new Date().toISOString();
 
     // Insert into Supabase
-    const { data, error } = await this.supabase
+    // Note: Type assertion needed because Supabase client is created without typed database schema
+    const insertData: Partial<MemoryRecord> = {
+      user_id: this.userId,
+      title: memory.title,
+      content: memory.content,
+      tags: memory.tags || [],
+      embedding,
+      created_at: now,
+      updated_at: now,
+      metadata: memory.metadata || {},
+      context: memory.context || null,
+      type: memory.type || "memory",
+    };
+
+    const { data, error } = (await this.supabase
       .from("memories")
-      .insert({
-        user_id: this.userId,
-        title: memory.title,
-        content: memory.content,
-        tags: memory.tags || [],
-        embedding,
-        created_at: now,
-        updated_at: now,
-        metadata: memory.metadata || {},
-        context: memory.context || null,
-        type: memory.type || "memory",
-      })
+      .insert(insertData as unknown as never)
       .select("*")
-      .single();
+      .single()) as {
+      data: MemoryRecord | null;
+      error: Error | null;
+    };
 
     if (error) {
       throw error;
@@ -243,7 +274,7 @@ export class MemoryService {
 
     // Count by type
     const byType: Record<string, number> = {};
-    typeData.forEach(item => {
+    (typeData as TypeDataItem[]).forEach(item => {
       if (
         item &&
         typeof item === "object" &&
@@ -256,7 +287,7 @@ export class MemoryService {
 
     // Count by tag
     const byTag: Record<string, number> = {};
-    tagData.forEach(item => {
+    (tagData as TagDataItem[]).forEach(item => {
       if (
         item &&
         typeof item === "object" &&

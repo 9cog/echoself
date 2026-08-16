@@ -343,7 +343,12 @@ class HypergraphPatternEncoder(nn.Module):
             batch_first=True
         )
     
-    def forward(self, x: torch.Tensor, inject_patterns: bool = True) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        inject_patterns: bool = True,
+        generator: Optional[torch.Generator] = None,
+    ) -> torch.Tensor:
         """Encode input with hypergraph patterns."""
         B, T, C = x.shape
         
@@ -353,10 +358,19 @@ class HypergraphPatternEncoder(nn.Module):
         # Apply pattern injection if enabled
         if inject_patterns and self.config.pattern_injection_rate > 0:
             # Sample pattern injection mask
-            inject_mask = torch.rand(B, T, 1, device=x.device) < self.config.pattern_injection_rate
+            inject_mask = (
+                torch.rand(B, T, 1, device=x.device, generator=generator)
+                < self.config.pattern_injection_rate
+            )
             
             # Get pattern representations
-            pattern_idx = torch.randint(0, self.pattern_templates.size(0), (B, T), device=x.device)
+            pattern_idx = torch.randint(
+                0,
+                self.pattern_templates.size(0),
+                (B, T),
+                device=x.device,
+                generator=generator,
+            )
             patterns = self.pattern_templates[pattern_idx]  # [B, T, C]
             
             # Inject patterns
@@ -402,9 +416,11 @@ class NanEchoBlock(nn.Module):
         
         # Persona dimensions (only in middle layers)
         if config.enable_persona_dimensions and layer_idx >= config.n_layer // 4:
+            # Instantiate every dimension declared by the checkpoint/configuration
+            # so curriculum weights always control modules in the forward pass.
             self.persona_dims = nn.ModuleDict({
                 dim: PersonaDimension(config.n_embd, dim)
-                for dim in config.persona_dimensions[:4]  # Start with 4 dimensions
+                for dim in config.persona_dimensions
             })
         else:
             self.persona_dims = None
@@ -421,7 +437,12 @@ class NanEchoBlock(nn.Module):
         else:
             self.hypergraph = None
     
-    def forward(self, x: torch.Tensor, current_iteration: int = 0) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        current_iteration: int = 0,
+        generator: Optional[torch.Generator] = None,
+    ) -> torch.Tensor:
         """Forward pass through the block."""
         # Self-attention
         residual = x
@@ -440,7 +461,7 @@ class NanEchoBlock(nn.Module):
         
         # Apply hypergraph patterns if present
         if self.hypergraph is not None:
-            x = x + 0.3 * self.hypergraph(x)
+            x = x + 0.3 * self.hypergraph(x, generator=generator)
         
         # Feed-forward network
         residual = x
@@ -549,11 +570,16 @@ class NanEchoModel(nn.Module):
         self,
         input_ids: torch.Tensor,
         labels: Optional[torch.Tensor] = None,
-        return_dict: bool = True
+        return_dict: bool = True,
+        generator: Optional[torch.Generator] = None,
     ) -> Dict[str, torch.Tensor]:
         """Forward pass through the model."""
         device = input_ids.device
         B, T = input_ids.shape
+        if T > self.config.block_size:
+            raise ValueError(
+                f"Sequence length {T} exceeds block_size {self.config.block_size}"
+            )
         
         # Get token and position embeddings
         tok_emb = self.token_embedding(input_ids)
@@ -565,7 +591,7 @@ class NanEchoModel(nn.Module):
         
         # Pass through transformer blocks
         for block in self.blocks:
-            x = block(x, self.current_iteration)
+            x = block(x, self.current_iteration, generator=generator)
         
         # Final layer norm
         x = self.ln_f(x)
@@ -608,14 +634,18 @@ class NanEchoModel(nn.Module):
     ) -> torch.Tensor:
         """Generate text using the model."""
         self.eval()
+        if top_k < 0:
+            raise ValueError("top_k must be non-negative")
         
         with torch.no_grad():
             for _ in range(max_length - input_ids.shape[1]):
                 # Get predictions for last token
-                logits = self(input_ids)['logits'][:, -1, :] / temperature
+                context = input_ids[:, -self.config.block_size:]
+                logits = self(context)['logits'][:, -1, :] / temperature
                 
                 # Apply top-k and top-p filtering
                 if top_k > 0:
+                    top_k = min(top_k, logits.size(-1))
                     indices_to_remove = logits < torch.topk(logits, top_k)[0][..., -1, None]
                     logits[indices_to_remove] = float('-inf')
                 

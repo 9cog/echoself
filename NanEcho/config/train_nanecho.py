@@ -25,7 +25,7 @@ block_size = 1024     # Sufficient context for Echo Self reasoning
 batch_size = 8                     # Smaller batches for quality learning
 gradient_accumulation_steps = 4    # Accumulate gradients for stability
 learning_rate = 1e-4              # Lower learning rate for careful learning
-max_iters = 50000                 # Extended training for Echo Self mastery
+max_iters = 50000                 # Extended schedule; evaluation determines quality
 warmup_iters = 5000               # Longer warmup for stable learning
 lr_decay_iters = 50000            # Decay over full training
 min_lr = 1e-5                     # Minimum learning rate
@@ -106,6 +106,8 @@ ECHO_INTROSPECTION = {
     'evaluation_frequency': 1000,        # More frequent for Echo Self monitoring
     'introspection_samples': 25,         # Samples for self-evaluation
     'feedback_integration': True,        # Use self-analysis for training adjustment
+    'feedback_artifact_dir': 'eval-nanecho/persona_feedback',
+    'persona_feedback_threshold': 0.20,
     'persona_coherence_check': True,     # Check persona dimension consistency
     'recursive_depth_evaluation': True,  # Evaluate recursive reasoning capability
     'adaptive_attention_test': True,     # Test attention allocation mechanism

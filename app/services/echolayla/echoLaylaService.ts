@@ -3,6 +3,9 @@
  *
  * Main service for managing EchoLayla AI assistant functionality,
  * integrating with EchoSelf's memory and cognitive systems.
+ *
+ * Enhanced with Triple-Loop Learning integration for adaptive
+ * character evolution and training cycle linkages.
  */
 
 import type {
@@ -14,8 +17,17 @@ import type {
   AutomationTask,
   TaskType,
 } from "./types";
+import type {
+  ConversationFeedback,
+  TrainingCycleConfig,
+  LearningCycleResult,
+} from "./tripleLoopLearningTypes";
 import { getCharacter, getDefaultCharacter } from "./characters";
 import { getDefaultAdapter, type AIAdapter } from "./aiIntegration";
+import {
+  getTripleLoopLearningService,
+  type TripleLoopLearningService,
+} from "./tripleLoopLearningService";
 
 /**
  * Default inference configuration
@@ -41,6 +53,9 @@ const DEFAULT_PRIVACY_SETTINGS: PrivacySettings = {
 
 /**
  * EchoLayla Service Class
+ *
+ * Enhanced with Triple-Loop Learning integration for adaptive
+ * character evolution and training cycle linkages.
  */
 export class EchoLaylaService {
   private activeCharacter: LaylaCharacter = "max";
@@ -49,6 +64,8 @@ export class EchoLaylaService {
   private privacySettings: PrivacySettings = DEFAULT_PRIVACY_SETTINGS;
   private tasks: Map<string, AutomationTask> = new Map();
   private aiAdapter: AIAdapter = getDefaultAdapter();
+  private tripleLoopService: TripleLoopLearningService | null = null;
+  private learningEnabled: boolean = true;
 
   /**
    * Initialize the service
@@ -59,6 +76,12 @@ export class EchoLaylaService {
     // Load saved settings from localStorage if available
     if (typeof window !== "undefined") {
       this.loadSettings();
+    }
+
+    // Initialize Triple-Loop Learning after settings so learningEnabled is respected
+    if (this.learningEnabled) {
+      this.tripleLoopService = getTripleLoopLearningService();
+      console.log("[EchoLayla] Triple-Loop Learning service initialized");
     }
 
     console.log(
@@ -319,6 +342,7 @@ export class EchoLaylaService {
       activeCharacter: this.activeCharacter,
       inferenceConfig: this.inferenceConfig,
       privacySettings: this.privacySettings,
+      learningEnabled: this.learningEnabled,
     };
 
     localStorage.setItem("echolayla:settings", JSON.stringify(settings));
@@ -353,6 +377,10 @@ export class EchoLaylaService {
           ...settings.privacySettings,
         };
       }
+
+      if (settings.learningEnabled !== undefined) {
+        this.learningEnabled = settings.learningEnabled;
+      }
     } catch (error) {
       console.error("[EchoLayla] Failed to load settings:", error);
     }
@@ -363,6 +391,134 @@ export class EchoLaylaService {
    */
   private generateId(): string {
     return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  }
+
+  // ==========================================
+  // Triple-Loop Learning Integration Methods
+  // ==========================================
+
+  /**
+   * Enable or disable learning
+   */
+  setLearningEnabled(enabled: boolean): void {
+    this.learningEnabled = enabled;
+    if (enabled && !this.tripleLoopService) {
+      this.tripleLoopService = getTripleLoopLearningService();
+    } else if (!enabled && this.tripleLoopService) {
+      this.tripleLoopService.stopLearningCycle();
+    }
+    this.saveSettings();
+  }
+
+  /**
+   * Check if learning is enabled
+   */
+  isLearningEnabled(): boolean {
+    return this.learningEnabled;
+  }
+
+  /**
+   * Record user feedback for a message (triggers learning)
+   */
+  recordFeedback(messageId: string, rating: number, comment?: string): void {
+    if (!this.tripleLoopService || !this.currentContext) return;
+
+    const message = this.currentContext.messages.find(m => m.id === messageId);
+    if (!message) return;
+
+    const feedback: Partial<ConversationFeedback> = {
+      messageId,
+      characterId: message.character || this.activeCharacter,
+      userFeedback: {
+        rating,
+        comment,
+      },
+      implicitSignals: {
+        responseAcceptance: rating >= 3,
+        followUpDepth: this.currentContext.messages.length,
+        contextRetention: this.calculateContextRetention(),
+      },
+      learningOpportunity: {
+        loopLevel: rating < 2 ? "double" : rating < 3 ? "single" : "single",
+        suggestedAction:
+          rating < 2
+            ? "Significant strategy revision needed"
+            : rating < 4
+              ? "Minor adjustment to response style"
+              : "Reinforce current approach",
+        priority: rating < 2 ? "high" : rating < 4 ? "medium" : "low",
+      },
+    };
+
+    this.tripleLoopService.recordConversationFeedback(message, feedback);
+    console.log(
+      `[EchoLayla] Recorded feedback for message ${messageId}: rating=${rating}`
+    );
+  }
+
+  /**
+   * Calculate context retention score
+   */
+  private calculateContextRetention(): number {
+    if (!this.currentContext) return 0;
+    const messageCount = this.currentContext.messages.length;
+    // Higher retention for longer conversations
+    return Math.min(1, messageCount / 10);
+  }
+
+  /**
+   * Get learning state summary
+   */
+  getLearningState(): {
+    enabled: boolean;
+    activeLoopLevel: string;
+    cycleMetrics: object;
+    characterProfile?: object;
+  } | null {
+    if (!this.tripleLoopService) return null;
+
+    const state = this.tripleLoopService.getLearningState();
+    const profile = this.tripleLoopService.getCharacterProfile(
+      this.activeCharacter
+    );
+
+    return {
+      enabled: this.learningEnabled,
+      activeLoopLevel: state.activeLoopLevel,
+      cycleMetrics: state.cycleMetrics,
+      characterProfile: profile,
+    };
+  }
+
+  /**
+   * Get training cycle configuration for NanEcho integration
+   */
+  getTrainingCycleConfig(): TrainingCycleConfig | null {
+    if (!this.tripleLoopService) return null;
+    return this.tripleLoopService.generateTrainingCycleConfig();
+  }
+
+  /**
+   * Manually trigger a learning cycle
+   */
+  async triggerLearningCycle(): Promise<LearningCycleResult | null> {
+    if (!this.tripleLoopService) return null;
+    return this.tripleLoopService.executeLearningCycle();
+  }
+
+  /**
+   * Get loop statistics for monitoring
+   */
+  getLoopStatistics(): object | null {
+    if (!this.tripleLoopService) return null;
+    return this.tripleLoopService.getLoopStatistics();
+  }
+
+  /**
+   * Get the triple-loop learning service instance
+   */
+  getTripleLoopService(): TripleLoopLearningService | null {
+    return this.tripleLoopService;
   }
 }
 
