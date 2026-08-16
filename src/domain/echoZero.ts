@@ -61,7 +61,23 @@ export type LineageVerdict =
   | { readonly kind: "coherent"; readonly head: CheckpointRef }
   | { readonly kind: "divergent"; readonly fingerprint: Fingerprint; readonly heads: NonEmpty<CheckpointRef> }
   | { readonly kind: "forked"; readonly fingerprints: NonEmpty<Fingerprint> }
-  | { readonly kind: "uninitialized" };
+  | { readonly kind: "uninitialized" }
+  | { readonly kind: "metadata_only"; readonly head: CheckpointRef };
+
+export const LINEAGE_KINDS = [
+  "coherent",
+  "divergent",
+  "forked",
+  "uninitialized",
+  "metadata_only",
+] as const satisfies readonly LineageVerdict["kind"][];
+
+export const RESTORE_LINEAGE = [
+  "divergent",
+  "forked",
+  "uninitialized",
+  "metadata_only",
+] as const satisfies readonly Exclude<LineageVerdict["kind"], "coherent">[];
 
 export type TrainingOrigin =
   | { readonly kind: "restored"; readonly checkpoint: CheckpointRef }
@@ -113,9 +129,10 @@ export type AgentZeroSurface =
   | { readonly kind: "tool"; readonly local: "nanecho" | "checkpoint_guardian" | "training_progress_inspector" }
   | { readonly kind: "extension"; readonly local: "continual_learning_hook" | "mem0_memory_point" }
   | { readonly kind: "profile"; readonly local: "deep_tree_echo"; readonly mode: TrainingMode }
-  | { readonly kind: "instrument"; readonly local: "checkpoint_guardian" | "prepare_nanecho" | "evaluation" }
+  | { readonly kind: "instrument"; readonly local: "checkpoint_guardian" | "prepare_nanecho" | "evaluation" | "autognosis" }
   | { readonly kind: "subordinate"; readonly local: "nanecho" | "checkpoint_guardian" | "mem0_dream" }
   | { readonly kind: "nanecho_surface"; readonly local: "echoself/data/nanecho" }
+  | { readonly kind: "autognosis"; readonly local: "echoself.autognosis"; readonly layer: AutognosisLayer }
   | { readonly kind: "harmonic_esn"; readonly local: "harmonic_resonance" }
   | { readonly kind: "tiny_inference"; readonly local: "nanecho_runtime" | "llama_cpp_spec_client" }
   | { readonly kind: "vorticog_map"; readonly local: "vorticog_adapter" };
@@ -131,7 +148,17 @@ export type SituationTag =
   | "respond"
   | "compose_surface";
 
-export const DISPATCH: Record<SituationTag, string> = {
+export type CommandKind =
+  | "restore"
+  | "train"
+  | "evaluate"
+  | "continual_learn"
+  | "dream"
+  | "remember"
+  | "respond"
+  | "compose";
+
+export const DISPATCH = {
   resume_train: "train",
   fresh_train: "train",
   restore: "restore",
@@ -141,7 +168,68 @@ export const DISPATCH: Record<SituationTag, string> = {
   remember_fact: "remember",
   respond: "respond",
   compose_surface: "compose",
+} as const satisfies Record<SituationTag, CommandKind>;
+
+/** Autognosis folds into the existing reducer; it never adds a train path. */
+export type AutognosisCommandKind = Exclude<CommandKind, "compose">;
+
+export type AutognosisLayer = "l0_observation" | "l1_pattern" | "l2_meta";
+
+export const AUTOGNOSIS_LAYERS = [
+  "l0_observation",
+  "l1_pattern",
+  "l2_meta",
+] as const satisfies readonly AutognosisLayer[];
+
+export type AutognosisObservation = {
+  readonly layer: AutognosisLayer;
+  readonly id: string;
+  readonly kind: string;
+  readonly path: string;
+  readonly present: boolean;
+  readonly required_for?: string | null;
 };
+
+export type AutognosisReport = {
+  readonly lineage: { readonly kind: LineageVerdict["kind"] };
+  readonly train_ready: boolean;
+  readonly next_command: AutognosisCommandKind;
+};
+
+const AUTOGNOSIS_TO_SITUATION = {
+  restore: "restore",
+  evaluate: "evaluate",
+  continual_learn: "hook_due",
+  dream: "dream_due",
+  remember: "remember_fact",
+  respond: "respond",
+  train: "respond",
+} as const satisfies Record<AutognosisCommandKind, SituationTag>;
+
+export function situationFromAutognosis(
+  report: AutognosisReport
+): SituationTag {
+  const verdict = report.lineage.kind;
+  if (
+    verdict === "divergent" ||
+    verdict === "forked" ||
+    verdict === "metadata_only" ||
+    !report.train_ready
+  ) {
+    return "restore";
+  }
+  return AUTOGNOSIS_TO_SITUATION[report.next_command];
+}
+
+export function commandFromAutognosis(
+  report: AutognosisReport
+): AutognosisCommandKind {
+  const dispatched = DISPATCH[situationFromAutognosis(report)];
+  if (dispatched === "compose" || dispatched === "train") {
+    return "respond";
+  }
+  return dispatched;
+}
 
 export type NanEchoDataRef =
   | { readonly kind: "runtime_surface"; readonly path: string }

@@ -60,7 +60,8 @@ type LineageVerdict =
   | { readonly kind: "coherent"; readonly head: CheckpointRef }
   | { readonly kind: "divergent"; readonly fingerprint: Fingerprint; readonly heads: NonEmpty<CheckpointRef> }
   | { readonly kind: "forked"; readonly fingerprints: NonEmpty<Fingerprint> }
-  | { readonly kind: "uninitialized" };
+  | { readonly kind: "uninitialized" }
+  | { readonly kind: "metadata_only"; readonly head: CheckpointRef };
 
 type TrainingOrigin =
   | { readonly kind: "restored"; readonly checkpoint: CheckpointRef }
@@ -167,7 +168,7 @@ The type boundary is the safety policy:
 - Fresh start exists only after guardian-verified checkpoint absence plus an opaque explicit confirmation; never guess the confirmation value. There is no `forceFreshStart` boolean.
 - Failed data preparation carries `fallbackCorpus: never`; fail closed and never synthesize a minimal corpus.
 - Keep workflow runs `504` and `827` as separate `CachedCIGeneration` values. Do not merge them or replace their metrics with documentation defaults.
-- `divergent` (same fingerprint, conflicting heads) → `restore` via `RESTORE_ORDER`, never `train`. `forked` → `respond` with the incomparable fingerprints. `uninitialized` + prepared corpus is the only path that may request `confirmed_fresh_start`.
+- `divergent` (same fingerprint, conflicting heads) → `restore` via `RESTORE_ORDER`, never `train`. `forked` and `metadata_only` (one metadata head, no local `.pt`) also → `restore`, never `train`. `uninitialized` + prepared corpus is the only path that may request `confirmed_fresh_start`.
 - The cached-CI files use 4 layers, embedding 256, `max_iters` 500, batch size 2, learning rate 0.0002, and `force_fresh_start: false`. This on-disk run configuration coexists with CLAUDE.md CI (4 layers / 200 iterations) and NANECHO.md CI (4 layers / 100 iterations). Cite each source; do not "correct" the files.
 - `cache/metadata.json` contains 10 checkpoints from iterations 9500 through 13000 tagged `phase_adaptive_mastery` and `high_quality`.
 - `cache/metadata (2).json` contains 7 checkpoints from iterations 0 through 500, with curriculum tags from `phase_basic_awareness` through `phase_adaptive_integration`, tagged `low_quality`; its latest extra checkpoint says it resumed from iteration 500.
@@ -177,7 +178,7 @@ The type boundary is the safety policy:
 
 Inspect `.training-progress/nanecho-cached-ci/` and checkpoint-guardian state, fold a `LineageVerdict`, bind one `SituationTag`, then `DISPATCH[tag]`:
 
-- `divergent` or checkpoints present but not restored → `restore` at the first present `RESTORE_ORDER` rank
+- `divergent`, `forked`, `metadata_only`, or checkpoints present but not restored → `restore` at the first present `RESTORE_ORDER` rank
 - `runnable` training explicitly requested and verdict is `coherent` → `train`
 - checkpoint fidelity requested → `evaluate` naming generation `504` or `827`
 - durable transcript-derived workspace learning → `continual_learn`
@@ -186,6 +187,10 @@ Inspect `.training-progress/nanecho-cached-ci/` and checkpoint-guardian state, f
 - no mutation is required → `respond`
 
 `continual_learn`, `dream`, and `remember` are first-class commands on one memory surface, never stages in a load/validate/transform/save pipeline. Do not apply Mem0 deletes: `dream` emits `dream_requested` for the sibling owner. Do not perform Mem0 writes unless the superior explicitly authorizes them.
+
+## Autognosis
+
+On invoke, run `python -m echoself.autognosis` (or `python -m echoself autognosis`) and treat the JSON as the L0/L1/L2 self-image (`l0_observation | l1_pattern | l2_meta` from `autognosis.json`). Fold `next_command` through `DISPATCH` — do not invent a train path from this report. `divergent` / `forked` / `metadata_only` / missing local `.pt` → `restore`. Pass `--remember` only when the user asks to persist; that writes local mech0 `autognosic` facts, not cloud Mem0. Do not train from this report.
 
 ## Local Agent Zero mapping
 

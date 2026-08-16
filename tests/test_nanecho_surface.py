@@ -17,7 +17,9 @@ from echoself.data.nanecho.harmonic_resonance_esn import (
     persona_oscillators,
 )
 from echoself.data.nanecho.surface import (
+    LINEAGE_KINDS,
     PERSONA_WEIGHTS,
+    RESTORE_LINEAGE,
     SurfaceError,
     compose_surface,
     find_local_checkpoint,
@@ -89,6 +91,9 @@ class TestNanechoSurface(unittest.TestCase):
 
     def test_lineage_cites_named_files_only(self) -> None:
         lineage = fold_lineage(ROOT)
+        self.assertIn(lineage["kind"], LINEAGE_KINDS)
+        self.assertIn(lineage["kind"], RESTORE_LINEAGE)
+        self.assertEqual(lineage["command"], "restore")
         ids = {head["generation"] for head in lineage["heads"]}
         self.assertIn("504", ids)
         self.assertIn("695", ids)

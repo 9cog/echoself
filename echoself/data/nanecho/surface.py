@@ -44,6 +44,16 @@ CHECKPOINT_CANDIDATES: tuple[str, ...] = (
     "out-nanecho/best_model.pt",
     "out-nanecho/ckpt.pt",
 )
+LINEAGE_KINDS: tuple[str, ...] = (
+    "coherent",
+    "divergent",
+    "forked",
+    "uninitialized",
+    "metadata_only",
+)
+RESTORE_LINEAGE: frozenset[str] = frozenset(
+    {"divergent", "forked", "uninitialized", "metadata_only"}
+)
 SUMMARY_504 = Path(".training-progress/nanecho-cached-ci/training_summary.json")
 SUMMARY_827 = Path(".training-progress/nanecho-cached-ci/training_summary (2).json")
 BACKUP_695 = Path(".training-progress/checkpoints/backup_manifest.json")
@@ -173,16 +183,16 @@ def fold_lineage(root: Path | None = None) -> dict[str, Any]:
         )
     if len(heads) >= 2:
         verdict = "divergent"
-        readiness = "restore_required"
     elif heads and not latest:
-        verdict = "divergent" if len(heads) > 1 else "metadata_only"
-        readiness = "restore_required"
+        verdict = "metadata_only"
     elif not heads and not latest:
         verdict = "uninitialized"
-        readiness = "restore_required"
     else:
         verdict = "coherent"
-        readiness = "restore_required" if not latest else "restore_required"
+    if verdict not in LINEAGE_KINDS:
+        raise SurfaceError(f"unknown lineage kind {verdict!r}")
+    readiness = "restore_required"
+    command = "restore" if verdict in RESTORE_LINEAGE or not latest else "respond"
     return {
         "kind": verdict,
         "readiness": readiness,
@@ -190,7 +200,7 @@ def fold_lineage(root: Path | None = None) -> dict[str, Any]:
         "generation_827_on_disk": summary_827 is not None,
         "heads": heads,
         "force_fresh_start": False,
-        "command": "restore" if readiness == "restore_required" else "respond",
+        "command": command,
     }
 
 
@@ -312,6 +322,8 @@ def compose_surface(
 
 __all__ = [
     "CANDIDATE_PATHS",
+    "LINEAGE_KINDS",
+    "RESTORE_LINEAGE",
     "HarmonicResonanceESN",
     "OscillatorState",
     "OscillatorStateError",
