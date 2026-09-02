@@ -1,8 +1,10 @@
 // Tests for the Deep Tree Echo chat engine.
 //
 // Runs on Node's built-in test runner so no extra dependency is needed:
-//   npm test  ->  node --experimental-transform-types --test "app/**/*.test.ts"
+//   npm test  ->  node --experimental-transform-types --test "app/**/*.spec.ts"
 // (Node >= 22.7 for type stripping; CI runs lint/typecheck, not this script.)
+// Named *.spec.ts on purpose: the Deno workflow treats *.test.ts / *_test.ts as
+// Deno tests and would try to run this Node test under `deno test`.
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import process from "node:process";

@@ -48,7 +48,8 @@ python server.py
 - **EchoSelf Chatbot**: Standalone web chatbot with SillyTavern-compatible character cards ([Try it online](https://9cog.github.io/echoself/chatbot/))
 - **Echo Home Map**: Navigate through different specialized rooms, each with unique functionality
 - **Memory System**: Store and retrieve information using advanced vector embeddings and semantic search
-- **AI Chat**: Interact with Deep Tree Echo's AI capabilities through a conversational interface
+- **AI Chat**: Talk to Deep Tree Echo through the `/chat` route, which runs the full cognitive pipeline — memory recall, per-session cognitive state (valence, arousal, wisdom, introspection), a persona/state/memory-enriched prompt, and an Ollama → OpenAI → Anthropic provider chain with a persona fallback so the chat never hard-fails
+- **Status Dashboard**: `/status` shows live provider health, memory backend and count, active cognitive sessions, and the latest NanEcho training summary (val loss, checkpoints)
 - **Workshop**: Access development tools and creative coding environments (Arena as Workspace)
 - **Visualization Studio**: Transform abstract data into insightful visual representations
 - **🔄 Adaptive Feedback Loop**: Autonomous hypergraph-encoded cognitive enhancement system
@@ -179,6 +180,12 @@ Run the development server:
 
 ```bash
 npm run dev
+```
+
+Run the test suite (uses Node's built-in test runner — Node 22.7 or newer — so no extra dependency is needed):
+
+```bash
+npm test
 ```
 
 ### Deployment
@@ -405,7 +412,17 @@ cp .env.example .env
 ```
 
 - `SUPABASE_URL` and `SUPABASE_ANON_KEY` are required
-- `OPENAI_API_KEY` is optional (enables embeddings and AI chat)
+- `OPENAI_API_KEY` is optional (enables embeddings and the OpenAI chat provider)
+
+The chat engine (`app/services/dte-chat.server.ts`) tries language-model providers in order and falls back to a local persona kernel when none respond. Configure any of:
+
+- `DTE_LLM_PROVIDERS` — comma-separated order, default `ollama,openai,anthropic`
+- `OLLAMA_BASE_URL` (default `http://localhost:11434`) and `OLLAMA_MODEL` (default `llama3.2`)
+- `OPENAI_MODEL` (default `gpt-4o-mini`; the provider is enabled by `OPENAI_API_KEY`)
+- `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` (default `claude-sonnet-5`)
+- `DTE_LLM_TIMEOUT_MS` (default `30000`) and `DTE_MAX_HISTORY` (default `20`)
+
+Conversations are persisted to the Supabase `memories` table (tagged `dte-chat`) when `SUPABASE_URL` and `SUPABASE_ANON_KEY` are set; otherwise memory is disabled and the app still runs. Visit `/status` to confirm which providers and backends are live.
 
 ## Supabase Schema
 

@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+// deno-lint-ignore-file no-node-globals
+// CommonJS script: without the directive above, `deno lint --fix` (run by the
+// quality workflow) inserts an ESM `import process` here and Node can no longer
+// load the file, which makes `npm run lint` fail before ESLint even starts.
 "use strict";
 
 /**
