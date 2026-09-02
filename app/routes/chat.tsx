@@ -1,31 +1,66 @@
-import { json, type ActionFunctionArgs } from "@remix-run/node";
+import {
+  json,
+  type ActionFunctionArgs,
+  type LoaderFunctionArgs,
+} from "@remix-run/node";
 import {
   useActionData,
   useLoaderData,
   useNavigation,
   Form,
+  Link,
 } from "@remix-run/react";
 import { useEffect, useState } from "react";
-import ChatInterface, { Message } from "~/components/ChatInterface";
-import { getAIService } from "~/services/ai.server";
+import ChatInterface, { type Message } from "~/components/ChatInterface";
+import {
+  getDTEChatEngine,
+  type CognitiveState,
+  type ChatTurn,
+} from "~/services/dte-chat.server";
 
-export async function loader() {
-  const aiService = getAIService();
+const SESSION_COOKIE = "dte_session";
 
-  return json({
-    apiKeyConfigured: aiService.isInitialized(),
-    initialMessage: {
-      id: "welcome",
-      role: "assistant" as const,
-      content: "Welcome to Deep Tree Echo. How can I assist you today?",
-      timestamp: new Date().toISOString(),
+/** Anonymous, cookie-backed session id so memory and cognitive state persist across requests. */
+function getSessionId(request: Request): { id: string; setCookie?: string } {
+  const cookie = request.headers.get("Cookie") ?? "";
+  const match = cookie.match(
+    new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`)
+  );
+  if (match) return { id: decodeURIComponent(match[1]) };
+  const id = `anon_${crypto.randomUUID()}`;
+  return {
+    id,
+    setCookie: `${SESSION_COOKIE}=${encodeURIComponent(id)}; Path=/; Max-Age=${60 * 60 * 24 * 30}; SameSite=Lax; HttpOnly`,
+  };
+}
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const engine = getDTEChatEngine();
+  const session = getSessionId(request);
+  const status = await engine.getStatus();
+
+  return json(
+    {
+      providerConfigured: engine.hasConfiguredProvider(),
+      providerLive: status.hasLiveProvider,
+      memoryBackend: status.memory.backend,
+      cognitiveState: engine.getCognitiveState(session.id),
+      initialMessage: {
+        id: "welcome",
+        role: "assistant" as const,
+        content: "Welcome to Deep Tree Echo. How can I assist you today?",
+        timestamp: new Date().toISOString(),
+      },
     },
-  });
+    session.setCookie
+      ? { headers: { "Set-Cookie": session.setCookie } }
+      : undefined
+  );
 }
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
-  const content = formData.get("content") as string;
+  const content = (formData.get("content") as string | null)?.trim();
   const history = JSON.parse(
     (formData.get("history") as string) || "[]"
   ) as Message[];
@@ -34,9 +69,9 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ error: "Message content is required" });
   }
 
-  const aiService = getAIService();
+  const engine = getDTEChatEngine();
+  const session = getSessionId(request);
 
-  // Add user message to history
   const userMessage: Message = {
     id: `msg_${Date.now()}`,
     role: "user",
@@ -44,39 +79,94 @@ export async function action({ request }: ActionFunctionArgs) {
     timestamp: new Date().toISOString(),
   };
 
-  const updatedHistory = [...history, userMessage];
+  const turns: ChatTurn[] = history.map(m => ({
+    role: m.role,
+    content: m.content,
+  }));
 
   try {
-    // Convert messages to the format expected by the AI service
-    const formattedMessages = updatedHistory.map(msg => ({
-      role: msg.role,
-      content: msg.content,
-    }));
+    const result = await engine.respond({
+      sessionId: session.id,
+      history: turns,
+      content,
+    });
 
-    // Generate response
-    const responseContent =
-      await aiService.generateResponseWithHistory(formattedMessages);
-
-    // Create assistant message
     const assistantMessage: Message = {
       id: `msg_${Date.now() + 1}`,
       role: "assistant",
-      content: responseContent,
+      content: result.content,
       timestamp: new Date().toISOString(),
     };
 
-    return json({
-      userMessage,
-      assistantMessage,
-      success: true,
-    });
+    return json(
+      {
+        userMessage,
+        assistantMessage,
+        provider: result.provider,
+        memoriesUsed: result.memoriesUsed,
+        latencyMs: result.latencyMs,
+        cognitiveState: result.cognitiveState,
+        success: true,
+      },
+      session.setCookie
+        ? { headers: { "Set-Cookie": session.setCookie } }
+        : undefined
+    );
   } catch (error) {
-    console.error("Error generating response:", error);
+    console.error("[chat] DTE engine error:", error);
     return json({
       userMessage,
       error: "Failed to generate response. Please try again.",
     });
   }
+}
+
+function CognitiveStrip({
+  state,
+  provider,
+  memoriesUsed,
+  latencyMs,
+  memoryBackend,
+}: {
+  state: CognitiveState;
+  provider?: string;
+  memoriesUsed?: number;
+  latencyMs?: number;
+  memoryBackend: string;
+}) {
+  const pct = (n: number) => `${Math.round(n * 100)}%`;
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-1.5 text-xs border-b border-border bg-card/50 text-card-foreground/80">
+      <span title="Emotional valence">
+        valence {pct(state.emotionalValence)}
+      </span>
+      <span title="Arousal">arousal {pct(state.arousalLevel)}</span>
+      <span title="Wisdom">wisdom {pct(state.wisdomLevel)}</span>
+      <span title="Introspection depth">
+        introspection {state.introspectionDepth.toFixed(1)}
+      </span>
+      <span title="Turns this session">turns {state.turnCount}</span>
+      <span className="opacity-60">·</span>
+      <span title="Memory backend">memory: {memoryBackend}</span>
+      {provider && (
+        <span
+          title="Provider that answered the last message"
+          className={
+            provider === "fallback" ? "text-yellow-400" : "text-primary"
+          }
+        >
+          via {provider}
+          {typeof memoriesUsed === "number" && memoriesUsed > 0
+            ? ` · ${memoriesUsed} memories`
+            : ""}
+          {typeof latencyMs === "number" ? ` · ${latencyMs}ms` : ""}
+        </span>
+      )}
+      <Link to="/status" className="ml-auto text-primary hover:underline">
+        status
+      </Link>
+    </div>
+  );
 }
 
 export default function ChatPage() {
@@ -86,16 +176,11 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     loaderData.initialMessage,
   ]);
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [apiKey, setApiKey] = useState("");
+  const [showInfo, setShowInfo] = useState(false);
 
-  // Update messages when action data changes
   useEffect(() => {
     if (actionData && "userMessage" in actionData) {
-      // Add user message
       setMessages(prev => [...prev, actionData.userMessage]);
-
-      // Add assistant message if successful
       if ("assistantMessage" in actionData) {
         setMessages(prev => [...prev, actionData.assistantMessage]);
       }
@@ -103,92 +188,69 @@ export default function ChatPage() {
   }, [actionData]);
 
   const isProcessing = navigation.state === "submitting";
+  const latest =
+    actionData && "cognitiveState" in actionData ? actionData : null;
+  const state = latest?.cognitiveState ?? loaderData.cognitiveState;
 
   return (
     <div className="h-screen flex flex-col">
-      <Form method="post" className="h-full">
+      <CognitiveStrip
+        state={state}
+        provider={latest?.provider}
+        memoriesUsed={latest?.memoriesUsed}
+        latencyMs={latest?.latencyMs}
+        memoryBackend={loaderData.memoryBackend}
+      />
+      <Form method="post" className="flex-1 min-h-0">
         <input type="hidden" name="history" value={JSON.stringify(messages)} />
         <input type="hidden" name="content" id="message-content" />
 
         <ChatInterface
           messages={messages}
           onSendMessage={content => {
-            // Set the content in the hidden input and submit the form
             const input = document.getElementById(
               "message-content"
-            ) as HTMLInputElement;
+            ) as HTMLInputElement | null;
             if (input) {
               input.value = content;
               input.form?.requestSubmit();
             }
           }}
           isProcessing={isProcessing}
-          apiKeyConfigured={loaderData.apiKeyConfigured}
-          onConfigureApiKey={() => setShowApiKeyModal(true)}
+          apiKeyConfigured={loaderData.providerConfigured}
+          onConfigureApiKey={() => setShowInfo(true)}
         />
       </Form>
 
-      {/* API Key Modal */}
-      {showApiKeyModal && (
+      {showInfo && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-card rounded-lg shadow-xl max-w-md w-full p-6">
             <h2 className="text-xl font-semibold mb-4">
-              Configure OpenAI API Key
+              Connect a language model
             </h2>
             <p className="mb-4 text-sm opacity-80">
-              To use the full capabilities of Deep Tree Echo, please provide
-              your OpenAI API key. Your key is stored securely and only used for
-              generating AI responses.
+              Deep Tree Echo tries providers in order and falls back to its
+              local persona kernel when none respond. Configure any of these on
+              the server:
             </p>
-
-            <div className="mb-4">
-              <label
-                htmlFor="api-key"
-                className="block text-sm font-medium mb-1"
-              >
-                OpenAI API Key
-              </label>
-              <input
-                type="password"
-                id="api-key"
-                value={apiKey}
-                onChange={e => setApiKey(e.target.value)}
-                className="w-full bg-input border border-border rounded-md px-3 py-2"
-                placeholder="sk-..."
-              />
-              <p className="text-xs mt-1 opacity-70">
-                You can get your API key from the{" "}
-                <a
-                  href="https://platform.openai.com/api-keys"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  OpenAI dashboard
-                </a>
-                .
-              </p>
-            </div>
-
-            <div className="flex justify-end space-x-3">
+            <ul className="text-sm space-y-1 mb-4 font-mono">
+              <li>OLLAMA_BASE_URL / OLLAMA_MODEL</li>
+              <li>OPENAI_API_KEY / OPENAI_MODEL</li>
+              <li>ANTHROPIC_API_KEY / ANTHROPIC_MODEL</li>
+              <li>DTE_LLM_PROVIDERS (ordering)</li>
+            </ul>
+            <p className="text-sm opacity-80 mb-4">
+              Memory backend:{" "}
+              <span className="font-mono">{loaderData.memoryBackend}</span>. Set
+              SUPABASE_URL and SUPABASE_ANON_KEY to persist conversations.
+            </p>
+            <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => setShowApiKeyModal(false)}
-                className="px-4 py-2 border border-border rounded-md"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  // In a real app, this would save the API key to the server
-                  // For now, we'll just close the modal
-                  setShowApiKeyModal(false);
-                }}
+                onClick={() => setShowInfo(false)}
                 className="px-4 py-2 bg-primary text-white rounded-md"
-                disabled={!apiKey.trim().startsWith("sk-")}
               >
-                Save API Key
+                Close
               </button>
             </div>
           </div>
