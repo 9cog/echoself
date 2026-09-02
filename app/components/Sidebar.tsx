@@ -9,6 +9,7 @@ import {
   FiUser,
   FiInfo,
   FiTerminal,
+  FiActivity,
 } from "react-icons/fi";
 
 interface SidebarProps {
@@ -57,6 +58,12 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
             to="/memory"
             label="Memory System"
             icon={<FiDatabase />}
+            collapsed={collapsed}
+          />
+          <NavItem
+            to="/status"
+            label="Status"
+            icon={<FiActivity />}
             collapsed={collapsed}
           />
           <NavItem
