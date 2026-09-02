@@ -9,9 +9,10 @@ declare global {
     ENV: AppEnv;
   }
 
-  // Allow ENV to be set on globalThis for server-side rendering
-  // eslint-disable-next-line no-var
-  var ENV: AppEnv;
+  // Allow ENV to be set on globalThis for server-side rendering.
+  // Ambient globals require `var` for TypeScript declaration merging.
+  // deno-lint-ignore no-var
+  var ENV: AppEnv; // eslint-disable-line no-var
 }
 
 export {};

@@ -1,5 +1,41 @@
 import { Matrix } from "ml-matrix";
 
+// Dynamic import of evolutionary config for dynamic parameters
+let evolutionaryConfig: { getConfig: (key: string) => number } | null = null;
+
+// Initialize evolutionary config asynchronously
+const initEvolutionaryConfig = async (): Promise<void> => {
+  try {
+    if (!evolutionaryConfig) {
+      // Dynamic import from src/services - path adjusted for app/services location
+      const imported = await import(
+        /* webpackIgnore: true */ "../../src/services/evolutionaryConfig"
+      );
+      // Cast to simplified interface since we only use the getConfig function
+      evolutionaryConfig = {
+        getConfig: (key: string) => imported.getConfig(key as never),
+      };
+    }
+  } catch {
+    // Fallback to null - getESNConfig will use default values
+    evolutionaryConfig = null;
+  }
+};
+
+// Initialize on module load
+initEvolutionaryConfig();
+
+const getESNConfig = (key: string, defaultValue: number): number => {
+  try {
+    if (evolutionaryConfig) {
+      return evolutionaryConfig.getConfig(key);
+    }
+    return defaultValue;
+  } catch {
+    return defaultValue;
+  }
+};
+
 export interface ESNConfig {
   inputSize: number;
   reservoirSize: number;
@@ -31,11 +67,14 @@ export class EchoStateNetwork {
     this.inputSize = config.inputSize;
     this.reservoirSize = config.reservoirSize;
     this.outputSize = config.outputSize;
-    this.spectralRadius = config.spectralRadius || 0.99;
-    this.connectivity = config.connectivity || 0.1;
-    this.inputScaling = config.inputScaling || 1.0;
-    this.biasScaling = config.biasScaling || 0.1;
-    this.leakingRate = config.leakingRate || 1.0;
+    // Use evolutionary config for defaults, falling back to reasonable static values
+    this.spectralRadius =
+      config.spectralRadius ?? getESNConfig("spectralRadius", 0.99);
+    this.connectivity =
+      config.connectivity ?? getESNConfig("connectivity", 0.1);
+    this.inputScaling = config.inputScaling ?? 1.0;
+    this.biasScaling = config.biasScaling ?? 0.1;
+    this.leakingRate = config.leakingRate ?? getESNConfig("leakingRate", 1.0);
 
     // Initialize weights
     this.inputWeights = this.initializeInputWeights();
@@ -114,9 +153,10 @@ export class EchoStateNetwork {
     }
 
     // Solve for output weights using ridge regression
+    // Ridge parameter from evolutionary config
     const X = new Matrix(stateCollector);
     const Y = new Matrix(targetCollector);
-    const ridge = 1e-6;
+    const ridge = getESNConfig("ridgeRegularization", 1e-6);
 
     const XtX = X.transpose().mmul(X);
     const I = Matrix.eye(this.reservoirSize, this.reservoirSize).mul(ridge);

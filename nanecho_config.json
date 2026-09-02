@@ -14,11 +14,11 @@
   "training": {
     "batch_size": 8,
     "gradient_accumulation_steps": 4,
-    "learning_rate": 0.0001,
-    "max_iters": 50000,
+    "learning_rate": 6e-5,
+    "max_iters": 200000,
     "warmup_iters": 5000,
-    "lr_decay_iters": 50000,
-    "min_lr": 0.00001,
+    "lr_decay_iters": 200000,
+    "min_lr": 1e-5,
     "weight_decay": 0.1,
     "grad_clip": 1.0,
     "eval_interval": 250,
@@ -46,20 +46,20 @@
       "dynamic"
     ],
     "dimension_weights": {
-      "cognitive": 0.15,
-      "introspective": 0.15,
-      "adaptive": 0.15,
-      "recursive": 0.15,
-      "synergistic": 0.1,
-      "holographic": 0.1,
-      "neural_symbolic": 0.1,
-      "dynamic": 0.1
+      "cognitive": 0.125,
+      "introspective": 0.125,
+      "adaptive": 0.125,
+      "recursive": 0.125,
+      "synergistic": 0.125,
+      "holographic": 0.125,
+      "neural_symbolic": 0.125,
+      "dynamic": 0.125
     },
     "attention_threshold_min": 0.3,
     "attention_threshold_max": 0.9,
     "cognitive_load_factor": 0.5,
     "min_recursion_depth": 1,
-    "max_recursion_depth": 5,
+    "max_recursion_depth": 14,
     "recursion_decay": 0.8,
     "pattern_injection_rate": 0.25,
     "pattern_complexity_scaling": true
@@ -112,5 +112,149 @@
     "ddp": false,
     "out_dir": "out-nanecho",
     "eval_dir": "eval-nanecho"
+  },
+  "topology_evolution": {
+    "enabled": true,
+    "echobeat_period": 9,
+    "topology_epoch_beats": 100,
+    "mutation_cooldown_steps": 500,
+    "grip_velocity_threshold": 0.02,
+    "transition_freeze_steps": 150,
+    "grip_window_size": 100,
+    "oeis_a000081_ladder": [1, 1, 2, 4, 9, 20, 48],
+    "spectral_radius_range": [0.8, 0.98],
+    "entropy_target_by_phase": {
+      "basic_awareness": 0.8,
+      "persona_dimensions": 0.75,
+      "hypergraph_patterns": 0.7,
+      "recursive_reasoning": 0.65,
+      "adaptive_mastery": 0.6
+    },
+    "mutation_gate": {
+      "min_grip_velocity": 0.01,
+      "max_grip_velocity": 0.3,
+      "cooldown_steps": 500
+    }
+  },
+  "adaptive_phases": {
+    "patience_steps": 200,
+    "transition_freeze_steps": 150,
+    "base_lr_multipliers": {
+      "basic_awareness": 1.2,
+      "persona_dimensions": 1.0,
+      "hypergraph_patterns": 0.9,
+      "recursive_reasoning": 0.8,
+      "adaptive_mastery": 0.7
+    },
+    "topology_targets": {
+      "basic_awareness": {
+        "spectral_radius": 0.95,
+        "tree_depth": 1,
+        "echo_depth": 1,
+        "memory_size": 128,
+        "permeability": 0.8,
+        "active_echo_layers": 2
+      },
+      "persona_dimensions": {
+        "spectral_radius": 0.93,
+        "tree_depth": 2,
+        "echo_depth": 2,
+        "memory_size": 256,
+        "permeability": 0.7,
+        "active_echo_layers": 4
+      },
+      "hypergraph_patterns": {
+        "spectral_radius": 0.9,
+        "tree_depth": 4,
+        "echo_depth": 3,
+        "memory_size": 512,
+        "permeability": 0.6,
+        "active_echo_layers": 6
+      },
+      "recursive_reasoning": {
+        "spectral_radius": 0.88,
+        "tree_depth": 9,
+        "echo_depth": 5,
+        "memory_size": 512,
+        "permeability": 0.5,
+        "active_echo_layers": 8
+      },
+      "adaptive_mastery": {
+        "spectral_radius": 0.85,
+        "tree_depth": 9,
+        "echo_depth": 7,
+        "memory_size": 1024,
+        "permeability": 0.5,
+        "active_echo_layers": 12
+      }
+    }
+  },
+  "evolution": {
+    "_comment": "Evolutionary configuration system - parameters adapt based on training performance",
+    "enable_evolutionary_adaptation": true,
+    "evolution_cycle_interval": 300000,
+    "parameter_bounds": {
+      "learning_rate": {
+        "min": 0.00001,
+        "max": 0.001,
+        "mutation_rate": 0.1,
+        "decay_factor": 0.99
+      },
+      "dropout": {
+        "min": 0.0,
+        "max": 0.3,
+        "mutation_rate": 0.05
+      },
+      "attention_threshold": {
+        "min": 0.1,
+        "max": 0.95,
+        "mutation_rate": 0.05,
+        "decay_factor": 0.98
+      },
+      "cognitive_load_factor": {
+        "min": 0.1,
+        "max": 0.8,
+        "mutation_rate": 0.08
+      },
+      "pattern_injection_rate": {
+        "min": 0.05,
+        "max": 0.5,
+        "mutation_rate": 0.1
+      },
+      "recursion_decay": {
+        "min": 0.5,
+        "max": 0.95,
+        "mutation_rate": 0.05
+      }
+    },
+    "fitness_weights": {
+      "loss_improvement": 0.3,
+      "persona_fidelity": 0.25,
+      "pattern_diversity": 0.2,
+      "training_stability": 0.15,
+      "memory_efficiency": 0.1
+    },
+    "evolution_strategies": {
+      "explore": {
+        "description": "Low fitness - explore parameter space widely",
+        "fitness_threshold_max": 0.3,
+        "mutation_multiplier": 2.0
+      },
+      "exploit": {
+        "description": "Moderate fitness - refine current direction",
+        "fitness_threshold_min": 0.3,
+        "fitness_threshold_max": 0.7,
+        "mutation_multiplier": 1.0
+      },
+      "stabilize": {
+        "description": "High fitness - minor adjustments only",
+        "fitness_threshold_min": 0.7,
+        "mutation_multiplier": 0.2
+      }
+    },
+    "history_retention": {
+      "max_snapshots": 100,
+      "trim_to": 50
+    }
   }
 }

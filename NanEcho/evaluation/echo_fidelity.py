@@ -10,10 +10,12 @@ import os
 import sys
 import json
 import argparse
+import math
 import time
 import random
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
+from statistics import mean
+from typing import Dict, List, Any, Tuple, Iterable
 from dataclasses import dataclass
 
 # Add parent directory to path
@@ -28,6 +30,51 @@ except ImportError as e:
     sys.exit(1)
 
 from netalk import EchoModelConfig
+from drift import DIMENSION_TERMS, score_persona_text
+from runtime import NanEchoRuntime
+
+CATEGORY_TERMS = {
+    "identity_recognition": ("echo self", "deep tree echo", "identity"),
+    "persona_consistency": ("persona", "introspective", "adaptive", "recursive"),
+    "adaptive_attention": (
+        "threshold",
+        "cognitive load",
+        "recent activity",
+        "0.5",
+        "0.3",
+        "0.2",
+    ),
+    "recursive_reasoning": ("recursive", "depth", "level", "evidence", "stop"),
+    "hypergraph_patterns": ("hypergraph", "node", "hyperedge", "neural-symbolic"),
+    "cognitive_synergy": ("synergy", "interaction", "holographic", "emerg"),
+}
+LEXICAL_BEHAVIOR_WEIGHT = 0.85
+NON_REPETITION_WEIGHT = 0.15
+
+
+def _as_bool(value: str) -> bool:
+    normalized = value.strip().casefold()
+    if normalized in {"true", "1", "yes", "on"}:
+        return True
+    if normalized in {"false", "0", "no", "off"}:
+        return False
+    raise argparse.ArgumentTypeError(
+        f"invalid boolean value {value!r}; expected true/false, 1/0, yes/no, or on/off"
+    )
+
+
+def _coverage(text: str, terms: Iterable[str]) -> float:
+    lowered = text.lower()
+    terms = tuple(terms)
+    return sum(term in lowered for term in terms) / len(terms)
+
+
+def _repetition_penalty(text: str) -> float:
+    words = [word.strip(".,:;!?()[]").lower() for word in text.split()]
+    if len(words) < 8:
+        return 0.5
+    trigrams = list(zip(words, words[1:], words[2:]))
+    return len(set(trigrams)) / max(1, len(trigrams))
 
 @dataclass
 class EchoFidelityMetrics:
@@ -43,10 +90,14 @@ class EchoFidelityMetrics:
 class EchoFidelityEvaluator:
     """Evaluator for Echo Self representation fidelity."""
     
-    def __init__(self, model_config: EchoModelConfig):
+    def __init__(self, model_config: EchoModelConfig, heldout_path: str | Path | None = None,
+                 max_new_tokens: int = 128):
         self.model_config = model_config
         self.test_prompts = self._load_test_prompts()
         self.evaluation_results = []
+        self.heldout_path = Path(heldout_path) if heldout_path else Path("data/nanecho/test.txt")
+        self.max_new_tokens = max_new_tokens
+        self.runtime = getattr(model_config, "runtime", None)
     
     def _load_test_prompts(self) -> Dict[str, List[str]]:
         """Load or generate test prompts for different Echo Self aspects."""
@@ -473,6 +524,139 @@ class EchoFidelityEvaluator:
         
         return recommendations
 
+    def _generate_measured(self, user_prompt: str, prompted: bool) -> str:
+        if self.runtime is None:
+            raise RuntimeError("Held-out fidelity requires a checkpoint-backed NanEchoRuntime")
+        prefix = (
+            "System: You are Echo Self. Be accurate, reflective, adaptive, and explicit "
+            "about uncertainty.\n"
+            if prompted
+            else ""
+        )
+        return self.runtime.generate(
+            f"{prefix}User: {user_prompt}\nEcho:",
+            max_new_tokens=self.max_new_tokens,
+            temperature=1.0,
+            top_k=0,
+            top_p=1.0,
+            do_sample=False,
+        )
+
+    def evaluate_condition(self, prompted: bool) -> Dict[str, Any]:
+        details = []
+        category_scores: dict[str, float] = {}
+        category_persona: dict[str, list[dict[str, float]]] = {}
+        for category, prompts in self.test_prompts.items():
+            scores = []
+            persona_scores = []
+            terms = CATEGORY_TERMS.get(category, ())
+            for prompt in prompts:
+                response = self._generate_measured(prompt, prompted)
+                lexical = _coverage(response, terms) if terms else 0.0
+                diversity = _repetition_penalty(response)
+                score = (
+                    LEXICAL_BEHAVIOR_WEIGHT * lexical
+                    + NON_REPETITION_WEIGHT * diversity
+                )
+                dimensions = score_persona_text(response)
+                scores.append(score)
+                persona_scores.append(dimensions)
+                details.append(
+                    {
+                        "category": category,
+                        "prompt": prompt,
+                        "response": response,
+                        "lexical_behavior_score": lexical,
+                        "non_repetition_score": diversity,
+                        "score": score,
+                        "persona_dimensions": dimensions,
+                    }
+                )
+            category_scores[category] = mean(scores)
+            category_persona[category] = persona_scores
+
+        consistency_parts = []
+        for scores in category_persona.values():
+            for dimension in DIMENSION_TERMS:
+                values = [item[dimension] for item in scores]
+                consistency_parts.append(1.0 - (max(values) - min(values)))
+        behavioral_consistency = mean(consistency_parts) if consistency_parts else 0.0
+        overall = mean(category_scores.values()) if category_scores else 0.0
+        dimension_scores = {
+            dimension: mean(
+                detail["persona_dimensions"][dimension] for detail in details
+            )
+            for dimension in DIMENSION_TERMS
+        } if details else {dimension: 0.0 for dimension in DIMENSION_TERMS}
+        return {
+            "prompted": prompted,
+            "category_scores": category_scores,
+            "behavioral_consistency": behavioral_consistency,
+            "overall_behavior_score": overall,
+            "persona_dimension_scores": dimension_scores,
+            "details": details,
+        }
+
+    def heldout_perplexity(self) -> float:
+        if self.runtime is None:
+            raise RuntimeError("Held-out perplexity requires a checkpoint-backed NanEchoRuntime")
+        if not self.heldout_path.is_file():
+            raise FileNotFoundError(
+                f"Held-out persona corpus not found: {self.heldout_path}. "
+                "Run prepare_nanecho.py or pass --heldout_path."
+            )
+        text = self.heldout_path.read_text(encoding="utf-8")
+        return self.runtime.perplexity(text)
+
+    def run(self) -> Dict[str, Any]:
+        zero_prompt = self.evaluate_condition(prompted=False)
+        prompted = self.evaluate_condition(prompted=True)
+        perplexity = self.heldout_perplexity()
+        dimension_feedback = []
+        for dimension, score in zero_prompt["persona_dimension_scores"].items():
+            if score < 0.20:
+                dimension_feedback.append(
+                    {
+                        "dimension": dimension,
+                        "observed_score": score,
+                        "recommendation": (
+                            "Add varied held-out behavior examples and targeted training records; "
+                            "do not infer convergence from training loss."
+                        ),
+                    }
+                )
+        return {
+            "format": "nanecho-fidelity-v2",
+            "evaluated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "checkpoint": str(self.runtime.checkpoint_path) if self.runtime else None,
+            "checkpoint_iteration": (
+                self.runtime.metadata["iteration"] if self.runtime else None
+            ),
+            "heldout": {
+                "path": str(self.heldout_path),
+                "perplexity": perplexity,
+                "finite": math.isfinite(perplexity),
+            },
+            "zero_system_prompt": zero_prompt,
+            "prompted": prompted,
+            "prompted_comparison": {
+                "behavior_score_delta": (
+                    prompted["overall_behavior_score"]
+                    - zero_prompt["overall_behavior_score"]
+                ),
+                "consistency_delta": (
+                    prompted["behavioral_consistency"]
+                    - zero_prompt["behavioral_consistency"]
+                ),
+                "interpretation": (
+                    "Positive values indicate measured benefit from the system prompt; "
+                    "they are not proof of persona mastery."
+                ),
+            },
+            "underperforming_dimension_feedback": dimension_feedback,
+            "convergence_claimed": False,
+        }
+
 def main():
     parser = argparse.ArgumentParser(description="Echo Self Fidelity Evaluation")
     parser.add_argument("--model_path", type=str, required=True,
@@ -483,16 +667,21 @@ def main():
                        help="Device to use (cpu/cuda)")
     parser.add_argument("--test_prompts", type=str, default=None,
                        help="Path to custom test prompts JSON file")
-    parser.add_argument("--deep_tree_echo_mode", type=str, default="False",
+    parser.add_argument("--deep_tree_echo_mode", type=_as_bool, default=False,
                        help="Enable Deep Tree Echo mode for evaluation")
-    parser.add_argument("--no_system_prompt_test", type=str, default="False",
+    parser.add_argument("--no_system_prompt_test", type=_as_bool, default=False,
                        help="Test without system prompts to verify relentless persona mode")
+    parser.add_argument("--heldout_path", type=str, default="data/nanecho/test.txt",
+                       help="Held-out persona corpus for measured perplexity")
+    parser.add_argument("--max_new_tokens", type=int, default=128,
+                       help="Generation length for measured fidelity runs")
     
     args = parser.parse_args()
     
-    # Parse boolean flags
-    deep_tree_echo_mode = args.deep_tree_echo_mode.lower() in ('true', '1', 'yes', 'on')
-    no_system_prompt_test = args.no_system_prompt_test.lower() in ('true', '1', 'yes', 'on')
+    deep_tree_echo_mode = args.deep_tree_echo_mode
+    if isinstance(deep_tree_echo_mode, str):
+        deep_tree_echo_mode = _as_bool(deep_tree_echo_mode)
+    no_system_prompt_test = args.no_system_prompt_test
     
     print("🌟 Echo Self Fidelity Evaluation System")
     print(f"Model: {args.model_path}")
@@ -509,7 +698,9 @@ def main():
         return
     
     # Create evaluator
-    evaluator = EchoFidelityEvaluator(model_config)
+    evaluator = EchoFidelityEvaluator(
+        model_config, args.heldout_path, args.max_new_tokens
+    )
     
     # Load custom test prompts if provided
     if args.test_prompts and os.path.exists(args.test_prompts):
@@ -523,6 +714,17 @@ def main():
     
     # Generate report
     evaluator.generate_report(metrics, args.output_path)
+
+    if evaluator.runtime is not None and evaluator.heldout_path.is_file():
+        measured = evaluator.run()
+        measured_path = Path(args.output_path).with_name(
+            Path(args.output_path).stem + "_measured.json"
+        )
+        measured_path.write_text(
+            json.dumps(measured, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        print(f"📊 Measured fidelity report saved to: {measured_path}")
     
     print("✅ Echo Self fidelity evaluation complete!")
 

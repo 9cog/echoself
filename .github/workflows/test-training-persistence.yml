@@ -12,8 +12,13 @@ on:
     branches: [ main, master ]
     paths:
       - 'training_cache.py'
+      - 'echogenesis/**'
       - 'train_cached.py'
       - '.github/workflows/test-training-persistence.yml'
+
+env:
+  # Use Node.js 24 for GitHub Actions to address deprecation warnings
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   test-persistence:
@@ -33,7 +38,7 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip'

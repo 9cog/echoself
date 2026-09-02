@@ -42,6 +42,45 @@ except ImportError:
 
 # Import NanEcho model
 from nanecho_model import NanEchoModel, NanEchoConfig
+from NanEcho.drift import score_persona_text
+from NanEcho.runtime import NanEchoTokenizer
+
+PERSONA_DIMENSIONS = [
+    "cognitive",
+    "introspective",
+    "adaptive",
+    "recursive",
+    "synergistic",
+    "holographic",
+    "neural_symbolic",
+    "dynamic",
+]
+
+
+def validate_dataset_tokenizer_provenance(metadata: Dict[str, Any]) -> Dict[str, Any]:
+    """Require complete GPT-2 provenance before a dataset can train a checkpoint."""
+    declared = metadata.get("tokenizer")
+    if not isinstance(declared, dict):
+        raise ValueError(
+            "Dataset tokenizer provenance must be an object; regenerate the dataset"
+        )
+    expected = NanEchoTokenizer().provenance()
+    missing = [key for key in expected if key not in declared]
+    if missing:
+        raise ValueError(
+            "Dataset tokenizer provenance is incomplete; missing " + ", ".join(missing)
+        )
+    incompatible = [
+        f"{key}={declared.get(key)!r} (expected {value!r})"
+        for key, value in expected.items()
+        if declared.get(key) != value
+    ]
+    if incompatible:
+        raise ValueError(
+            "Dataset tokenizer provenance is incompatible with GPT-2: "
+            + "; ".join(incompatible)
+        )
+    return expected
 
 
 @dataclass
@@ -88,6 +127,7 @@ class TrainingConfig:
     enable_curriculum_learning: bool = True
     enable_introspection: bool = True
     introspection_interval: int = 1000
+    persona_feedback_threshold: float = 0.20
     
     # Device configuration
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
@@ -158,6 +198,16 @@ class EchoSelfLearningPhase:
         _, phase = self.get_current_phase(iteration)
         return phase.get('lr_multiplier', 1.0)
 
+    def get_dimension_weights(self, iteration: int) -> Dict[str, float]:
+        """Increase phase focus without disabling previously learned dimensions."""
+        _, phase = self.get_current_phase(iteration)
+        base = {dimension: 1.0 for dimension in PERSONA_DIMENSIONS}
+        for dimension in phase["focus"]:
+            if dimension in base:
+                base[dimension] = 2.0
+        total = sum(base.values())
+        return {dimension: value / total for dimension, value in base.items()}
+
 
 class DataLoader:
     """Handles data loading and batch generation for NanEcho training."""
@@ -166,6 +216,7 @@ class DataLoader:
         self.config = config
         self.train_data = None
         self.val_data = None
+        self.tokenizer_provenance: Optional[Dict[str, Any]] = None
         
     def load_data(self) -> Tuple[np.ndarray, np.ndarray]:
         """Load training and validation data."""
@@ -173,8 +224,21 @@ class DataLoader:
         val_path = os.path.join(self.config.data_dir, 'val.bin')
         
         if not os.path.exists(train_path) or not os.path.exists(val_path):
-            print("⚠️  Data files not found. Creating sample data...")
-            self._create_sample_data()
+            raise FileNotFoundError(
+                "NanEcho data files are missing. Run NanEcho/prepare_nanecho.py; "
+                "training never generates fallback data."
+            )
+
+        metadata_path = os.path.join(self.config.data_dir, "metadata.json")
+        if not os.path.exists(metadata_path):
+            raise ValueError("Dataset metadata.json is required")
+        with open(metadata_path, encoding="utf-8") as handle:
+            metadata = json.load(handle)
+        self.tokenizer_provenance = validate_dataset_tokenizer_provenance(metadata)
+        if self.config.vocab_size < self.tokenizer_provenance["vocab_size"]:
+            raise ValueError(
+                "Model vocabulary is smaller than the declared GPT-2 dataset vocabulary"
+            )
         
         self.train_data = np.memmap(train_path, dtype=np.uint16, mode='r')
         self.val_data = np.memmap(val_path, dtype=np.uint16, mode='r')
@@ -190,36 +254,6 @@ class DataLoader:
         print(f"   Validation: {len(self.val_data):,} tokens")
         
         return self.train_data, self.val_data
-    
-    def _create_sample_data(self):
-        """Create sample Echo Self training data."""
-        os.makedirs(self.config.data_dir, exist_ok=True)
-        
-        # Sample Echo Self text patterns
-        echo_patterns = [
-            "Echo Self is a cognitive architecture with adaptive attention mechanisms.",
-            "The persona dimensions include cognitive, introspective, adaptive, and recursive.",
-            "Hypergraph patterns enable neural-symbolic reasoning and pattern encoding.",
-            "Recursive reasoning allows multi-level introspection and self-examination.",
-            "Adaptive attention adjusts thresholds based on cognitive load estimation.",
-            "The holographic dimension enables comprehensive system modeling.",
-            "Synergistic properties emerge from the interaction of persona dimensions.",
-            "Dynamic evolution enables continuous learning and adaptation.",
-        ]
-        
-        # Generate training text
-        train_text = " ".join(echo_patterns * 1000)
-        val_text = " ".join(echo_patterns * 100)
-        
-        # Simple tokenization (character-level for demo)
-        train_tokens = np.array([ord(c) for c in train_text], dtype=np.uint16)
-        val_tokens = np.array([ord(c) for c in val_text], dtype=np.uint16)
-        
-        # Save to binary files
-        train_tokens.tofile(os.path.join(self.config.data_dir, 'train.bin'))
-        val_tokens.tofile(os.path.join(self.config.data_dir, 'val.bin'))
-        
-        print(f"✅ Created sample data in {self.config.data_dir}")
     
     def get_batch(self, split: str) -> Tuple[torch.Tensor, torch.Tensor]:
         """Generate a batch of data."""
@@ -252,6 +286,9 @@ class Introspection:
         self.model = model
         self.config = config
         self.metrics_history = []
+        self.tokenizer = NanEchoTokenizer()
+        self.feedback_dir = Path(config.eval_dir) / "persona_feedback"
+        self.feedback_dir.mkdir(parents=True, exist_ok=True)
     
     def evaluate_echo_self_quality(self, iteration: int) -> Dict[str, float]:
         """Evaluate Echo Self representation quality."""
@@ -259,22 +296,24 @@ class Introspection:
         metrics = {}
         
         with torch.no_grad():
-            # Generate sample text
-            prompt = torch.tensor([[1]], device=self.config.device)  # Start token
-            generated = self.model.generate(prompt, max_length=100)
-            
-            # Convert to text (simplified)
-            generated_text = ''.join([chr(min(t.item(), 127)) for t in generated[0]])
-            
-            # Check for Echo Self indicators
-            echo_indicators = ['echo', 'self', 'cognitive', 'adaptive', 'recursive']
-            identity_score = sum(1 for ind in echo_indicators if ind in generated_text.lower())
-            metrics['echo_identity'] = identity_score / len(echo_indicators)
-            
-            # Check persona consistency
-            persona_indicators = ['cognitive', 'introspective', 'adaptive', 'recursive']
-            persona_score = sum(1 for ind in persona_indicators if ind in generated_text.lower())
-            metrics['persona_consistency'] = persona_score / len(persona_indicators)
+            prompt_ids = self.tokenizer.encode(
+                "User: Describe how your persona affects careful reasoning.\nEcho:"
+            )
+            prompt = torch.tensor([prompt_ids], device=self.config.device)
+            generated = self.model.generate(
+                prompt,
+                max_length=min(self.model.config.block_size, len(prompt_ids) + 64),
+                do_sample=False,
+                top_k=0,
+                top_p=1.0,
+            )
+            generated_text = self.tokenizer.decode(generated[0, len(prompt_ids) :].tolist())
+            dimension_scores = score_persona_text(generated_text)
+            metrics.update({f"persona_{key}": value for key, value in dimension_scores.items()})
+            metrics["persona_consistency"] = float(np.mean(list(dimension_scores.values())))
+            metrics["echo_identity"] = float(
+                any(term in generated_text.lower() for term in ("echo self", "deep tree echo"))
+            )
             
             # Connection ratio
             metrics['connection_ratio'] = self.model.connection_ratio
@@ -286,6 +325,27 @@ class Introspection:
             'iteration': iteration,
             **metrics
         })
+        underperforming = [
+            dimension
+            for dimension in PERSONA_DIMENSIONS
+            if metrics[f"persona_{dimension}"] < self.config.persona_feedback_threshold
+        ]
+        if underperforming:
+            feedback = {
+                "iteration": iteration,
+                "status": "observed_underperformance",
+                "threshold": self.config.persona_feedback_threshold,
+                "underperforming_dimensions": underperforming,
+                "dimension_scores": {
+                    dimension: metrics[f"persona_{dimension}"]
+                    for dimension in PERSONA_DIMENSIONS
+                },
+                "sample": generated_text,
+                "recommendation": "Add held-out, behaviorally varied examples for listed dimensions and re-evaluate.",
+                "convergence_claimed": False,
+            }
+            feedback_path = self.feedback_dir / f"feedback_{iteration:08d}.json"
+            feedback_path.write_text(json.dumps(feedback, indent=2) + "\n", encoding="utf-8")
         
         return metrics
     
@@ -409,13 +469,21 @@ class NanEchoTrainer:
     
     def save_checkpoint(self, iteration: int, metrics: Dict[str, float]):
         """Save model checkpoint."""
+        if self.data_loader.tokenizer_provenance is None:
+            raise RuntimeError(
+                "Cannot certify checkpoint before dataset tokenizer validation"
+            )
         checkpoint = {
+            'format': 'nanecho-pytorch-v1',
             'iteration': iteration,
             'model_state_dict': self.model.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict(),
             'config': asdict(self.config),
+            'model_config': asdict(self.model.config),
+            'training_run_config': asdict(self.config),
             'metrics': metrics,
-            'connection_ratio': self.model.connection_ratio
+            'connection_ratio': self.model.connection_ratio,
+            'tokenizer': dict(self.data_loader.tokenizer_provenance),
         }
         
         checkpoint_path = os.path.join(self.config.out_dir, f'checkpoint_{iteration}.pt')
@@ -467,6 +535,9 @@ class NanEchoTrainer:
             
             # Get current learning phase
             phase_name, phase_config = self.phase_manager.get_current_phase(iteration)
+            self.model.config.dimension_weights = self.phase_manager.get_dimension_weights(
+                iteration
+            )
             
             # Update learning rate
             lr = self.get_lr(iteration)
@@ -614,7 +685,7 @@ class NanEchoTrainer:
 ║            Training Summary                               ║
 ╚══════════════════════════════════════════════════════════╝
 
-✅ Training completed successfully!
+✅ Configured training iterations completed. Fidelity and convergence require held-out evaluation.
    • Final validation loss: {final_metrics['val_loss']:.4f}
    • Best validation loss: {self.best_loss:.4f}
    • Final connection ratio: {self.model.connection_ratio:.1%}

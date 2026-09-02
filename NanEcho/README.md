@@ -1,5 +1,11 @@
 # NanEcho
 
+> For the current checkpoint-backed NanEchoModel runtime, deterministic corpus
+> pipeline, fidelity benchmark, exports, and drift monitoring, see
+> [PRODUCTION.md](PRODUCTION.md). Historical NanoCog/nanoGPT instructions below
+> describe a separate checkpoint format and are not accepted by the NanEchoModel
+> runtime.
+
 A **Deep Tree Echo-aware AI assistant** built on a custom‐trained nanoGPT variant.  
 NanEcho understands the theory of the Deep Tree Echo AGI architecture **and** the practical Scheme code that powers OpenCog. It can:
 

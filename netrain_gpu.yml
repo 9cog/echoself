@@ -1,0 +1,128 @@
+# NetRain Deep Tree Echo LLM Configuration - GPU Healing Run
+# Designed for Vast.ai RTX 3090/4090 execution
+
+name: deep_tree_echo_llm_gpu
+version: 1.1.0
+description: "Deep Tree Echo LLM - Full Architecture GPU Healing Run"
+
+# Model Architecture
+model:
+  type: DeepTreeEchoTransformer
+  architecture:
+    # Core transformer parameters (Scaled up for GPU)
+    n_layers: 12
+    n_heads: 12
+    n_embd: 768
+    block_size: 1024
+    vocab_size: 50257
+    
+    # Deep tree echo specific
+    tree_depth: 5
+    echo_layers: [2, 4, 6, 8, 10, 12]
+    branch_factor: 3
+    
+    # Attention mechanisms
+    attention:
+      type: hierarchical_adaptive
+      use_flash_attention: true
+      attention_dropout: 0.1
+      use_rotary_embeddings: true
+      max_position_embeddings: 2048
+      
+    # Echo architecture
+    echo:
+      enable_recursive_attention: true
+      echo_depth: 4
+      echo_decay: 0.90
+      use_memory_bank: true
+      memory_size: 1024
+      
+    # Tree structure
+    tree:
+      enable_hierarchical_pooling: true
+      tree_attention_heads: 6
+      branch_merge_strategy: "weighted_sum"
+      use_gating_mechanism: true
+
+# Data Configuration
+data:
+  dataset_name: "deep_echo_corpus"
+  data_dir: "data/deep_echo"
+  preprocessing:
+    tokenizer: "gpt2"
+    max_length: 1024
+    stride: 512
+    add_special_tokens: true
+  augmentation:
+    enable: true
+    techniques:
+      - token_masking: 0.10
+      - span_masking: 0.05
+      - sentence_permutation: 0.02
+  loader:
+    batch_size: 16
+    num_workers: 4
+    pin_memory: true
+
+# Training Configuration
+training:
+  optimizer:
+    type: "AdamW"
+    learning_rate: 3e-4
+    weight_decay: 0.1
+    beta1: 0.9
+    beta2: 0.95
+    eps: 1e-8
+  scheduler:
+    type: "cosine_with_warmup"
+    warmup_steps: 1000
+    total_steps: 50000
+    min_lr_ratio: 0.05
+  max_steps: 50000
+  gradient_accumulation_steps: 4
+  gradient_clipping: 1.0
+  mixed_precision: "fp16"
+  checkpoint:
+    save_steps: 5000
+    save_total_limit: 3
+    save_best_only: true
+    monitor_metric: "eval_loss"
+  evaluation:
+    eval_steps: 1000
+    eval_strategy: "steps"
+  early_stopping:
+    enable: true
+    patience: 5
+    min_delta: 0.005
+
+# Deep Tree Echo Specific Training
+echo_training:
+  progressive_depth:
+    enable: true
+    initial_depth: 2
+    increment_every: 5000
+    max_depth: 5
+  loss_weights:
+    primary_loss: 1.0
+    echo_consistency_loss: 0.4
+    tree_structure_loss: 0.2
+    hierarchical_loss: 0.1
+  recursive_attention:
+    enable_curriculum: true
+    start_recursion_at: 10000
+    max_recursion_depth: 4
+    recursion_dropout: 0.1
+  memory_bank:
+    update_frequency: 50
+    memory_dropout: 0.1
+    use_contrastive_loss: true
+    temperature: 0.07
+
+# Hardware Configuration
+hardware:
+  device: "cuda"
+  device_ids: [0]
+  memory:
+    gradient_checkpointing: true
+    cpu_offload: false
+    optimizer_offload: false

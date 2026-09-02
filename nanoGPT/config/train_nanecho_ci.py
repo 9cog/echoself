@@ -1,8 +1,23 @@
 # train_nanecho_ci.py
 # Minimal configuration for CI testing
+# NOTE: This static config is overwritten by the workflow's dynamic config
+# generation step. It exists as a fallback only.
 
 # Output directory for checkpoints
 out_dir = 'out-nanecho-ci'
+
+# CRITICAL: Resume from existing checkpoint by default.
+# The workflow sets this dynamically based on checkpoint restoration status.
+# Default to 'resume' so that if a ckpt.pt exists in out_dir, nanoGPT picks it up.
+# If no checkpoint exists, nanoGPT falls back to 'scratch' automatically.
+import os
+if os.path.isfile(os.path.join(out_dir, 'ckpt.pt')):
+    init_from = 'resume'
+else:
+    init_from = 'scratch'
+
+# ALWAYS save checkpoints — never skip. Skipping risks losing all training progress.
+always_save_checkpoint = True
 
 # Data
 dataset = 'nanecho'
@@ -36,7 +51,6 @@ eval_interval = 5
 log_interval = 1
 eval_iters = 2  # Reduced for CI
 eval_only = False
-always_save_checkpoint = False  # Don't save in CI
 
 # DDP settings
 backend = 'nccl'

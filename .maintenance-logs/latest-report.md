@@ -1,42 +1,64 @@
-# Automated Maintenance Report - 2026-03-25 13:43:00 UTC
+# Automated Maintenance Report - 2026-08-15 12:50:00 UTC
 
 ## Summary
-- Trigger: manual (copilot fix)
+- Trigger: manual (copilot fix for issue #42)
 - Auto-fixes applied: true
 
 ## ✅ Issues Successfully Resolved
 
-### Deno Lint Fix
+### Deno Lint (v1.x)
 
-- **Root Cause**: `app/types/global.d.ts` contained an unused `// deno-lint-ignore no-var` comment
-- **Error**: `ban-unused-ignore: Ignore for code "no-var" was not used`
-- **Fix**: Removed the unused `// deno-lint-ignore no-var` comment (Deno's `no-var` rule does not apply to `.d.ts` declaration files, so the ignore directive was never consumed)
-- **Status**: ✅ Resolved — `deno lint` now passes with 0 problems across 95 files
+- **Root Cause 1**: `app/types/global.d.ts` ambient `var ENV` triggered `no-var`
+- **Fix**: Added `// deno-lint-ignore no-var` with same-line ESLint disable
+- **Root Cause 2**: Unused `// deno-lint-ignore-file no-node-globals` in `cognitiveEngineBridge.ts`
+- **Fix**: Removed unused ignore directive
+- **Hardening**: Excluded `build/`, `public/build/`, and `node_modules/` from Deno lint in `deno.json`
+- **Status**: ✅ Resolved — Deno 1.46.3 lint passes with 0 problems across 96 files
 
-### Code Quality Status
+### Prettier
 
-- **TypeScript compilation**: ✅ Zero errors (clean build)
-- **Build process**: ✅ Successful compilation with Remix/Vite
-- **ESLint**: ✅ 0 errors, 12 warnings (acceptable technical debt)
+- **Root Cause**: `NanEcho/adapted_config_summary.json` missing trailing newline
+- **Fix**: Prettier `--write`
+- **Status**: ✅ Resolved
+
+### Maintenance Report Completeness
+
+- Prettier and Deno failure logs are now included in automated issue bodies
+
+## Code Quality Status
+
+- **TypeScript compilation**: ✅ Zero errors
+- **Build process**: ✅ Successful
+- **ESLint**: ✅ 0 errors, 9 warnings (acceptable technical debt)
 - **Prettier**: ✅ All files properly formatted
-- **Deno lint**: ✅ 0 problems (95 files checked)
+- **Deno lint**: ✅ 0 problems (96 files checked)
 
 ## ⚠️ Remaining Acceptable Issues
 
-### ESLint Warnings (12 warnings: 0 errors)
+### ESLint Warnings (9 warnings: 0 errors)
 
-All remaining warnings are intentional `any` types for external API compatibility:
-
+- `cognitiveEngineBridge.ts`: 2 instances — Python bridge payload typing
 - `hypergraphSchemeCore.ts`: 6 instances — Dynamic cognitive patterns
-- `mem0aiService.ts`: 3 instances — OpenAI SDK compatibility
-- `toroidalCognitiveService.ts`: 2 instances — Flexible cognitive typing
 - `tests.ts`: 1 instance — Test fixtures
 
 ## 🔄 Automation Status
 
-**Status**: ✅ All quality checks passing
-**Quality gate**: ✅ Passed
-**Ready for deployment**: ✅ Yes
-**Automated maintenance**: ✅ Will no longer trigger issue updates
+**Status**: ✅ All quality checks passing  
+**Quality gate**: ✅ Passed  
+**Ready for deployment**: ✅ Yes  
+**Issue #42**: Ready to close after merge
 
-### 📅 Resolution Completed: 2026-03-25 13:43:00 UTC
+### 📅 Resolution Completed: 2026-08-15 12:50:00 UTC
+
+## Later session (2026-08-15 13:45:00 UTC)
+
+Unique resolved items from the Explorer copy that the 12:50 report did not list:
+
+- Trigger: manual_intervention_required (Issue #118)
+- Aligned `deno.json` with ESLint technical-debt baseline
+- Fixed unreachable default-context returns in `MemoryContext.tsx`
+- Cleared unused imports/parameters across services and app entrypoints
+- Ignored machine-generated training artifacts in `.prettierignore` to stop recurring CI format failures after training commits
+- Extended automated-quality maintenance logs to include Prettier and Deno failure excerpts
+- `npm audit fix` reduced advisories from 35 → 23
+- Issue #118: ready to close

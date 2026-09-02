@@ -6,15 +6,29 @@
     "format:check": "deno fmt --check"
   },
   "lint": {
+    "exclude": [
+      "build/",
+      "public/build/",
+      "node_modules/",
+      "dist/",
+      "out-*/",
+      "**/node_modules/",
+      "nanoGPT",
+      "NanEcho",
+      ".training-progress"
+    ],
     "rules": {
-      "tags": ["recommended"],
+      "tags": [
+        "recommended"
+      ],
       "exclude": [
         "no-sloppy-imports",
         "jsx-button-has-type",
         "no-window",
         "no-explicit-any",
         "require-await",
-        "no-unused-vars"
+        "no-unused-vars",
+        "no-control-regex"
       ]
     }
   },

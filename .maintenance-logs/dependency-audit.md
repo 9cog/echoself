@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-03-25 02:59:17 UTC
+# Dependency Audit Report - 2026-05-30 03:01:43 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-03-25T02:59:15.284Z",
+  "timestamp": "2026-05-30T03:01:41.406Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -52,7 +52,7 @@
       "openai": 19,
       "prettier": 0,
       "python-shell": 1,
-      "react": 46,
+      "react": 47,
       "react-dom": 4,
       "react-icons": 23,
       "react-markdown": 2,
@@ -86,7 +86,7 @@
       "eslint-plugin-react": 0,
       "eslint-plugin-react-hooks": 0,
       "typescript": 8,
-      "vite": 3,
+      "vite": 2,
       "vite-tsconfig-paths": 0
     },
     "securityVulnerabilities": {},
@@ -98,10 +98,39 @@
 ```
 # npm audit report
 
-dompurify  3.1.3 - 3.3.1
+@supabase/auth-js  <=2.69.1
+auth-js Vulnerable to Insecure Path Routing from Malformed User Input - https://github.com/advisories/GHSA-8r88-6cj9-9fh5
+fix available via `npm audit fix`
+node_modules/@supabase/auth-js
+  @supabase/supabase-js  2.41.1 - 2.49.10 || 2.58.1-canary.0
+  Depends on vulnerable versions of @supabase/auth-js
+  node_modules/@supabase/supabase-js
+
+brace-expansion  <1.1.13 || >=2.0.0 <2.0.3
+Severity: moderate
+brace-expansion: Zero-step sequence causes process hang and memory exhaustion - https://github.com/advisories/GHSA-f886-m6hf-6m8v
+brace-expansion: Zero-step sequence causes process hang and memory exhaustion - https://github.com/advisories/GHSA-f886-m6hf-6m8v
+fix available via `npm audit fix`
+node_modules/@eslint/eslintrc/node_modules/brace-expansion
+node_modules/@humanwhocodes/config-array/node_modules/brace-expansion
+node_modules/brace-expansion
+node_modules/eslint-plugin-import/node_modules/brace-expansion
+node_modules/eslint-plugin-jsx-a11y/node_modules/brace-expansion
+node_modules/eslint-plugin-react/node_modules/brace-expansion
+node_modules/eslint/node_modules/brace-expansion
+node_modules/rimraf/node_modules/brace-expansion
+
+dompurify  <=3.3.3
 Severity: moderate
 DOMPurify contains a Cross-site Scripting vulnerability - https://github.com/advisories/GHSA-v8jm-5vwx-cfxm
 DOMPurify contains a Cross-site Scripting vulnerability - https://github.com/advisories/GHSA-v2wj-7wpq-c8vv
+DOMPurify ADD_ATTR predicate skips URI validation - https://github.com/advisories/GHSA-cjmm-f4jc-qw8r
+DOMPurify USE_PROFILES prototype pollution allows event handlers - https://github.com/advisories/GHSA-cj63-jhhr-wcxv
+DOMPurify's ADD_TAGS function form bypasses FORBID_TAGS due to short-circuit evaluation - https://github.com/advisories/GHSA-39q2-94rc-95cp
+DOMPurify: FORBID_TAGS bypassed by function-based ADD_TAGS predicate (asymmetry with FORBID_ATTR fix) - https://github.com/advisories/GHSA-h7mw-gpvr-xq4m
+DOMPurify has a SAFE_FOR_TEMPLATES bypass in RETURN_DOM mode - https://github.com/advisories/GHSA-crv5-9vww-q3g8
+DOMPurify: Prototype Pollution to XSS Bypass via CUSTOM_ELEMENT_HANDLING Fallback - https://github.com/advisories/GHSA-v9jr-rg53-9pgp
+DOMPurify is vulnerable to mutation-XSS via Re-Contextualization  - https://github.com/advisories/GHSA-h8r8-wccr-v5f2
 fix available via `npm audit fix`
 node_modules/dompurify
 
@@ -122,7 +151,7 @@ node_modules/vite/node_modules/esbuild
   Depends on vulnerable versions of vite
   Depends on vulnerable versions of vite-node
   node_modules/@vanilla-extract/integration
-  vite  0.11.0 - 6.1.6
+  vite  <=6.4.1
   Depends on vulnerable versions of esbuild
   node_modules/vite
     vite-node  <=2.2.0-beta.2
@@ -145,6 +174,48 @@ Prototype Pollution via parse() in NodeJS flatted - https://github.com/advisorie
 fix available via `npm audit fix`
 node_modules/flatted
 
+lodash  <=4.17.23
+Severity: high
+lodash vulnerable to Code Injection via `_.template` imports key names - https://github.com/advisories/GHSA-r5fr-rjxr-66jc
+lodash vulnerable to Prototype Pollution via array path bypass in `_.unset` and `_.omit` - https://github.com/advisories/GHSA-f23m-r3pf-42rh
+fix available via `npm audit fix`
+node_modules/lodash
+
+lodash-es  <=4.17.23
+Severity: high
+lodash vulnerable to Code Injection via `_.template` imports key names - https://github.com/advisories/GHSA-r5fr-rjxr-66jc
+lodash vulnerable to Prototype Pollution via array path bypass in `_.unset` and `_.omit` - https://github.com/advisories/GHSA-f23m-r3pf-42rh
+fix available via `npm audit fix`
+node_modules/lodash-es
+  @chevrotain/cst-dts-gen  11.0.0 - 11.2.0
+  Depends on vulnerable versions of @chevrotain/gast
+  Depends on vulnerable versions of lodash-es
+  node_modules/@chevrotain/cst-dts-gen
+  @chevrotain/gast  11.0.0 - 11.2.0
+  Depends on vulnerable versions of lodash-es
+  node_modules/@chevrotain/gast
+  chevrotain  11.0.0 - 11.2.0
+  Depends on vulnerable versions of @chevrotain/cst-dts-gen
+  Depends on vulnerable versions of @chevrotain/gast
+  Depends on vulnerable versions of lodash-es
+  node_modules/chevrotain
+    chevrotain-allstar  0.3.0 - 0.3.1
+    Depends on vulnerable versions of chevrotain
+    node_modules/chevrotain-allstar
+    langium  2.0.0-next.239179f - 4.2.1
+    Depends on vulnerable versions of chevrotain
+    Depends on vulnerable versions of chevrotain-allstar
+    node_modules/langium
+
+mermaid  11.0.0-alpha.1 - 11.14.0
+Severity: moderate
+Mermaid Gantt Charts are vulnerable to an Infinite Loop DoS - https://github.com/advisories/GHSA-6m6c-36f7-fhxh
+Mermaid: Improper sanitization of `classDefs` in diagrams leads to CSS injection - https://github.com/advisories/GHSA-xcj9-5m2h-648r
+Mermaid: Improper sanitization of configuration leads to CSS injection - https://github.com/advisories/GHSA-87f9-hvmw-gh4p
+Mermaid: Improper sanitization of `classDef` in state diagrams leads to HTML injection - https://github.com/advisories/GHSA-ghcm-xqfw-q4vr
+fix available via `npm audit fix`
+node_modules/mermaid
+
 minimatch  9.0.0 - 9.0.6
 Severity: high
 minimatch has a ReDoS via repeated wildcards with non-matching literal in pattern - https://github.com/advisories/GHSA-3ppc-4f35-3m26
@@ -162,13 +233,47 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
+
+path-to-regexp  <0.1.13
+Severity: high
+path-to-regexp vulnerable to Regular Expression Denial of Service via multiple route parameters - https://github.com/advisories/GHSA-37ch-88jc-xwx2
+fix available via `npm audit fix`
+node_modules/path-to-regexp
+
+picomatch  <=2.3.1 || 4.0.0 - 4.0.3
+Severity: high
+Picomatch: Method Injection in POSIX Character Classes causes incorrect Glob Matching - https://github.com/advisories/GHSA-3v7f-55p6-f55p
+Picomatch: Method Injection in POSIX Character Classes causes incorrect Glob Matching - https://github.com/advisories/GHSA-3v7f-55p6-f55p
+Picomatch has a ReDoS vulnerability via extglob quantifiers - https://github.com/advisories/GHSA-c2c7-rcm5-vvqj
+Picomatch has a ReDoS vulnerability via extglob quantifiers - https://github.com/advisories/GHSA-c2c7-rcm5-vvqj
+fix available via `npm audit fix`
+node_modules/picomatch
+node_modules/tinyglobby/node_modules/picomatch
+
+postcss  <8.5.10
+Severity: moderate
+PostCSS has XSS via Unescaped </style> in its CSS Stringify Output - https://github.com/advisories/GHSA-qx2v-qp2m-jg93
+fix available via `npm audit fix`
+node_modules/postcss
+
+qs  6.11.1 - 6.15.1
+Severity: moderate
+qs has a remotely triggerable DoS: qs.stringify crashes with TypeError on null/undefined entries in comma-format arrays when encodeValuesOnly is set - https://github.com/advisories/GHSA-q8mj-m7cp-5q26
+fix available via `npm audit fix`
+node_modules/qs
+  body-parser  1.20.3 - 1.20.4 || 2.0.0-beta.1 - 2.0.2
+  Depends on vulnerable versions of qs
+  node_modules/body-parser
+  express  4.21.0 - 4.22.1 || 5.0.0-alpha.1 - 5.0.1
+  Depends on vulnerable versions of qs
+  node_modules/express
 
 tar  <=7.5.10
 Severity: high
@@ -196,7 +301,26 @@ Undici has CRLF Injection in undici via `upgrade` option - https://github.com/ad
 fix available via `npm audit fix`
 node_modules/undici
 
-18 vulnerabilities (7 moderate, 11 high)
+uuid  <11.1.1
+Severity: moderate
+uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided - https://github.com/advisories/GHSA-w5hq-g745-h8pq
+fix available via `npm audit fix`
+node_modules/uuid
+
+
+ws  8.0.0 - 8.20.0
+Severity: moderate
+ws: Uninitialized memory disclosure - https://github.com/advisories/GHSA-58qx-3vcg-4xpx
+fix available via `npm audit fix`
+node_modules/ws
+
+yaml  2.0.0 - 2.8.2
+Severity: moderate
+yaml is vulnerable to Stack Overflow via deeply nested YAML collections - https://github.com/advisories/GHSA-48c2-rrv3-qjmp
+fix available via `npm audit fix`
+node_modules/yaml
+
+38 vulnerabilities (2 low, 16 moderate, 20 high)
 
 To address issues that do not require attention, run:
   npm audit fix
@@ -204,4 +328,31 @@ To address issues that do not require attention, run:
 Some issues need review, and may require choosing
 a different dependency.
 No security issues found
+```
+
+## Later audit snapshot - 2026-08-16 02:26:06 UTC
+
+The Explorer copy was a later `npm audit` run. Original 2026-05-30 report is kept above
+(more complete unused-dependency analysis). Unique later findings from the copy:
+
+```
+react-router  6.0.0 - 7.17.0
+Severity: moderate
+React Router: Open redirect via backslash in <Link> and useNavigate (CVE-2025-68470 bypass) - https://github.com/advisories/GHSA-wrjc-x8rr-h8h6
+React Router: Arbitrary Constructor Injection via deserializeErrors() in React Router SSR Hydration - https://github.com/advisories/GHSA-337j-9hxr-rhxg
+
+turbo-stream  <3.0.0
+Severity: high
+React Router vulnerable to Denial of Service via reflected user input in single-fetch - https://github.com/advisories/GHSA-rxv8-25v2-qmq8
+
+tar  <=7.5.20
+Severity: critical
+node-tar applies PAX size override to intermediary GNU long-name/long-link headers, causing tar parser interpretation differential (file smuggling) - https://github.com/advisories/GHSA-vmf3-w455-68vh
+node-tar: Process crash via PAX numeric path type confusion - https://github.com/advisories/GHSA-w8wr-v893-vjvp
+node-tar: Decompression/parse DoS via unlimited input - https://github.com/advisories/GHSA-23hp-3jrh-7fpw
+node-tar: Negative tar entry size causes infinite loop in archive replace - https://github.com/advisories/GHSA-8x88-c5mf-7j5w
+node-tar: Uncaught Exception DoS via NUL byte in PAX path/linkpath records - https://github.com/advisories/GHSA-gvwx-54wh-qm9j
+node-tar: Uncontrolled recursion in mapHas/filesFilter allows uncatchable stack-overflow DoS via crafted long-path tar with member selection - https://github.com/advisories/GHSA-r292-9mhp-454m
+
+23 vulnerabilities (7 moderate, 15 high, 1 critical)
 ```

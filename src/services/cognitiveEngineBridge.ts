@@ -9,6 +9,7 @@
 import { execFile } from "child_process";
 import { promisify } from "util";
 import * as path from "path";
+import process from "node:process";
 
 const execFileAsync = promisify(execFile);
 
@@ -65,8 +66,7 @@ export class CognitiveEngineBridge {
     this.pythonPath = process.env.PYTHON_PATH || "python3";
     // Resolve project root relative to this file's location (src/services/)
     this.projectRoot =
-      process.env.ECHOSELF_ROOT ||
-      path.resolve(__dirname, "..", "..");
+      process.env.ECHOSELF_ROOT || path.resolve(__dirname, "..", "..");
   }
 
   public static getInstance(): CognitiveEngineBridge {
@@ -197,12 +197,11 @@ print(json.dumps(out))
       });
       return JSON.parse(stdout.trim()) as RelevanceEvaluation;
     } catch (error) {
-      console.error("Python relevance evaluation failed, using fallback:", error);
-      return this.evaluateRelevanceFallback(
-        conceptId,
-        conceptData,
-        context
+      console.error(
+        "Python relevance evaluation failed, using fallback:",
+        error
       );
+      return this.evaluateRelevanceFallback(conceptId, conceptData, context);
     }
   }
 

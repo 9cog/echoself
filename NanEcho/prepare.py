@@ -649,6 +649,52 @@ def main():
         for src_file in src_files:
             process_file(src_file, all_text_content)
     
+    # 5. Echo Self Persona Content from repository root and .github/agents/
+    print("\n🌳 Processing Echo Self Persona Content")
+    repo_root = os.path.abspath(os.path.join(script_dir, ".."))
+    
+    # Primary persona files in repository root
+    persona_root_files = [
+        "echoself.md",
+        "DTECHO.MD",
+        "CLAUDE.MD",
+    ]
+    for persona_file in persona_root_files:
+        file_path = os.path.join(repo_root, persona_file)
+        if process_file(file_path, all_text_content):
+            print(f"   ✓ Added {persona_file}")
+    
+    # Echo-related agent persona files from .github/agents/
+    agents_dir = os.path.join(repo_root, ".github", "agents")
+    if os.path.exists(agents_dir):
+        print(f"   📂 Found agents directory at {agents_dir}")
+        echo_agent_files = [
+            "deep-tree-echo.md",
+            "echo.md",
+            "echoself.md",
+            "echo-instructions.md",
+            "echo-state-pyper.md",
+            "deep-tree-echo-pilot.md",
+            "echobeats-3phase.md",
+        ]
+        for agent_file in echo_agent_files:
+            file_path = os.path.join(agents_dir, agent_file)
+            if process_file(file_path, all_text_content):
+                print(f"   ✓ Added agent persona: {agent_file}")
+    else:
+        print(f"   ⚠ Agents directory not found at {agents_dir}")
+    
+    # 6. Authentic Conversation Corpus from NanEcho/persona_corpus/
+    print("\n💬 Processing Authentic Conversation Corpus")
+    persona_corpus_dir = os.path.join(script_dir, "persona_corpus")
+    if os.path.exists(persona_corpus_dir):
+        corpus_files = collect_files(persona_corpus_dir, "*.md", "Conversation corpus")
+        for corpus_file in corpus_files:
+            if process_file(corpus_file, all_text_content):
+                print(f"   ✓ Added corpus: {os.path.basename(corpus_file)}")
+    else:
+        print(f"   ⚠ Persona corpus directory not found at {persona_corpus_dir}")
+    
     if not all_text_content:
         print("\n❌ No content collected. Exiting. Please check data source paths and availability.")
         sys.exit(1)
@@ -728,7 +774,12 @@ def main():
         "token_stats": {k: v for k, v in token_stats.items() if k != 'most_common_tokens'},
         "train_tokens": len(train_data_ids),
         "val_tokens": len(val_data_ids),
-        "tokenizer": "gpt2",
+        "tokenizer": {
+            "name": "gpt2",
+            "vocab_size": enc.n_vocab,
+            "eos_token": "<|endoftext|>",
+            "eos_token_id": enc.eot_token,
+        },
         "train_ratio": TRAIN_RATIO,
         "sources": {
             "cogprime_paper": bool(cogprime_paper_local_path and os.path.exists(cogprime_paper_local_path)),

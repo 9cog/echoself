@@ -23,6 +23,14 @@ export {
   type AdaptiveThresholds,
 } from "./adaptiveFeedbackService";
 
+// Enhanced feedback service with Relevance Realization integration
+export {
+  EnhancedAdaptiveFeedbackService,
+  getEnhancedAdaptiveFeedbackService,
+  type EnhancedModelScore,
+  type FeedbackCycleResult,
+} from "./enhancedAdaptiveFeedbackService";
+
 // Integration with orchestrator
 export {
   FeedbackIntegrationService,
@@ -31,10 +39,20 @@ export {
 
 // Import for convenience function
 import { FeedbackIntegrationService } from "./feedbackIntegrationService";
+import { EnhancedAdaptiveFeedbackService } from "./enhancedAdaptiveFeedbackService";
 
 // Convenience function to initialize the complete feedback system
 export const initializeAdaptiveFeedbackSystem = () => {
   const integrationService = FeedbackIntegrationService.getInstance();
   console.log("🚀 Adaptive feedback system initialized");
   return integrationService;
+};
+
+// Convenience function to initialize enhanced feedback system with RR
+export const initializeEnhancedFeedbackSystem = () => {
+  const enhancedService = EnhancedAdaptiveFeedbackService.getInstance();
+  console.log(
+    "🚀 Enhanced feedback system with Relevance Realization initialized"
+  );
+  return enhancedService;
 };

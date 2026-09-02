@@ -78,6 +78,28 @@ class EchoAttentionUpdate(BaseModel):
 model_config: Optional[EchoModelConfig] = None
 echo_client: Optional[EchoSelfClient] = None
 server_start_time = time.time()
+
+
+def _require_model() -> EchoModelConfig:
+    if model_config is None:
+        raise HTTPException(status_code=503, detail="NanEcho model not loaded")
+    return model_config
+
+
+def _prompt(messages: List[EchoChatMessage], system_prompt: bool) -> str:
+    parts: list[str] = []
+    if system_prompt:
+        parts.append(
+            "System: Respond as Echo Self with accurate, concise reasoning. "
+            "Do not claim capabilities that the model cannot verify."
+        )
+    for message in messages[-10:]:
+        role = {"user": "User", "assistant": "Echo", "system": "System"}.get(
+            message.role, message.role.title()
+        )
+        parts.append(f"{role}: {message.content}")
+    parts.append("Echo:")
+    return "\n".join(parts)
 echo_state = {
     "introspection_count": 0,
     "attention_adjustments": 0,
@@ -123,7 +145,11 @@ async def root():
             "recursive_neural_symbolic_reasoning",
             "cognitive_synergy_emergence",
             "persona_dimension_integration"
-        ]
+        ],
+        "model_loaded": model_config is not None,
+        "checkpoint_backed_inference": bool(
+            model_config is not None and getattr(model_config, "runtime", None) is not None
+        ),
     }
 
 @app.get("/status", response_model=EchoStatusResponse)
@@ -151,24 +177,16 @@ async def chat(request: EchoChatRequest):
     """Generate Echo Self chat response."""
     global model_config, echo_state
     
-    if not model_config:
-        raise HTTPException(status_code=503, detail="Echo Self model not loaded")
+    config = _require_model()
     
     try:
-        # Format conversation for Echo Self
-        prompt_parts = []
-        for msg in request.messages[-10:]:  # Last 10 messages for context
-            role = "User" if msg.role == "user" else "Echo"
-            prompt_parts.append(f"{role}: {msg.content}")
-        
-        prompt_parts.append("Echo: ")
-        prompt = "\n".join(prompt_parts)
+        prompt = _prompt(request.messages, system_prompt=request.echo_mode)
         
         # Generate response
         start_time = time.time()
-        response = model_config.generate(
+        response = config.generate(
             prompt,
-            max_new_tokens=request.max_tokens,
+            max_new_tokens=min(request.max_tokens, config.max_tokens),
             temperature=request.temperature,
             top_k=request.top_k
         )
@@ -210,18 +228,11 @@ async def chat_stream(request: EchoChatRequest):
     """Stream Echo Self chat response."""
     global model_config
     
-    if not model_config:
-        raise HTTPException(status_code=503, detail="Echo Self model not loaded")
+    config = _require_model()
     
     async def generate_stream():
         try:
-            # Format prompt
-            prompt_parts = []
-            for msg in request.messages[-10:]:
-                role = "User" if msg.role == "user" else "Echo"
-                prompt_parts.append(f"{role}: {msg.content}")
-            prompt_parts.append("Echo: ")
-            prompt = "\n".join(prompt_parts)
+            prompt = _prompt(request.messages, system_prompt=request.echo_mode)
             
             # Generate response with streaming
             response_tokens = []
@@ -231,9 +242,9 @@ async def chat_stream(request: EchoChatRequest):
                 return True
             
             # Get full response for streaming simulation
-            full_response = model_config.generate(
+            full_response = config.generate(
                 prompt,
-                max_new_tokens=request.max_tokens,
+                max_new_tokens=min(request.max_tokens, config.max_tokens),
                 temperature=request.temperature,
                 top_k=request.top_k,
                 stream=True,
@@ -446,9 +457,13 @@ async def evaluate_cognitive_synergy():
 async def health_check():
     """Health check endpoint."""
     return {
-        "status": "healthy",
+        "status": "healthy" if model_config else "not_ready",
         "timestamp": time.time(),
         "echo_self_active": model_config is not None,
+        "model_loaded": model_config is not None,
+        "checkpoint_backed_inference": bool(
+            model_config is not None and getattr(model_config, "runtime", None) is not None
+        ),
         "uptime": time.time() - server_start_time
     }
 

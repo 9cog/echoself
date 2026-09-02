@@ -7,6 +7,7 @@ on:
       - 'NanEcho/**'
       - 'echoself.md'
       - 'echo/**'
+      - 'echogenesis/**'
       - '.github/workflows/nerun.yml'
   pull_request:
     branches: [ main, master ]
@@ -14,6 +15,7 @@ on:
       - 'NanEcho/**'
       - 'echoself.md'
       - 'echo/**'
+      - 'echogenesis/**'
       - '.github/workflows/nerun.yml'
   workflow_run:
     workflows: ["Train NanEcho Model"]
@@ -42,6 +44,10 @@ on:
         default: true
         type: boolean
 
+env:
+  # Use Node.js 24 for GitHub Actions to address deprecation warnings
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -63,7 +69,7 @@ jobs:
         path: nanoGPT
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip'
@@ -106,7 +112,9 @@ jobs:
     - name: Create nanecho model checkpoint if not found
       run: |
         if [ ! -f nanoGPT/out-nanecho-ci/ckpt.pt ]; then
-          echo "No nanecho model artifact found, creating minimal Echo Self checkpoint for testing"
+          echo "⚠️ No nanecho model artifact found from previous training"
+          echo "   Creating minimal Echo Self checkpoint for TESTING ONLY"
+          echo "   This is a fallback - production training should use actual trained checkpoints"
           mkdir -p nanoGPT/out-nanecho-ci
           cd nanoGPT
           python -c "

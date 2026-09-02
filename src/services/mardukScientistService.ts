@@ -265,7 +265,7 @@ ${analysisPoints.join("\n")}
     return steps;
   }
 
-  private generateRecursiveInsight(terms: string[], level: number): string {
+  private generateRecursiveInsight(_terms: string[], level: number): string {
     const insights = [
       "structural dependencies requiring optimization",
       "emergent properties from component interactions",

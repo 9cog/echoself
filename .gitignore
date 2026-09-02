@@ -106,3 +106,6 @@ nanoGPT/data/
 
 # Generated reports
 cognitive_analysis_report.json
+
+# Local ech0-mem0 / mech0 data (self-hosted memory; do not commit)
+.mech0/

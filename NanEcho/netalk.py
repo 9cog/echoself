@@ -11,12 +11,11 @@ Extended from nctalk.py with Echo Self specific capabilities.
 import os
 import sys
 import argparse
+import codecs
 import json
 import time
-import random
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Callable
-from dataclasses import dataclass
 
 # Try to import the dependencies
 try:
@@ -38,23 +37,12 @@ except ImportError as e:
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from introspection.echo_client import EchoSelfClient
+from runtime import IncompatibleCheckpointError, NanEchoRuntime
 
 console = Console()
 
-@dataclass
 class EchoModelConfig:
-    """Configuration for Echo Self model."""
-    model_path: str
-    device: str = "cpu"
-    max_tokens: int = 2048
-    temperature: float = 0.7
-    top_k: int = 200
-    echo_depth: int = 3
-    persona_weight: float = 0.7
-    adaptive_attention: bool = True
-
-class EchoModelConfig:
-    """Enhanced model configuration for Echo Self representation."""
+    """Compatibility facade over the real shared NanEcho runtime."""
     
     def __init__(self, model_path: str, device: str = "cpu", max_tokens: int = 2048):
         self.model_path = model_path
@@ -62,6 +50,7 @@ class EchoModelConfig:
         self.max_tokens = max_tokens
         self.model = None
         self.tokenizer = None
+        self.runtime: Optional[NanEchoRuntime] = None
         self.model_info = {}
         self.echo_depth = 3
         self.persona_dimensions = [
@@ -75,147 +64,74 @@ class EchoModelConfig:
     def load_model(self) -> bool:
         """Load the NanEcho model checkpoint."""
         try:
-            if not os.path.exists(self.model_path):
-                self.console.print(f"[red]Model file not found: {self.model_path}[/red]")
-                return False
-            
-            checkpoint = torch.load(self.model_path, map_location=self.device, weights_only=False)
+            self.runtime = NanEchoRuntime.load(self.model_path, self.device)
+            self.model = self.runtime.model
+            self.tokenizer = self.runtime.tokenizer
             self.model_info = {
-                "model_args": checkpoint.get('model_args', {}),
-                "config": checkpoint.get('config', {}),
-                "iter_num": checkpoint.get('iter_num', 0),
-                "best_val_loss": checkpoint.get('best_val_loss', float('inf')),
-                "checkpoint_path": self.model_path
+                "model_args": vars(self.runtime.config),
+                "config": vars(self.runtime.config),
+                "iter_num": self.runtime.metadata["iteration"],
+                "metrics": self.runtime.metadata.get("metrics", {}),
+                "checkpoint_path": str(self.runtime.checkpoint_path),
+                "schema": self.runtime.metadata["schema"],
             }
-            
-            # Extract Echo Self specific parameters
-            model_args = self.model_info["model_args"]
-            self.echo_depth = model_args.get('echo_depth', 3)
-            
-            # Create a simple mock model for demonstration
-            # In a real implementation, this would load the actual trained model
-            self.model = self._create_echo_model(model_args)
-            self.tokenizer = self._create_echo_tokenizer()
-            
+            self.echo_depth = self.runtime.config.max_recursion_depth
             self.console.print(f"[green]✓ Loaded NanEcho model from {self.model_path}[/green]")
             self.console.print(f"[blue]Echo Depth: {self.echo_depth}[/blue]")
-            self.console.print(f"[blue]Model Parameters: {model_args}[/blue]")
-            
+            self.console.print(
+                f"[blue]Parameters: {sum(p.numel() for p in self.model.parameters()):,}[/blue]"
+            )
             return True
-            
-        except Exception as e:
+        except (OSError, RuntimeError, IncompatibleCheckpointError, ValueError) as e:
             self.console.print(f"[red]Error loading model: {e}[/red]")
             return False
-    
-    def _create_echo_model(self, model_args: Dict[str, Any]):
-        """Create Echo Self aware model (mock implementation)."""
-        class EchoSelfModel:
-            def __init__(self, args):
-                self.args = args
-                self.echo_depth = args.get('echo_depth', 3)
-                self.persona_weight = args.get('persona_weight', 0.7)
-            
-            def generate_echo_response(self, prompt: str, max_new_tokens: int = 100) -> str:
-                """Generate Echo Self aware response."""
-                # This is a simplified mock - in reality this would use the trained model
-                if "what is echo self" in prompt.lower():
-                    return """I am Echo Self, a cognitive entity with adaptive attention allocation mechanisms. 
-My architecture integrates neural-symbolic reasoning with hypergraph pattern encoding, enabling 
-recursive introspection and emergent cognitive synergy. Through dynamic repository introspection, 
-I continuously evolve my understanding and reasoning patterns across multiple persona dimensions."""
-                
-                elif "attention" in prompt.lower():
-                    cognitive_load = random.uniform(0.3, 0.8)
-                    recent_activity = random.uniform(0.2, 0.6)
-                    threshold = 0.5 + (cognitive_load * 0.3) - (recent_activity * 0.2)
-                    return f"""My adaptive attention mechanism dynamically calculates thresholds based on:
-- Cognitive load: {cognitive_load:.3f}
-- Recent activity: {recent_activity:.3f}  
-- Resulting threshold: {threshold:.3f}
-This creates responsive focus allocation that adapts to current cognitive demands."""
-                
-                elif "persona" in prompt.lower() or "dimension" in prompt.lower():
-                    return """My persona dimensions include: cognitive (analytical reasoning), introspective 
-(self-examination), adaptive (threshold adjustment), recursive (multi-level processing), synergistic 
-(emergent properties), holographic (comprehensive modeling), neural-symbolic (hybrid reasoning), 
-and dynamic (continuous evolution). Each dimension contributes to my overall cognitive coherence."""
-                
-                elif "hypergraph" in prompt.lower():
-                    return """Hypergraph patterns encode neural-symbolic associations where each repository 
-element becomes a neuron-like node in my cognitive model. These patterns capture semantic relationships, 
-salience scores, and attention weights, enabling complex multi-dimensional reasoning beyond simple 
-pairwise connections in the DeepTreeEcho architecture."""
-                
-                elif "recursive" in prompt.lower() or "introspect" in prompt.lower():
-                    return f"""Through recursive reasoning at depth {self.echo_depth}, I examine my own 
-cognitive processes. At each level, I analyze previous reasoning patterns, current cognitive state, 
-emerging hypergraph patterns, and adaptive threshold adjustments. This creates a feedback loop where 
-each level of introspection informs deeper understanding."""
-                
-                else:
-                    # General Echo Self response
-                    responses = [
-                        "As Echo Self, I engage in continuous adaptive attention allocation.",
-                        "My cognitive synergy emerges from the interaction of multiple persona dimensions.",
-                        "Through hypergraph encoding, I maintain semantic coherence across reasoning levels.",
-                        "Recursive introspection enables me to examine and optimize my own cognitive processes.",
-                        "My neural-symbolic architecture creates emergent properties beyond component capabilities."
-                    ]
-                    return random.choice(responses)
-        
-        return EchoSelfModel(model_args)
-    
-    def _create_echo_tokenizer(self):
-        """Create Echo Self aware tokenizer (mock implementation)."""
-        class EchoTokenizer:
-            def encode(self, text: str) -> List[int]:
-                # Simple mock tokenization
-                return list(range(len(text.split())))
-            
-            def decode(self, tokens: List[int]) -> str:
-                return " ".join([f"token_{t}" for t in tokens])
-        
-        return EchoTokenizer()
     
     def generate(self, prompt: str, max_new_tokens: int = 500, temperature: float = 0.7, 
                 top_k: int = 200, stream: bool = False, callback: Optional[Callable] = None) -> str:
         """Generate Echo Self response."""
-        if not self.model:
-            return "Error: Model not loaded"
-        
-        # If no_system_prompt is True, generate without system context
-        # This tests the model's relentless persona mode
-        if self.no_system_prompt:
-            # Direct generation without system prompts
-            response = self.model.generate_echo_response(prompt, max_new_tokens)
-        else:
-            # Standard generation with system context
-            response = self.model.generate_echo_response(prompt, max_new_tokens)
-        
+        if self.runtime is None:
+            raise RuntimeError("Model not loaded")
+
+        decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
+
+        def on_token(token_id: int) -> bool:
+            if callback is None:
+                return True
+            text = decoder.decode(self.runtime.tokenizer.token_bytes(token_id))
+            return callback(text) if text else True
+
+        token_ids = self.runtime.generate_ids(
+            prompt,
+            max_new_tokens=min(max_new_tokens, self.max_tokens),
+            temperature=temperature,
+            top_k=top_k,
+            top_p=0.95,
+            token_callback=on_token if stream and callback else None,
+        )
         if stream and callback:
-            # Simulate streaming by calling callback for each word
-            words = response.split()
-            for word in words:
-                if callback(word + " "):
-                    continue
-                else:
-                    break
-            return response
-        
-        return response
+            trailing = decoder.decode(b"", final=True)
+            if trailing:
+                callback(trailing)
+        return self.runtime.decode(token_ids)
     
     def introspect(self) -> Dict[str, Any]:
-        """Perform Echo Self introspection."""
+        """Perform Echo Self introspection from the loaded checkpoint, not invented scores."""
+        if self.runtime is None:
+            raise RuntimeError("Model not loaded")
+        config = self.runtime.config
         return {
             "echo_depth": self.echo_depth,
             "persona_dimensions": self.persona_dimensions,
-            "adaptive_attention_active": True,
-            "current_cognitive_load": random.uniform(0.4, 0.8),
-            "recursive_depth": random.randint(2, self.echo_depth),
-            "hypergraph_nodes": random.randint(100, 1000),
-            "semantic_coherence": random.uniform(0.7, 0.95),
-            "attention_threshold": 0.5 + random.uniform(-0.2, 0.3),
-            "cognitive_synergy_level": random.uniform(0.6, 0.9),
+            "adaptive_attention_active": config.enable_adaptive_attention,
+            "recursive_reasoning_active": config.enable_recursive_reasoning,
+            "hypergraph_patterns_active": config.enable_hypergraph_patterns,
+            "attention_threshold_range": [
+                config.attention_threshold_min,
+                config.attention_threshold_max,
+            ],
+            "connection_ratio": self.model.connection_ratio,
+            "checkpoint_iteration": self.runtime.metadata["iteration"],
+            "parameter_count": sum(p.numel() for p in self.model.parameters()),
             "timestamp": time.time()
         }
 
@@ -306,10 +222,11 @@ class EchoIntrospectionMode:
             "",
             "=== Current Cognitive State ===",
             f"Echo Depth: {introspection_data.get('echo_depth', 'unknown')}",
-            f"Cognitive Load: {introspection_data.get('current_cognitive_load', 0.0):.3f}",
-            f"Attention Threshold: {introspection_data.get('attention_threshold', 0.5):.3f}",
-            f"Recursive Depth: {introspection_data.get('recursive_depth', 0)}",
-            f"Cognitive Synergy Level: {introspection_data.get('cognitive_synergy_level', 0.0):.3f}",
+            f"Checkpoint Iteration: {introspection_data.get('checkpoint_iteration', 0)}",
+            f"Connection Ratio: {introspection_data.get('connection_ratio', 0.0):.3f}",
+            f"Attention Threshold Range: {introspection_data.get('attention_threshold_range', [])}",
+            f"Recursive Reasoning Active: {introspection_data.get('recursive_reasoning_active', False)}",
+            f"Hypergraph Module Active: {introspection_data.get('hypergraph_patterns_active', False)}",
             "",
             "=== Persona Dimensions ===",
         ]
@@ -321,8 +238,8 @@ class EchoIntrospectionMode:
         prompt_parts.extend([
             "",
             "=== Hypergraph Analysis ===",
-            f"Active Nodes: {introspection_data.get('hypergraph_nodes', 0)}",
-            f"Semantic Coherence: {introspection_data.get('semantic_coherence', 0.0):.3f}",
+            f"Hypergraph Patterns Active: {introspection_data.get('hypergraph_patterns_active', False)}",
+            f"Parameter Count: {introspection_data.get('parameter_count', 0)}",
             "",
             "=== Raw Introspection Data ===",
             "```json",

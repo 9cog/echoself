@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "identity": {
+    "name": "EchoSelf",
+    "profile": "Deep Tree Echo",
+    "subject": "self"
+  },
+  "memory": {
+    "backend": "mech0",
+    "type": "autognosic",
+    "cloud_mem0_required": false
+  },
+  "esn": {
+    "spectral_radius_band": [0.85, 0.95]
+  },
+  "layers": {
+    "l0_observation": [
+      {
+        "id": "training_summary_504",
+        "path": ".training-progress/nanecho-cached-ci/training_summary.json",
+        "kind": "training_summary"
+      },
+      {
+        "id": "backup_manifest_695",
+        "path": ".training-progress/checkpoints/backup_manifest.json",
+        "kind": "backup_manifest"
+      },
+      {
+        "id": "latest_checkpoint",
+        "path": ".training-progress/checkpoints/latest_checkpoint.pt",
+        "kind": "checkpoint_weights",
+        "required_for": "train"
+      },
+      {
+        "id": "nanecho_surface",
+        "path": "echoself/data/nanecho",
+        "kind": "runtime_surface"
+      }
+    ],
+    "l1_pattern": [
+      {
+        "id": "cache_metadata",
+        "path": ".training-progress/nanecho-cached-ci/cache/metadata.json",
+        "kind": "checkpoint_index"
+      },
+      {
+        "id": "eval_history",
+        "path": ".training-progress/eval_history",
+        "kind": "eval_dir"
+      },
+      {
+        "id": "introspection_history",
+        "path": ".training-progress/nanecho-cached-ci/introspection_history.json",
+        "kind": "introspection"
+      }
+    ],
+    "l2_meta": [
+      {
+        "id": "echo_zero",
+        "path": ".cursor/agents/echo-zero.md",
+        "kind": "domain_profile"
+      },
+      {
+        "id": "autognosis_agent",
+        "path": ".github/agents/AUTOGNOSIS.md",
+        "kind": "self_image_spec"
+      },
+      {
+        "id": "agents_md",
+        "path": "AGENTS.md",
+        "kind": "workspace_memory"
+      },
+      {
+        "id": "autognosis_config",
+        "path": "autognosis.json",
+        "kind": "self_config"
+      }
+    ]
+  }
+}

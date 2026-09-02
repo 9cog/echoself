@@ -4,6 +4,11 @@
 
 NanEcho is an extension of the NanEcho framework specifically designed to train models that represent Deep Tree Echo cognitive architecture, persona dimensions, and adaptive attention mechanisms. This implementation creates a "nanecho" model that embodies the characteristics and reasoning patterns of Deep Tree Echo as a workspace arena system with Echo (Self Kernel Core).
 
+> Production loading, corpus, evaluation, monitoring, and export details are in
+> [`NanEcho/PRODUCTION.md`](NanEcho/PRODUCTION.md). CLI and server inference are
+> checkpoint-backed; incompatible or legacy character-tokenized checkpoints are
+> rejected rather than replaced with mock output.
+
 ## 🚀 Quick Start
 
 ### Training a NanEcho Model
@@ -94,7 +99,8 @@ NanEcho models are evaluated on six key dimensions:
 
 ### Quality Gates
 
-Training includes automated quality gates:
+Evaluation reports measured diagnostic thresholds; passing them is not a claim
+of convergence or persona mastery:
 
 - Minimum Deep Tree Echo identity score: 0.85
 - Minimum arena integration: 0.80

@@ -15,9 +15,14 @@ from typing import Optional, Dict, Any
 
 from nanecho_model import NanEchoModel, NanEchoConfig
 
+ROOT = Path(__file__).resolve().parent
+if str(ROOT / "NanEcho") not in sys.path:
+    sys.path.insert(0, str(ROOT / "NanEcho"))
+from runtime import NanEchoRuntime  # noqa: E402
+
 
 class NanEchoGenerator:
-    """Text generator for NanEcho models."""
+    """Text generator for NanEcho models, preferring the shared production runtime."""
     
     def __init__(self, checkpoint_path: str, device: str = 'cuda'):
         self.device = torch.device(device if torch.cuda.is_available() else 'cpu')
@@ -25,8 +30,22 @@ class NanEchoGenerator:
         self.config = None
         self.iteration = 0
         self.connection_ratio = 0.0
-        
-        self.load_checkpoint(checkpoint_path)
+        self.runtime = None
+        try:
+            self.runtime = NanEchoRuntime.load(
+                checkpoint_path,
+                device if torch.cuda.is_available() or not str(device).startswith("cuda") else "cpu",
+            )
+            self.model = self.runtime.model
+            self.config = self.runtime.config
+            self.iteration = self.runtime.metadata["iteration"]
+            self.connection_ratio = self.model.connection_ratio
+            print(f"✅ Runtime loaded from {checkpoint_path}")
+            print(f"   • Iteration: {self.iteration:,}")
+            print(f"   • Connection ratio: {self.connection_ratio:.1%}")
+        except Exception as exc:
+            print(f"⚠️  NanEchoRuntime unavailable ({exc}); using legacy checkpoint loader")
+            self.load_checkpoint(checkpoint_path)
     
     def load_checkpoint(self, checkpoint_path: str):
         """Load model from checkpoint."""
@@ -85,18 +104,33 @@ class NanEchoGenerator:
         num_samples: int = 1
     ) -> list:
         """Generate text from prompt."""
-        # Simple character-level tokenization for demo
+        if self.runtime is not None:
+            if not prompt:
+                raise ValueError("prompt must not be empty when using NanEchoRuntime")
+            prompt_tokens = len(self.runtime.encode(prompt))
+            max_new_tokens = max(0, max_length - prompt_tokens)
+            return [
+                self.runtime.generate(
+                    prompt,
+                    max_new_tokens=max_new_tokens,
+                    temperature=temperature,
+                    top_k=top_k,
+                    top_p=top_p,
+                    do_sample=do_sample,
+                )
+                for _ in range(num_samples)
+            ]
+
+        # Legacy path for checkpoints the production runtime cannot load
         if prompt:
             input_ids = torch.tensor([[ord(c) % self.config.vocab_size for c in prompt]], 
                                     device=self.device)
         else:
-            # Start with a random token
             input_ids = torch.randint(0, self.config.vocab_size, (1, 1), device=self.device)
         
         results = []
         
         for i in range(num_samples):
-            # Generate
             with torch.no_grad():
                 generated = self.model.generate(
                     input_ids,
@@ -106,8 +140,6 @@ class NanEchoGenerator:
                     top_p=top_p,
                     do_sample=do_sample
                 )
-            
-            # Decode (simple character-level)
             text = ''.join([chr(min(t.item(), 127)) for t in generated[0]])
             results.append(text)
         
