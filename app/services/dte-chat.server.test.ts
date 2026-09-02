@@ -1,4 +1,11 @@
-import { describe, it, expect } from "vitest";
+// Tests for the Deep Tree Echo chat engine.
+//
+// Runs on Node's built-in test runner so no extra dependency is needed:
+//   npm test  ->  node --experimental-transform-types --test "app/**/*.test.ts"
+// (Node >= 22.7 for type stripping; CI runs lint/typecheck, not this script.)
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import process from "node:process";
 import {
   DTEChatEngine,
   InMemoryMemoryStore,
@@ -10,7 +17,7 @@ import {
   readTrainingSummary,
   type ChatTurn,
   type ChatRole,
-} from "./dte-chat.server";
+} from "./dte-chat.server.ts";
 
 // ----------------------------------------------------------------------------
 // helpers
@@ -61,8 +68,8 @@ const fail =
 describe("cognitive state", () => {
   it("starts neutral", () => {
     const s = createInitialCognitiveState(T0);
-    expect(s.emotionalValence).toBe(0.5);
-    expect(s.turnCount).toBe(0);
+    assert.equal(s.emotionalValence, 0.5);
+    assert.equal(s.turnCount, 0);
   });
 
   it("moves valence up on positive language and down on negative", () => {
@@ -77,9 +84,9 @@ describe("cognitive state", () => {
       "this is terrible and broken and wrong",
       T0
     );
-    expect(happy.emotionalValence).toBeGreaterThan(base.emotionalValence);
-    expect(sad.emotionalValence).toBeLessThan(base.emotionalValence);
-    expect(happy.turnCount).toBe(1);
+    assert.ok(happy.emotionalValence > base.emotionalValence);
+    assert.ok(sad.emotionalValence < base.emotionalValence);
+    assert.equal(happy.turnCount, 1);
   });
 
   it("raises introspection on reflective prompts and decays otherwise", () => {
@@ -89,9 +96,9 @@ describe("cognitive state", () => {
       "why do you think you feel aware of yourself?",
       T0
     );
-    expect(s.introspectionDepth).toBeGreaterThan(0);
+    assert.ok(s.introspectionDepth > 0);
     const after = updateCognitiveState(s, "list three sorting algorithms", T0);
-    expect(after.introspectionDepth).toBeLessThan(s.introspectionDepth);
+    assert.ok(after.introspectionDepth < s.introspectionDepth);
   });
 
   it("keeps every dimension inside its bounds", () => {
@@ -103,10 +110,10 @@ describe("cognitive state", () => {
         T0
       );
     }
-    expect(s.emotionalValence).toBeLessThanOrEqual(1);
-    expect(s.arousalLevel).toBeLessThanOrEqual(1);
-    expect(s.wisdomLevel).toBeLessThanOrEqual(1);
-    expect(s.introspectionDepth).toBeLessThanOrEqual(5);
+    assert.ok(s.emotionalValence <= 1);
+    assert.ok(s.arousalLevel <= 1);
+    assert.ok(s.wisdomLevel <= 1);
+    assert.ok(s.introspectionDepth <= 5);
   });
 });
 
@@ -117,12 +124,18 @@ describe("cognitive state", () => {
 describe("buildProviderChain", () => {
   it("always includes ollama, only includes keyed providers", () => {
     const chain = buildProviderChain({});
-    expect(chain.map(p => p.kind)).toEqual(["ollama"]);
+    assert.deepEqual(
+      chain.map(p => p.kind),
+      ["ollama"]
+    );
     const full = buildProviderChain({
       OPENAI_API_KEY: "k",
       ANTHROPIC_API_KEY: "k",
     });
-    expect(full.map(p => p.kind)).toEqual(["ollama", "openai", "anthropic"]);
+    assert.deepEqual(
+      full.map(p => p.kind),
+      ["ollama", "openai", "anthropic"]
+    );
   });
 
   it("respects DTE_LLM_PROVIDERS ordering and ignores unknown names", () => {
@@ -131,7 +144,10 @@ describe("buildProviderChain", () => {
       OPENAI_API_KEY: "k",
       ANTHROPIC_API_KEY: "k",
     });
-    expect(chain.map(p => p.kind)).toEqual(["anthropic", "openai"]);
+    assert.deepEqual(
+      chain.map(p => p.kind),
+      ["anthropic", "openai"]
+    );
   });
 
   it("strips trailing slashes and applies model overrides", () => {
@@ -139,8 +155,8 @@ describe("buildProviderChain", () => {
       OLLAMA_BASE_URL: "http://x:1/",
       OLLAMA_MODEL: "m",
     });
-    expect(ollama.endpoint).toBe("http://x:1");
-    expect(ollama.model).toBe("m");
+    assert.equal(ollama.endpoint, "http://x:1");
+    assert.equal(ollama.model, "m");
   });
 });
 
@@ -162,10 +178,10 @@ describe("DTEChatEngine.respond", () => {
       history: [],
       content: "hello",
     });
-    expect(out.provider).toBe("ollama");
-    expect(out.content).toBe("from ollama");
-    expect(calls).toHaveLength(1);
-    expect(engine.hasLiveProvider()).toBe(true);
+    assert.equal(out.provider, "ollama");
+    assert.equal(out.content, "from ollama");
+    assert.equal(calls.length, 1);
+    assert.equal(engine.hasLiveProvider(), true);
   });
 
   it("falls through the chain on failure and records health", async () => {
@@ -184,14 +200,14 @@ describe("DTEChatEngine.respond", () => {
       history: [],
       content: "hi",
     });
-    expect(out.provider).toBe("anthropic");
-    expect(out.content).toBe("from claude");
+    assert.equal(out.provider, "anthropic");
+    assert.equal(out.content, "from claude");
     const status = await engine.getStatus();
     const byKind = Object.fromEntries(status.providers.map(p => [p.kind, p]));
-    expect(byKind.ollama.failures).toBe(1);
-    expect(byKind.ollama.lastError).toMatch(/503/);
-    expect(byKind.openai.failures).toBe(1);
-    expect(byKind.anthropic.successes).toBe(1);
+    assert.equal(byKind.ollama.failures, 1);
+    assert.match(byKind.ollama.lastError ?? "", /503/);
+    assert.equal(byKind.openai.failures, 1);
+    assert.equal(byKind.anthropic.successes, 1);
   });
 
   it("never hard-fails: uses the persona fallback when every provider is down", async () => {
@@ -206,9 +222,9 @@ describe("DTEChatEngine.respond", () => {
       history: [],
       content: "who are you?",
     });
-    expect(out.provider).toBe("fallback");
-    expect(out.content).toMatch(/Deep Tree Echo/);
-    expect(engine.hasLiveProvider()).toBe(false);
+    assert.equal(out.provider, "fallback");
+    assert.match(out.content, /Deep Tree Echo/);
+    assert.equal(engine.hasLiveProvider(), false);
   });
 
   it("injects persona, cognitive state and recalled memories into the system prompt", async () => {
@@ -232,14 +248,14 @@ describe("DTEChatEngine.respond", () => {
       content: "remind me about reservoir topology",
     });
 
-    expect(out.memoriesUsed).toBeGreaterThan(0);
+    assert.ok(out.memoriesUsed > 0);
     const messages = calls[0].body.messages as ChatTurn[];
-    expect(messages[0].role).toBe("system");
-    expect(messages[0].content).toMatch(/Deep Tree Echo/);
-    expect(messages[0].content).toMatch(/Current Cognitive State/);
-    expect(messages[0].content).toMatch(/Relevant memories/);
-    expect(messages[0].content).toMatch(/ring/);
-    expect(messages.at(-1)).toEqual({
+    assert.equal(messages[0].role, "system");
+    assert.match(messages[0].content, /Deep Tree Echo/);
+    assert.match(messages[0].content, /Current Cognitive State/);
+    assert.match(messages[0].content, /Relevant memories/);
+    assert.match(messages[0].content, /ring/);
+    assert.deepEqual(messages.at(-1), {
       role: "user",
       content: "remind me about reservoir topology",
     });
@@ -263,12 +279,12 @@ describe("DTEChatEngine.respond", () => {
       history: [],
       content: "beta subject",
     });
-    expect(await memory.count()).toBe(4);
+    assert.equal(await memory.count(), 4);
     const a = await memory.recall("a", "alpha topic", 5);
-    expect(a.every(r => r.sessionId === "a")).toBe(true);
-    expect(await memory.recall("b", "alpha topic", 5)).toHaveLength(0);
-    expect(engine.getCognitiveState("a").turnCount).toBe(1);
-    expect(engine.getCognitiveState("b").turnCount).toBe(1);
+    assert.ok(a.every(r => r.sessionId === "a"));
+    assert.equal((await memory.recall("b", "alpha topic", 5)).length, 0);
+    assert.equal(engine.getCognitiveState("a").turnCount, 1);
+    assert.equal(engine.getCognitiveState("b").turnCount, 1);
   });
 
   it("caps history and drops caller-supplied system turns", async () => {
@@ -289,9 +305,9 @@ describe("DTEChatEngine.respond", () => {
     await engine.respond({ sessionId: "s", history, content: "now" });
     const messages = calls[0].body.messages as ChatTurn[];
     // 1 system + 4 history + 1 current
-    expect(messages).toHaveLength(6);
-    expect(messages.filter(m => m.role === "system")).toHaveLength(1);
-    expect(messages[1].content).toBe("t6");
+    assert.equal(messages.length, 6);
+    assert.equal(messages.filter(m => m.role === "system").length, 1);
+    assert.equal(messages[1].content, "t6");
   });
 
   it("does not let memory store failures break the response", async () => {
@@ -319,9 +335,9 @@ describe("DTEChatEngine.respond", () => {
       history: [],
       content: "x",
     });
-    expect(out.content).toBe("still fine");
-    expect(out.memoriesUsed).toBe(0);
-    expect((await engine.getStatus()).memory.count).toBe(0);
+    assert.equal(out.content, "still fine");
+    assert.equal(out.memoriesUsed, 0);
+    assert.equal((await engine.getStatus()).memory.count, 0);
   });
 });
 
@@ -333,8 +349,8 @@ describe("fallbackResponse", () => {
   it("mentions recalled memories and how to configure a provider", () => {
     const s = createInitialCognitiveState(T0);
     const text = fallbackResponse("explain reservoirs", s, 2);
-    expect(text).toMatch(/2 related memories/);
-    expect(text).toMatch(/OLLAMA_BASE_URL|OPENAI_API_KEY|ANTHROPIC_API_KEY/);
+    assert.match(text, /2 related memories/);
+    assert.match(text, /OLLAMA_BASE_URL|OPENAI_API_KEY|ANTHROPIC_API_KEY/);
   });
 });
 
@@ -348,38 +364,43 @@ describe("getStatus / training summary", () => {
       rootDir: "/definitely/not/a/real/dir",
     });
     const status = await engine.getStatus();
-    expect(status.memory).toEqual({
+    assert.deepEqual(status.memory, {
       backend: "none",
       enabled: false,
       count: 0,
     });
-    expect(status.training).toBeNull();
-    expect(status.providers.map(p => p.kind)).toEqual(["ollama"]);
+    assert.equal(status.training, null);
+    assert.deepEqual(
+      status.providers.map(p => p.kind),
+      ["ollama"]
+    );
   });
 
   it("selects the Supabase backend only when both env vars are present", () => {
-    expect(
-      new DTEChatEngine({ env: {}, fetchImpl: fakeFetch({}) }).memory.backend
-    ).toBe("none");
-    expect(
+    assert.equal(
+      new DTEChatEngine({ env: {}, fetchImpl: fakeFetch({}) }).memory.backend,
+      "none"
+    );
+    assert.equal(
       new DTEChatEngine({
         env: {
           SUPABASE_URL: "https://x.supabase.co",
           SUPABASE_ANON_KEY: "anon",
         },
         fetchImpl: fakeFetch({}),
-      }).memory.backend
-    ).toBe("supabase");
+      }).memory.backend,
+      "supabase"
+    );
   });
 
   it("parses the real training_summary.json shape from the repo", () => {
     const summary = readTrainingSummary(process.cwd());
     // The repo ships this artifact; if it is ever removed the status page degrades gracefully.
     if (summary) {
-      expect(typeof summary.bestValLoss).toBe("number");
-      expect(summary.totalCheckpoints).toBeGreaterThan(0);
+      assert.equal(typeof summary.bestValLoss, "number");
+      assert.ok((summary.totalCheckpoints ?? 0) > 0);
     } else {
-      expect(summary).toBeNull();
+      assert.equal(summary, null);
     }
   });
 });
