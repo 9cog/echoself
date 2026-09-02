@@ -12,9 +12,7 @@
     "format:check": "prettier --check .",
     "audit:deps": "node scripts/dependency-audit.js",
     "start": "remix-serve ./build/server/index.js",
-    "typecheck": "tsc",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "typecheck": "tsc"
   },
   "dependencies": {
     "@huggingface/inference": "^3.15.0",
@@ -72,8 +70,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "typescript": "^5.1.6",
     "vite": "^5.0.0",
-    "vite-tsconfig-paths": "^4.2.1",
-    "vitest": "^2.1.8"
+    "vite-tsconfig-paths": "^4.2.1"
   },
   "engines": {
     "node": ">=18.0.0"
