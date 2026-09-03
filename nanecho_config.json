@@ -1,8 +1,8 @@
 {
   "model": {
     "vocab_size": 50257,
-    "n_embd": 768,
-    "n_head": 12,
+    "n_embd": 910,
+    "n_head": 14,
     "n_layer": 12,
     "block_size": 1024,
     "dropout": 0.1,
@@ -14,11 +14,11 @@
   "training": {
     "batch_size": 8,
     "gradient_accumulation_steps": 4,
-    "learning_rate": 6e-5,
+    "learning_rate": 6e-05,
     "max_iters": 200000,
     "warmup_iters": 5000,
     "lr_decay_iters": 200000,
-    "min_lr": 1e-5,
+    "min_lr": 1e-05,
     "weight_decay": 0.1,
     "grad_clip": 1.0,
     "eval_interval": 250,
@@ -121,8 +121,19 @@
     "grip_velocity_threshold": 0.02,
     "transition_freeze_steps": 150,
     "grip_window_size": 100,
-    "oeis_a000081_ladder": [1, 1, 2, 4, 9, 20, 48],
-    "spectral_radius_range": [0.8, 0.98],
+    "oeis_a000081_ladder": [
+      1,
+      1,
+      2,
+      4,
+      9,
+      20,
+      48
+    ],
+    "spectral_radius_range": [
+      0.8,
+      0.98
+    ],
     "entropy_target_by_phase": {
       "basic_awareness": 0.8,
       "persona_dimensions": 0.75,
@@ -195,7 +206,7 @@
     "evolution_cycle_interval": 300000,
     "parameter_bounds": {
       "learning_rate": {
-        "min": 0.00001,
+        "min": 1e-05,
         "max": 0.001,
         "mutation_rate": 0.1,
         "decay_factor": 0.99
