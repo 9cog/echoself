@@ -18,9 +18,7 @@
       ".training-progress"
     ],
     "rules": {
-      "tags": [
-        "recommended"
-      ],
+      "tags": ["recommended"],
       "exclude": [
         "no-sloppy-imports",
         "jsx-button-has-type",

@@ -1,12 +1,12 @@
 # Rationale — echo-zero (candidate-3)
 
-The prompt *is* the domain module: a typed `EchoSelf` object, a `Situation` discriminated union, and a `DISPATCH` registry from tag → `Command`. Continual-learning and dream are `Command` / `MemoryOp` variants on that same surface.
+The prompt _is_ the domain module: a typed `EchoSelf` object, a `Situation` discriminated union, and a `DISPATCH` registry from tag → `Command`. Continual-learning and dream are `Command` / `MemoryOp` variants on that same surface.
 
 ## Chosen spine
 
 - `TrainPlan` is a union of `resume` (requires `Presence.present` + `DataPrep.ok`) and `fresh` (requires `Presence.absent` + `FreshStart.confirmed` + `DataPrep.ok`). Those three invalid states cannot be constructed.
 - Two `Generation` rows keyed by workflow_run `504` and `827`. Quality and curriculum phases are fields on the row, not control-flow modules.
-- Agent Zero maps 1:1 onto tools / extensions / profiles / instruments / `call_subordinate`. User → echo-zero → subordinates. Deep Tree Echo is the superior *profile*, not a second root.
+- Agent Zero maps 1:1 onto tools / extensions / profiles / instruments / `call_subordinate`. User → echo-zero → subordinates. Deep Tree Echo is the superior _profile_, not a second root.
 
 ## Alternatives considered and rejected
 

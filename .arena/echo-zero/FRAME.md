@@ -47,14 +47,14 @@ When invoked, the subagent:
 
 Map Agent Zero concepts locally onto EchoSelf (no extra indirection):
 
-| Agent Zero | EchoSelf |
-|---|---|
-| tools (`python/tools` or `agents/{profile}/tools`) | NanEcho / checkpoint-guardian / training-progress inspectors |
-| extensions (lifecycle: agent_init, message_loop_start, before_main_llm_call, system_prompt, response_stream, monologue_end) | continual-learning hook + Mem0 remember/dream points |
-| profiles (`agents/{profile}/settings.json`) | Deep Tree Echo persona + NanEcho CI/full/relentless |
-| instruments (callable procedures) | `scripts/checkpoint_guardian.py`, prepare_nanecho, evaluation |
-| `call_subordinate` hierarchy | Deep Tree Echo (superior) → NanEcho / checkpoint-guardian / Mem0-dream (subordinates) |
-| memory_save/load/delete | AGENTS.md (continual_learn) + Mem0 (remember / dream) |
+| Agent Zero                                                                                                                  | EchoSelf                                                                              |
+| --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| tools (`python/tools` or `agents/{profile}/tools`)                                                                          | NanEcho / checkpoint-guardian / training-progress inspectors                          |
+| extensions (lifecycle: agent_init, message_loop_start, before_main_llm_call, system_prompt, response_stream, monologue_end) | continual-learning hook + Mem0 remember/dream points                                  |
+| profiles (`agents/{profile}/settings.json`)                                                                                 | Deep Tree Echo persona + NanEcho CI/full/relentless                                   |
+| instruments (callable procedures)                                                                                           | `scripts/checkpoint_guardian.py`, prepare_nanecho, evaluation                         |
+| `call_subordinate` hierarchy                                                                                                | Deep Tree Echo (superior) → NanEcho / checkpoint-guardian / Mem0-dream (subordinates) |
+| memory_save/load/delete                                                                                                     | AGENTS.md (continual_learn) + Mem0 (remember / dream)                                 |
 
 User is Agent 0's superior. Subordinates report back. Do not invent a second hierarchy.
 
@@ -119,7 +119,7 @@ Adaptive attention: `threshold = 0.5 + (cognitive_load * 0.3) - (recent_activity
 ### Memory operations (same surface)
 
 - `continual_learn` → mine transcript deltas into `AGENTS.md`
-- `dream` → Mem0 consolidation (merge/contradiction/prune). A sibling worker owns applying dream deletes; this subagent may *decide* `dream` but must not apply Mem0 deletes.
+- `dream` → Mem0 consolidation (merge/contradiction/prune). A sibling worker owns applying dream deletes; this subagent may _decide_ `dream` but must not apply Mem0 deletes.
 - `remember` → Mem0 add (infer=False for structured domain facts)
 
 ### AGENTS.md facts
@@ -138,6 +138,7 @@ description: ... Use proactively when ... Delegate when ...
 ---
 
 # echo-zero
+
 ...
 ```
 
@@ -147,4 +148,4 @@ Description must be specific and actionable, include "use proactively", and say 
 
 ## Small surface
 
-One module of domain knowledge. Prefer the cleaner boundary when tied. The prompt should *be* the domain model the agent loads — not a tutorial and not a phase-named pipeline (load/validate/transform/save).
+One module of domain knowledge. Prefer the cleaner boundary when tied. The prompt should _be_ the domain model the agent loads — not a tutorial and not a phase-named pipeline (load/validate/transform/save).

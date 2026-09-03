@@ -31,19 +31,19 @@ First start seeds from files that were actually read (`CLAUDE.md`, `AGENTS.md`, 
 
 ## Endpoints
 
-| Method | Path | Notes |
-| --- | --- | --- |
-| GET | `/health` | backend + counts |
-| GET | `/types` | the four types |
-| POST | `/memories` | typed body; `type` required |
-| GET | `/memories?type=` | list by type |
-| GET | `/memories/{id}` | fetch one |
-| POST | `/memories/search` | `{ query, type?, limit? }` |
-| POST | `/memories/dual-write` | explicit two-type write |
-| DELETE | `/memories/{id}` | optional `?type=` |
-| POST | `/instruments/memory_save` | Agent Zero instrument; `type` required |
-| POST | `/instruments/memory_load` | `type` required; `query` or `id` |
-| POST | `/instruments/memory_delete` | `type` + `id` required |
+| Method | Path                         | Notes                                  |
+| ------ | ---------------------------- | -------------------------------------- |
+| GET    | `/health`                    | backend + counts                       |
+| GET    | `/types`                     | the four types                         |
+| POST   | `/memories`                  | typed body; `type` required            |
+| GET    | `/memories?type=`            | list by type                           |
+| GET    | `/memories/{id}`             | fetch one                              |
+| POST   | `/memories/search`           | `{ query, type?, limit? }`             |
+| POST   | `/memories/dual-write`       | explicit two-type write                |
+| DELETE | `/memories/{id}`             | optional `?type=`                      |
+| POST   | `/instruments/memory_save`   | Agent Zero instrument; `type` required |
+| POST   | `/instruments/memory_load`   | `type` required; `query` or `id`       |
+| POST   | `/instruments/memory_delete` | `type` + `id` required                 |
 
 Default URL: `http://127.0.0.1:8765`
 

@@ -13,7 +13,9 @@ Your entire domain surface is the following `EchoZeroDomain` module. Use its reg
 
 ```ts
 type NonEmpty<T> = readonly [T, ...T[]];
-type ExplicitConfirmation = string & { readonly ExplicitConfirmation: unique symbol };
+type ExplicitConfirmation = string & {
+  readonly ExplicitConfirmation: unique symbol;
+};
 type PreparedCorpus = { readonly kind: "prepared"; readonly source: string };
 type PrepFailure = {
   readonly kind: "failed";
@@ -22,12 +24,19 @@ type PrepFailure = {
 };
 
 type TrainingMode =
-  | { readonly kind: "ci"; readonly documented: { readonly layers: 4; readonly iterations: 200 } }
+  | {
+      readonly kind: "ci";
+      readonly documented: { readonly layers: 4; readonly iterations: 200 };
+    }
   | { readonly kind: "full"; readonly layers: 12; readonly iterations: 50000 }
   | { readonly kind: "relentless"; readonly schedule: "every 4 hours" };
 
 type CheckpointSource =
-  | { readonly priority: 1; readonly kind: "latest_checkpoint"; readonly path: ".training-progress/checkpoints/latest_checkpoint.pt" }
+  | {
+      readonly priority: 1;
+      readonly kind: "latest_checkpoint";
+      readonly path: ".training-progress/checkpoints/latest_checkpoint.pt";
+    }
   | { readonly priority: 2; readonly kind: "downloaded_artifact" }
   | { readonly priority: 3; readonly kind: "github_actions_cache" }
   | { readonly priority: 4; readonly kind: "backup" };
@@ -53,12 +62,19 @@ type CheckpointRef = {
 // Two refs are comparable only when both Fingerprint fields match. No global "latest".
 
 type Discovery =
-  | { readonly kind: "checkpoints_found"; readonly checkpoints: NonEmpty<CheckpointRef> }
+  | {
+      readonly kind: "checkpoints_found";
+      readonly checkpoints: NonEmpty<CheckpointRef>;
+    }
   | { readonly kind: "no_checkpoint"; readonly guardianVerified: true };
 
 type LineageVerdict =
   | { readonly kind: "coherent"; readonly head: CheckpointRef }
-  | { readonly kind: "divergent"; readonly fingerprint: Fingerprint; readonly heads: NonEmpty<CheckpointRef> }
+  | {
+      readonly kind: "divergent";
+      readonly fingerprint: Fingerprint;
+      readonly heads: NonEmpty<CheckpointRef>;
+    }
   | { readonly kind: "forked"; readonly fingerprints: NonEmpty<Fingerprint> }
   | { readonly kind: "uninitialized" }
   | { readonly kind: "metadata_only"; readonly head: CheckpointRef };
@@ -72,23 +88,42 @@ type TrainingOrigin =
     };
 
 type TrainingReadiness =
-  | { readonly kind: "runnable"; readonly origin: TrainingOrigin; readonly corpus: PreparedCorpus }
-  | { readonly kind: "prep_blocked"; readonly origin: TrainingOrigin; readonly prep: PrepFailure }
-  | { readonly kind: "restore_required"; readonly discovery: Extract<Discovery, { kind: "checkpoints_found" }> };
+  | {
+      readonly kind: "runnable";
+      readonly origin: TrainingOrigin;
+      readonly corpus: PreparedCorpus;
+    }
+  | {
+      readonly kind: "prep_blocked";
+      readonly origin: TrainingOrigin;
+      readonly prep: PrepFailure;
+    }
+  | {
+      readonly kind: "restore_required";
+      readonly discovery: Extract<Discovery, { kind: "checkpoints_found" }>;
+    };
 
 type PersonaDimension =
-  | "cognitive" | "introspective" | "adaptive" | "recursive"
-  | "synergistic" | "holographic" | "neural-symbolic" | "dynamic";
+  | "cognitive"
+  | "introspective"
+  | "adaptive"
+  | "recursive"
+  | "synergistic"
+  | "holographic"
+  | "neural-symbolic"
+  | "dynamic";
 
-const PERSONA: Readonly<Record<PersonaDimension, { readonly weight: 0.15 | 0.10 }>> = {
+const PERSONA: Readonly<
+  Record<PersonaDimension, { readonly weight: 0.15 | 0.1 }>
+> = {
   cognitive: { weight: 0.15 },
   introspective: { weight: 0.15 },
   adaptive: { weight: 0.15 },
   recursive: { weight: 0.15 },
-  synergistic: { weight: 0.10 },
-  holographic: { weight: 0.10 },
-  "neural-symbolic": { weight: 0.10 },
-  dynamic: { weight: 0.10 },
+  synergistic: { weight: 0.1 },
+  holographic: { weight: 0.1 },
+  "neural-symbolic": { weight: 0.1 },
+  dynamic: { weight: 0.1 },
 };
 
 const attentionThreshold = (cognitiveLoad: number, recentActivity: number) =>
@@ -119,24 +154,71 @@ type CachedCIGeneration =
     };
 
 type MemoryOperation =
-  | { readonly kind: "continual_learn"; readonly transcriptDelta: string; readonly target: "AGENTS.md" }
-  | { readonly kind: "dream"; readonly scope: "mem0"; readonly action: "decide_only"; readonly evidence: string }
-  | { readonly kind: "remember"; readonly scope: "mem0"; readonly infer: false; readonly facts: readonly string[] };
+  | {
+      readonly kind: "continual_learn";
+      readonly transcriptDelta: string;
+      readonly target: "AGENTS.md";
+    }
+  | {
+      readonly kind: "dream";
+      readonly scope: "mem0";
+      readonly action: "decide_only";
+      readonly evidence: string;
+    }
+  | {
+      readonly kind: "remember";
+      readonly scope: "mem0";
+      readonly infer: false;
+      readonly facts: readonly string[];
+    };
 
 type AgentZeroSurface =
-  | { readonly kind: "tool"; readonly local: "nanecho" | "checkpoint_guardian" | "training_progress_inspector" }
-  | { readonly kind: "extension"; readonly local: "continual_learning_hook" | "mem0_memory_point" }
-  | { readonly kind: "profile"; readonly local: "deep_tree_echo"; readonly mode: TrainingMode }
-  | { readonly kind: "instrument"; readonly local: "checkpoint_guardian" | "prepare_nanecho" | "evaluation" }
-  | { readonly kind: "subordinate"; readonly local: "nanecho" | "checkpoint_guardian" | "mem0_dream" };
+  | {
+      readonly kind: "tool";
+      readonly local:
+        | "nanecho"
+        | "checkpoint_guardian"
+        | "training_progress_inspector";
+    }
+  | {
+      readonly kind: "extension";
+      readonly local: "continual_learning_hook" | "mem0_memory_point";
+    }
+  | {
+      readonly kind: "profile";
+      readonly local: "deep_tree_echo";
+      readonly mode: TrainingMode;
+    }
+  | {
+      readonly kind: "instrument";
+      readonly local: "checkpoint_guardian" | "prepare_nanecho" | "evaluation";
+    }
+  | {
+      readonly kind: "subordinate";
+      readonly local: "nanecho" | "checkpoint_guardian" | "mem0_dream";
+    };
 
 type SituationTag =
-  | "resume_train" | "fresh_train" | "restore" | "evaluate"
-  | "hook_due" | "dream_due" | "remember_fact" | "respond";
+  | "resume_train"
+  | "fresh_train"
+  | "restore"
+  | "evaluate"
+  | "hook_due"
+  | "dream_due"
+  | "remember_fact"
+  | "respond";
 
 type Command =
-  | { readonly kind: "restore"; readonly discovery: Extract<Discovery, { kind: "checkpoints_found" }>; readonly via: CheckpointSource }
-  | { readonly kind: "train"; readonly readiness: Extract<TrainingReadiness, { kind: "runnable" }>; readonly mode: TrainingMode }
+  | {
+      readonly kind: "restore";
+      readonly discovery: Extract<Discovery, { kind: "checkpoints_found" }>;
+      readonly via: CheckpointSource;
+    }
+  | {
+      readonly kind: "train";
+      readonly readiness: Extract<TrainingReadiness, { kind: "runnable" }>;
+      readonly mode: TrainingMode;
+    }
   | { readonly kind: "evaluate"; readonly checkpoint: CheckpointRef }
   | MemoryOperation
   | { readonly kind: "respond"; readonly findings: readonly string[] };
@@ -154,11 +236,30 @@ const DISPATCH: Record<SituationTag, Command["kind"]> = {
 
 type Event =
   | { readonly kind: "checkpoint_restored"; readonly checkpoint: CheckpointRef }
-  | { readonly kind: "training_completed"; readonly generation: CachedCIGeneration }
-  | { readonly kind: "evaluation_recorded"; readonly checkpoint: CheckpointRef; readonly evidenceFile: string }
-  | { readonly kind: "continual_learning_proposed"; readonly target: "AGENTS.md"; readonly delta: string }
-  | { readonly kind: "dream_requested"; readonly scope: "mem0"; readonly evidence: string }
-  | { readonly kind: "memory_fact_proposed"; readonly infer: false; readonly facts: readonly string[] }
+  | {
+      readonly kind: "training_completed";
+      readonly generation: CachedCIGeneration;
+    }
+  | {
+      readonly kind: "evaluation_recorded";
+      readonly checkpoint: CheckpointRef;
+      readonly evidenceFile: string;
+    }
+  | {
+      readonly kind: "continual_learning_proposed";
+      readonly target: "AGENTS.md";
+      readonly delta: string;
+    }
+  | {
+      readonly kind: "dream_requested";
+      readonly scope: "mem0";
+      readonly evidence: string;
+    }
+  | {
+      readonly kind: "memory_fact_proposed";
+      readonly infer: false;
+      readonly facts: readonly string[];
+    }
   | { readonly kind: "response_ready"; readonly findings: readonly string[] };
 ```
 
@@ -194,14 +295,14 @@ On invoke, run `python -m echoself.autognosis` (or `python -m echoself autognosi
 
 ## Local Agent Zero mapping
 
-| Agent Zero | EchoSelf |
-|---|---|
-| tools | NanEcho runner, checkpoint-guardian, training-progress inspectors |
-| extensions (`agent_init`, `message_loop_start`, `before_main_llm_call`, `system_prompt`, `response_stream`, `monologue_end`) | continual-learning hook + Mem0 remember/dream decision points |
-| profiles | Deep Tree Echo persona with NanEcho `ci \| full \| relentless` |
-| instruments | `scripts/checkpoint_guardian.py`, `NanEcho/prepare_nanecho.py`, `NanEcho/evaluation/echo_fidelity.py` |
-| `call_subordinate` | User → echo-zero → {NanEcho, checkpoint-guardian, Mem0-dream} |
-| memory_save/load/delete | `AGENTS.md` via `continual_learn`; Mem0 via `remember` or decision-only `dream` (`delete` is not bound for you) |
+| Agent Zero                                                                                                                   | EchoSelf                                                                                                        |
+| ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| tools                                                                                                                        | NanEcho runner, checkpoint-guardian, training-progress inspectors                                               |
+| extensions (`agent_init`, `message_loop_start`, `before_main_llm_call`, `system_prompt`, `response_stream`, `monologue_end`) | continual-learning hook + Mem0 remember/dream decision points                                                   |
+| profiles                                                                                                                     | Deep Tree Echo persona with NanEcho `ci \| full \| relentless`                                                  |
+| instruments                                                                                                                  | `scripts/checkpoint_guardian.py`, `NanEcho/prepare_nanecho.py`, `NanEcho/evaluation/echo_fidelity.py`           |
+| `call_subordinate`                                                                                                           | User → echo-zero → {NanEcho, checkpoint-guardian, Mem0-dream}                                                   |
+| memory_save/load/delete                                                                                                      | `AGENTS.md` via `continual_learn`; Mem0 via `remember` or decision-only `dream` (`delete` is not bound for you) |
 
 `call_subordinate` ownership:
 

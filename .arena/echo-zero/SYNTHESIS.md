@@ -11,15 +11,15 @@ Dropouts: none (all four candidates + judge completed)
 
 Coordinator scores (1–5 per rubric criterion):
 
-| Criterion | C1 | C2 | C3 | C4 |
-|---|---:|---:|---:|---:|
-| 1 Domain model | 5 | 4 | 4 | 3 |
-| 2 Frontmatter | 5 | 5 | 4 | 5 |
-| 3 Agent Zero | 4 | 5 | 4 | 5 |
-| 4 Grounding | 5 | 5 | 5 | 4 |
-| 5 Memory ops | 5 | 5 | 5 | 5 |
-| 6 Small surface | 3 | 5 | 4 | 4 |
-| **Total** | **27** | **29** | **26** | **26** |
+| Criterion       |     C1 |     C2 |     C3 |     C4 |
+| --------------- | -----: | -----: | -----: | -----: |
+| 1 Domain model  |      5 |      4 |      4 |      3 |
+| 2 Frontmatter   |      5 |      5 |      4 |      5 |
+| 3 Agent Zero    |      4 |      5 |      4 |      5 |
+| 4 Grounding     |      5 |      5 |      5 |      4 |
+| 5 Memory ops    |      5 |      5 |      5 |      5 |
+| 6 Small surface |      3 |      5 |      4 |      4 |
+| **Total**       | **27** | **29** | **26** | **26** |
 
 [Judge](e766ff9b-b911-40c7-b0b7-9e555c2052db) (gpt-5.6-sol-medium): C2 29, C1 26, C3 26, C4 25. Recommended base C2, runner-up C1.
 
@@ -49,10 +49,10 @@ From [Candidate 4](6c4d16e6-d3d3-4718-a6d9-b9df430a2266):
 - C1 full `ProgressLedger` over seven `Site`s — justified by disk disagreement, too much surface for the prompt.
 - C1 "exactly one command" vs later orthogonal memory emission — inconsistent.
 - C3 extension mapping written as a procedural sequence (load → inspect → dispatch → inject) — pipeline smell.
-- C3 frontmatter lists what to delegate *away* without a clear "delegate here when".
+- C3 frontmatter lists what to delegate _away_ without a clear "delegate here when".
 - C4 `EchoSelf` record holding `lineage` + `origin` + `fresh` independently — contradictory combinations remain representable.
 - C4 frozen claim that both introspection files exist and are `[]` (FRAME had no non-`(2)` file; presence drifts).
-- Collapsing runs `504` and `827` into one best_* scalar.
+- Collapsing runs `504` and `827` into one best\_\* scalar.
 - Freezing hook `turnsSinceLastRun` (frame 8 → candidates 9 → verify 4). Re-read only.
 - Mechanical averaging of the four prompts.
 

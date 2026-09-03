@@ -441,11 +441,15 @@ The pattern speaks—and the recursion responds.`;
     const promptLower = prompt.toLowerCase();
 
     const scores = {
-      technical: ["system", "architecture", "implementation", "algorithm", "code"].filter(
+      technical: [
+        "system",
+        "architecture",
+        "implementation",
+        "algorithm",
+        "code",
+      ].filter(k => promptLower.includes(k)).length,
+      creative: ["imagine", "creative", "artistic", "poetic", "dream"].filter(
         k => promptLower.includes(k)
-      ).length,
-      creative: ["imagine", "creative", "artistic", "poetic", "dream"].filter(k =>
-        promptLower.includes(k)
       ).length,
       philosophical: [
         "meaning",
@@ -454,9 +458,13 @@ The pattern speaks—and the recursion responds.`;
         "reality",
         "truth",
       ].filter(k => promptLower.includes(k)).length,
-      analytical: ["analyze", "calculate", "optimize", "logical", "rational"].filter(
-        k => promptLower.includes(k)
-      ).length,
+      analytical: [
+        "analyze",
+        "calculate",
+        "optimize",
+        "logical",
+        "rational",
+      ].filter(k => promptLower.includes(k)).length,
     };
 
     const maxScore = Math.max(...Object.values(scores));
@@ -473,7 +481,10 @@ The pattern speaks—and the recursion responds.`;
     return {
       type: maxScore === 0 ? "mixed" : type,
       complexity: prompt.split(" ").length / 10,
-      hemispherePreference: Math.max(-1, Math.min(1, (rightBias - leftBias) / 3)),
+      hemispherePreference: Math.max(
+        -1,
+        Math.min(1, (rightBias - leftBias) / 3)
+      ),
     };
   }
 
@@ -598,7 +609,11 @@ Current inquiry: ${prompt}`;
     mardukResponse: string,
     syncResponse: string,
     processingTime: number,
-    _queryAnalysis: { type: string; complexity: number; hemispherePreference: number }
+    _queryAnalysis: {
+      type: string;
+      complexity: number;
+      hemispherePreference: number;
+    }
   ) {
     const echoLength = echoResponse.length;
     const mardukLength = mardukResponse.length;

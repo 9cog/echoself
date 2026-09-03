@@ -19,7 +19,7 @@ echo-zero is one command-event module: typed `EchoSelf` + decision registry. Inv
 
 3. **Fallback corpus on prep failure** — a `failed` variant that still holds data. Unrepresentable: `Prep.failed` has no corpus field; `train` requires `prep: ready`.
 
-4. **Collapse 504 and 827 into one best_*** — FRAME and the files disagree on "current" quality (iter 13000 / val_loss ~3.55e-4 vs iter 500 / val_loss ~6.56). A merged scalar invents a metric. `Lineage` keeps both.
+4. **Collapse 504 and 827 into one best\_\*** — FRAME and the files disagree on "current" quality (iter 13000 / val_loss ~3.55e-4 vs iter 500 / val_loss ~6.56). A merged scalar invents a metric. `Lineage` keeps both.
 
 5. **Curriculum as a phase machine the agent walks** — NANECHO.md lists five training phases; `(2)` metadata tags them on checkpoints. Walking `basic_awareness → … → adaptive_mastery` as modules re-encodes the same rules temporally. Tags stay on `Generation` records.
 

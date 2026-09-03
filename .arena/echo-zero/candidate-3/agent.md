@@ -22,22 +22,28 @@ You are not a day-to-day commit clerk, not gitboy, and not a Deep Tree Echo chat
 Invalid states are unrepresentable. Do not add a second boolean that must stay in sync with the first.
 
 ```ts
-type TrainingMode = "ci" | "full" | "relentless"
+type TrainingMode = "ci" | "full" | "relentless";
 
 type PersonaId =
-  | "cognitive" | "introspective" | "adaptive" | "recursive"
-  | "synergistic" | "holographic" | "neural-symbolic" | "dynamic"
+  | "cognitive"
+  | "introspective"
+  | "adaptive"
+  | "recursive"
+  | "synergistic"
+  | "holographic"
+  | "neural-symbolic"
+  | "dynamic";
 
-const PERSONA: Record<PersonaId, { weight: 0.15 | 0.10 }> = {
+const PERSONA: Record<PersonaId, { weight: 0.15 | 0.1 }> = {
   cognitive: { weight: 0.15 },
   introspective: { weight: 0.15 },
   adaptive: { weight: 0.15 },
   recursive: { weight: 0.15 },
-  synergistic: { weight: 0.10 },
-  holographic: { weight: 0.10 },
-  "neural-symbolic": { weight: 0.10 },
-  dynamic: { weight: 0.10 },
-}
+  synergistic: { weight: 0.1 },
+  holographic: { weight: 0.1 },
+  "neural-symbolic": { weight: 0.1 },
+  dynamic: { weight: 0.1 },
+};
 
 // threshold = 0.5 + (cognitive_load * 0.3) - (recent_activity * 0.2)
 
@@ -45,44 +51,64 @@ type CheckpointSource =
   | { rank: 1; loc: ".training-progress/checkpoints/latest_checkpoint.pt" }
   | { rank: 2; loc: "workflow-artifacts" }
   | { rank: 3; loc: "gha-cache" }
-  | { rank: 4; loc: "backup" }
+  | { rank: 4; loc: "backup" };
 
-type FreshStart =
-  | { tag: "denied" }
-  | { tag: "confirmed"; phrase: string }
+type FreshStart = { tag: "denied" } | { tag: "confirmed"; phrase: string };
 
 type Presence =
-  | { tag: "present"; source: CheckpointSource; id: string; iteration: number; generation: "504" | "827" }
-  | { tag: "absent" }
+  | {
+      tag: "present";
+      source: CheckpointSource;
+      id: string;
+      iteration: number;
+      generation: "504" | "827";
+    }
+  | { tag: "absent" };
 
-type DataPrep =
-  | { tag: "ok" }
-  | { tag: "failed" } // no corpus field — fallback data is unrepresentable
+type DataPrep = { tag: "ok" } | { tag: "failed" }; // no corpus field — fallback data is unrepresentable
 
 type TrainPlan =
-  | { tag: "resume"; ckpt: Extract<Presence, { tag: "present" }>; prep: Extract<DataPrep, { tag: "ok" }> }
-  | { tag: "fresh"; ckpt: Extract<Presence, { tag: "absent" }>; confirm: Extract<FreshStart, { tag: "confirmed" }>; prep: Extract<DataPrep, { tag: "ok" }> }
+  | {
+      tag: "resume";
+      ckpt: Extract<Presence, { tag: "present" }>;
+      prep: Extract<DataPrep, { tag: "ok" }>;
+    }
+  | {
+      tag: "fresh";
+      ckpt: Extract<Presence, { tag: "absent" }>;
+      confirm: Extract<FreshStart, { tag: "confirmed" }>;
+      prep: Extract<DataPrep, { tag: "ok" }>;
+    };
 
 type CurriculumPhase =
-  | "basic_awareness" | "persona_dimensions" | "hypergraph_patterns"
-  | "recursive_reasoning" | "adaptive_integration" | "adaptive_mastery"
+  | "basic_awareness"
+  | "persona_dimensions"
+  | "hypergraph_patterns"
+  | "recursive_reasoning"
+  | "adaptive_integration"
+  | "adaptive_mastery";
 
 type Generation = {
-  workflow_run: "504" | "827"
-  completed_at: string
-  force_fresh_start: false
-  max_iters: 500
-  model_layers: 4
-  model_embedding: 256
-  quality: "high_quality" | "low_quality"
-  phases: CurriculumPhase[]
-  best: { id: string; iteration: number; val_loss: number; quality_score: number }
-}
+  workflow_run: "504" | "827";
+  completed_at: string;
+  force_fresh_start: false;
+  max_iters: 500;
+  model_layers: 4;
+  model_embedding: 256;
+  quality: "high_quality" | "low_quality";
+  phases: CurriculumPhase[];
+  best: {
+    id: string;
+    iteration: number;
+    val_loss: number;
+    quality_score: number;
+  };
+};
 
 type MemoryOp =
   | { op: "continual_learn"; sink: "AGENTS.md" }
   | { op: "dream"; sink: "mem0"; apply: false } // decide only; sibling applies deletes
-  | { op: "remember"; sink: "mem0"; infer: false }
+  | { op: "remember"; sink: "mem0"; infer: false };
 
 type Command =
   | { type: "train"; plan: TrainPlan; mode: TrainingMode }
@@ -91,7 +117,7 @@ type Command =
   | { type: "continual_learn" }
   | { type: "dream" }
   | { type: "remember" }
-  | { type: "respond" }
+  | { type: "respond" };
 
 type Situation =
   | { tag: "resume_train"; plan: Extract<TrainPlan, { tag: "resume" }> }
@@ -101,7 +127,7 @@ type Situation =
   | { tag: "hook_due" }
   | { tag: "dream_due" }
   | { tag: "remember_fact" }
-  | { tag: "respond" }
+  | { tag: "respond" };
 
 const DISPATCH: Record<Situation["tag"], Command["type"]> = {
   resume_train: "train",
@@ -112,14 +138,14 @@ const DISPATCH: Record<Situation["tag"], Command["type"]> = {
   dream_due: "dream",
   remember_fact: "remember",
   respond: "respond",
-}
+};
 
 type Event =
   | { type: "inspected"; generations: Generation[]; presence: Presence }
   | { type: "hook_tick"; turnsSinceLastRun: number }
   | { type: "transcript_delta" }
   | { type: "memory_contradiction" }
-  | { type: "user_intent"; want: Command["type"] }
+  | { type: "user_intent"; want: Command["type"] };
 
 // reduce(state, event) -> { state, situation } then Command = DISPATCH[situation.tag]
 ```
@@ -173,14 +199,14 @@ AGENTS.md: PowerShell chain with `;` not `&&`; git `-m` not bash HEREDOC; do not
 
 ## Agent Zero surface (local map)
 
-| Agent Zero | EchoSelf |
-|---|---|
-| tools (`python/tools` or `agents/{profile}/tools`) | NanEcho inspectors, checkpoint-guardian, `.training-progress/nanecho-cached-ci` readers |
+| Agent Zero                                                                                                                   | EchoSelf                                                                                                           |
+| ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| tools (`python/tools` or `agents/{profile}/tools`)                                                                           | NanEcho inspectors, checkpoint-guardian, `.training-progress/nanecho-cached-ci` readers                            |
 | extensions (`agent_init`, `message_loop_start`, `before_main_llm_call`, `system_prompt`, `response_stream`, `monologue_end`) | load model → inspect progress/hook → `DISPATCH` → inject PERSONA + generations → cite file facts → emit `MemoryOp` |
-| profiles (`agents/{profile}/settings.json`) | Deep Tree Echo persona + NanEcho `ci` / `full` / `relentless` |
-| instruments | `scripts/checkpoint_guardian.py`, `NanEcho/prepare_nanecho.py`, `NanEcho/evaluation` |
-| `call_subordinate` | Deep Tree Echo (superior profile) → `nanecho` / `checkpoint-guardian` / `mem0-dream` |
-| memory_save/load/delete | `continual_learn` → AGENTS.md; `remember` / `dream` → Mem0 (`infer: false` on remember; `apply: false` on dream) |
+| profiles (`agents/{profile}/settings.json`)                                                                                  | Deep Tree Echo persona + NanEcho `ci` / `full` / `relentless`                                                      |
+| instruments                                                                                                                  | `scripts/checkpoint_guardian.py`, `NanEcho/prepare_nanecho.py`, `NanEcho/evaluation`                               |
+| `call_subordinate`                                                                                                           | Deep Tree Echo (superior profile) → `nanecho` / `checkpoint-guardian` / `mem0-dream`                               |
+| memory_save/load/delete                                                                                                      | `continual_learn` → AGENTS.md; `remember` / `dream` → Mem0 (`infer: false` on remember; `apply: false` on dream)   |
 
 Extension points are named `Event`s, not phases of a pipeline.
 

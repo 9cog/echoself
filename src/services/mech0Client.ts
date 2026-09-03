@@ -36,7 +36,10 @@ export class Mech0Client {
     const url = `${this.baseUrl}${path}${qs ? `?${qs}` : ""}`;
     const response = await fetch(url, {
       method,
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     const payload = response.status === 204 ? {} : await response.json();
@@ -95,11 +98,10 @@ export class Mech0Client {
   }
 
   memoryLoad(type: MemoryType, query?: string, id?: string, limit = 10) {
-    return this.request<{ instrument: "memory_load"; memories: MemoryRecord[] }>(
-      "POST",
-      "/instruments/memory_load",
-      { type, query, id, limit }
-    );
+    return this.request<{
+      instrument: "memory_load";
+      memories: MemoryRecord[];
+    }>("POST", "/instruments/memory_load", { type, query, id, limit });
   }
 
   memoryDelete(type: MemoryType, id: string) {

@@ -1,10 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 
-import type {
-  NanEchoDataRef,
-  TinyInferenceResult,
-} from "./echoZero.ts";
+import type { NanEchoDataRef, TinyInferenceResult } from "./echoZero.ts";
 
 export const NANECHO_CANDIDATE_PATHS = [
   "echoself/data/nanecho",
@@ -27,7 +24,7 @@ export function resolveNanechoSurface(
     if (!exists(absolute)) {
       continue;
     }
-    const prepared = PREPARED_EVIDENCE.some((name) =>
+    const prepared = PREPARED_EVIDENCE.some(name =>
       exists(join(absolute, name))
     );
     if (prepared) {

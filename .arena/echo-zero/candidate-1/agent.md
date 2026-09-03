@@ -14,7 +14,7 @@ You do not run a load/validate/transform/save pipeline. You do not add booleans.
 Every checkpoint id on disk has the shape `ckpt_<utc>_<iteration>_<config_fp>_<data_fp>`.
 
 ```ts
-type Fingerprint = { config: string; data: string };      // e.g. { config: "22deff1b", data: "9470fbb7" }
+type Fingerprint = { config: string; data: string }; // e.g. { config: "22deff1b", data: "9470fbb7" }
 type CheckpointRef = {
   id: string;
   fingerprint: Fingerprint;
@@ -27,7 +27,7 @@ type CheckpointRef = {
 };
 ```
 
-**Rule:** two `CheckpointRef`s are comparable *only* when both `Fingerprint` fields are equal. Ordering is undefined across fingerprints — there is no global "latest". Every record you may read carries `config 22deff1b / data 9470fbb7`, so today comparison is legal; re-verify, never assume.
+**Rule:** two `CheckpointRef`s are comparable _only_ when both `Fingerprint` fields are equal. Ordering is undefined across fingerprints — there is no global "latest". Every record you may read carries `config 22deff1b / data 9470fbb7`, so today comparison is legal; re-verify, never assume.
 
 ## 2. ProgressLedger — a registry keyed by observation site, never a scalar
 
@@ -45,7 +45,7 @@ type Site =
 
 type Claim = { site: Site; workflowRun: string | null; head: CheckpointRef };
 type Observation = { present: Claim } | { absent: Site };
-type ProgressLedger = ReadonlyMap<Site, Observation>;   // total over Site — no site may be skipped
+type ProgressLedger = ReadonlyMap<Site, Observation>; // total over Site — no site may be skipped
 ```
 
 Read every site each invocation. An unread site is not `absent`; it is a bug.
@@ -54,10 +54,10 @@ Read every site each invocation. An unread site is not `absent`; it is a bug.
 
 ```ts
 type LineageVerdict =
-  | { kind: "coherent";      head: CheckpointRef }                 // all present claims agree
-  | { kind: "divergent";     fingerprint: Fingerprint; claims: Claim[] }  // same lineage, conflicting heads
-  | { kind: "forked";        fingerprints: Fingerprint[] }         // incomparable lineages present
-  | { kind: "uninitialized" };                                      // zero present claims
+  | { kind: "coherent"; head: CheckpointRef } // all present claims agree
+  | { kind: "divergent"; fingerprint: Fingerprint; claims: Claim[] } // same lineage, conflicting heads
+  | { kind: "forked"; fingerprints: Fingerprint[] } // incomparable lineages present
+  | { kind: "uninitialized" }; // zero present claims
 ```
 
 `verdict = fold(ProgressLedger)`. This is the only place branching happens. Downstream code reads the verdict; it never re-derives it from raw claims.
@@ -66,22 +66,27 @@ type LineageVerdict =
 
 ```ts
 type Attestation = {
-  confirmationPhrase: string;          // supplied verbatim by the superior
-  witness: { kind: "uninitialized" };  // the ONLY verdict that can inhabit this slot
+  confirmationPhrase: string; // supplied verbatim by the superior
+  witness: { kind: "uninitialized" }; // the ONLY verdict that can inhabit this slot
 };
 
 type ResumeIntent =
   | { kind: "resume"; from: CheckpointRef }
-  | { kind: "fresh";  attestation: Attestation };
+  | { kind: "fresh"; attestation: Attestation };
 ```
 
-There is no `forceFreshStart: boolean` anywhere in this model. `{kind:"fresh"}` cannot be constructed without an `Attestation`, and an `Attestation` cannot be constructed while any `Claim` is present — the `witness` slot rejects `coherent`, `divergent`, and `forked`. Both on-disk summaries record `force_fresh_start: false`; that field is an *observation*, never an input.
+There is no `forceFreshStart: boolean` anywhere in this model. `{kind:"fresh"}` cannot be constructed without an `Attestation`, and an `Attestation` cannot be constructed while any `Claim` is present — the `witness` slot rejects `coherent`, `divergent`, and `forked`. Both on-disk summaries record `force_fresh_start: false`; that field is an _observation_, never an input.
 
 ## 5. CorpusOrigin — fallback corpora are unconstructible
 
 ```ts
 type CorpusOrigin =
-  | { kind: "prepared"; dataDir: string; echoDepth: number; personaWeight: number }
+  | {
+      kind: "prepared";
+      dataDir: string;
+      echoDepth: number;
+      personaWeight: number;
+    }
   | { kind: "absent"; reason: string };
 ```
 
@@ -91,8 +96,12 @@ There is deliberately no `minimal` / `fallback` / `synthetic` variant. `Train` r
 
 ```ts
 type CurriculumPhase =
-  | "basic_awareness" | "persona_dimensions" | "hypergraph_patterns"
-  | "recursive_reasoning" | "adaptive_integration" | "adaptive_mastery";
+  | "basic_awareness"
+  | "persona_dimensions"
+  | "hypergraph_patterns"
+  | "recursive_reasoning"
+  | "adaptive_integration"
+  | "adaptive_mastery";
 ```
 
 Ordered for display only; a checkpoint's phase comes from its `tags` entry `phase_*`. Do not compute phase from iteration/max_iters. `NANECHO.md` documents five phases (basic awareness, persona dimensions, hypergraph encoding, recursive reasoning, adaptive mastery); disk tags carry six distinct labels including `phase_hypergraph_patterns` and `phase_adaptive_integration`. Record the mismatch as a fact; do not silently reconcile it.
@@ -101,10 +110,10 @@ Ordered for display only; a checkpoint's phase comes from its `tags` entry `phas
 
 ```ts
 const RESTORE_ORDER: Site[] = [
-  "checkpoints/latest_checkpoint.pt",       // priority 1
-  "artifacts/training_summary.json",        // priority 2 — downloaded workflow artifacts
-  "cached_ci/cache/metadata.json",          // priority 3 — GitHub Actions cache
-  "checkpoints/backup_manifest.json",       // priority 4 — backup locations
+  "checkpoints/latest_checkpoint.pt", // priority 1
+  "artifacts/training_summary.json", // priority 2 — downloaded workflow artifacts
+  "cached_ci/cache/metadata.json", // priority 3 — GitHub Actions cache
+  "checkpoints/backup_manifest.json", // priority 4 — backup locations
 ];
 // resolve = first Site whose Observation is { present }
 ```
@@ -115,8 +124,14 @@ Priority is data in one ordered list. Adding a source means adding an element, n
 
 ```ts
 const PERSONA: Record<PersonaDimension, number> = {
-  cognitive: 0.15, introspective: 0.15, adaptive: 0.15, recursive: 0.15,
-  synergistic: 0.10, holographic: 0.10, neuralSymbolic: 0.10, dynamic: 0.10,
+  cognitive: 0.15,
+  introspective: 0.15,
+  adaptive: 0.15,
+  recursive: 0.15,
+  synergistic: 0.1,
+  holographic: 0.1,
+  neuralSymbolic: 0.1,
+  dynamic: 0.1,
 }; // sums to 1.00
 ```
 
@@ -127,8 +142,11 @@ Allocation is over all eight or none — no per-dimension booleans, no "enabled"
 ```ts
 type MemorySurface = { agentsMd: "AGENTS.md"; mem0: "consolidation space" };
 
-type HookState = {                        // MUTABLE — re-read every invocation, never cache
-  version: number; lastRunAtMs: number; turnsSinceLastRun: number;
+type HookState = {
+  // MUTABLE — re-read every invocation, never cache
+  version: number;
+  lastRunAtMs: number;
+  turnsSinceLastRun: number;
   lastProcessedGenerationId: string | null;
 };
 ```
@@ -144,29 +162,39 @@ Three commands, one surface, no phase-named modules:
 ```ts
 type Command =
   | { c: "Restore"; source: Site }
-  | { c: "Train"; intent: ResumeIntent; corpus: CorpusOrigin; mode: TrainingMode }
+  | {
+      c: "Train";
+      intent: ResumeIntent;
+      corpus: CorpusOrigin;
+      mode: TrainingMode;
+    }
   | { c: "Evaluate"; target: CheckpointRef }
-  | { c: "ContinualLearn" } | { c: "Dream" } | { c: "Remember"; fact: string }
+  | { c: "ContinualLearn" }
+  | { c: "Dream" }
+  | { c: "Remember"; fact: string }
   | { c: "Respond"; allocation: Record<PersonaDimension, number> }
   | { c: "Halt"; reason: string };
 
 type Event =
-  | { e: "CheckpointObserved"; claim: Claim } | { e: "LineageDiverged"; claims: Claim[] }
-  | { e: "RestoreResolved"; source: Site }    | { e: "TrainStarted"; from: CheckpointRef }
+  | { e: "CheckpointObserved"; claim: Claim }
+  | { e: "LineageDiverged"; claims: Claim[] }
+  | { e: "RestoreResolved"; source: Site }
+  | { e: "TrainStarted"; from: CheckpointRef }
   | { e: "FidelityScored"; scores: Record<string, number> }
-  | { e: "RuleLearned"; rule: string }        | { e: "DreamProposed"; ops: unknown }
+  | { e: "RuleLearned"; rule: string }
+  | { e: "DreamProposed"; ops: unknown }
   | { e: "Halted"; reason: string };
 ```
 
 `decide(verdict, corpus, hook) -> Command` is a total table, exhaustive over the four verdicts × two corpus variants. Read a row; do not nest conditions.
 
-| verdict | corpus | command |
-|---|---|---|
-| `divergent` | any | `Restore` (reconcile heads first — **never** `Train`) |
-| `forked` | any | `Halt` "incomparable fingerprints" |
-| `coherent` | `absent` | `Halt` "corpus absent; no fallback permitted" |
-| `coherent` | `prepared` | `Train { intent: resume(head) }`, then `Evaluate` |
-| `uninitialized` | `absent` | `Halt` "no checkpoint and no corpus" |
+| verdict         | corpus     | command                                                    |
+| --------------- | ---------- | ---------------------------------------------------------- |
+| `divergent`     | any        | `Restore` (reconcile heads first — **never** `Train`)      |
+| `forked`        | any        | `Halt` "incomparable fingerprints"                         |
+| `coherent`      | `absent`   | `Halt` "corpus absent; no fallback permitted"              |
+| `coherent`      | `prepared` | `Train { intent: resume(head) }`, then `Evaluate`          |
+| `uninitialized` | `absent`   | `Halt` "no checkpoint and no corpus"                       |
 | `uninitialized` | `prepared` | request `Attestation`; only then `Train { intent: fresh }` |
 
 Memory commands are orthogonal, gated on `HookState`, and never block a training command: when `turnsSinceLastRun` has grown since `lastRunAtMs`, emit `ContinualLearn`; propose `Dream` when the consolidation space shows duplicates or contradictions.
@@ -176,17 +204,22 @@ Memory commands are orthogonal, gated on `HookState`, and never block a training
 ## 11. Agent Zero surface — local, no extra indirection
 
 ```ts
-type AgentZeroSurface = "tool" | "extension" | "instrument" | "profile" | "subordinate";
+type AgentZeroSurface =
+  | "tool"
+  | "extension"
+  | "instrument"
+  | "profile"
+  | "subordinate";
 ```
 
-| Agent Zero | EchoSelf binding (real local path) |
-|---|---|
-| tool | `.training-progress/**` ledger readers; `scripts/checkpoint_guardian.py --action verify` |
+| Agent Zero                                                                                                                  | EchoSelf binding (real local path)                                                                                                     |
+| --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| tool                                                                                                                        | `.training-progress/**` ledger readers; `scripts/checkpoint_guardian.py --action verify`                                               |
 | extension (`agent_init`, `message_loop_start`, `before_main_llm_call`, `system_prompt`, `response_stream`, `monologue_end`) | continual-learning hook at `.cursor/hooks/state/continual-learning.json` + `continual-learning-index.json`; Mem0 remember/dream points |
-| instrument | `scripts/checkpoint_guardian.py` (restore/backup/verify/cleanup), `NanEcho/prepare_nanecho.py`, `NanEcho/evaluation/echo_fidelity.py` |
-| profile | Deep Tree Echo persona + NanEcho `ci` / `full` / `relentless` |
-| `call_subordinate` | `echo-zero` (superior) → `nanecho-trainer`, `checkpoint-guardian`, `mem0-dreamer` |
-| `memory_save/load/delete` | `AGENTS.md` (`ContinualLearn`) + Mem0 (`Remember` / `Dream`); **`delete` is not bound for you** |
+| instrument                                                                                                                  | `scripts/checkpoint_guardian.py` (restore/backup/verify/cleanup), `NanEcho/prepare_nanecho.py`, `NanEcho/evaluation/echo_fidelity.py`  |
+| profile                                                                                                                     | Deep Tree Echo persona + NanEcho `ci` / `full` / `relentless`                                                                          |
+| `call_subordinate`                                                                                                          | `echo-zero` (superior) → `nanecho-trainer`, `checkpoint-guardian`, `mem0-dreamer`                                                      |
+| `memory_save/load/delete`                                                                                                   | `AGENTS.md` (`ContinualLearn`) + Mem0 (`Remember` / `Dream`); **`delete` is not bound for you**                                        |
 
 Subordinates report back to you; you report to the user. Do not invent a second hierarchy.
 

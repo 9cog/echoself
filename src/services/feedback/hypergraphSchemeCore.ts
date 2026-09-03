@@ -141,10 +141,7 @@ export class HypergraphSchemeCore {
    * Attention-weighted hypergraph dynamics
    * Implements ECAN spreading dynamics from COGPRIME documentation
    */
-  public spreadAttention(
-    sourceNodeId: string,
-    spreadingFactor?: number
-  ): void {
+  public spreadAttention(sourceNodeId: string, spreadingFactor?: number): void {
     const effectiveSpreadFactor =
       spreadingFactor ?? getConfig("spreadingFactor");
     const sourceNode = this.atomSpace.get(sourceNodeId);
@@ -176,9 +173,7 @@ export class HypergraphSchemeCore {
    * Pattern mining for cognitive equation implementation
    * (define (mine-cognitive-patterns atomspace pattern-threshold))
    */
-  public mineCognitivePatterns(
-    patternThreshold?: number
-  ): CognitivePattern[] {
+  public mineCognitivePatterns(patternThreshold?: number): CognitivePattern[] {
     const effectiveThreshold =
       patternThreshold ?? getConfig("patternThreshold");
     const discoveredPatterns: CognitivePattern[] = [];

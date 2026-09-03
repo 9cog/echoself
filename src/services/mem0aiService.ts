@@ -397,8 +397,7 @@ class Mem0AIService {
       relevantMemories.forEach((memory, index) => {
         systemPrompt += `\n[Memory ${index + 1}]: ${memory.content.slice(0, 300)}`;
       });
-      systemPrompt +=
-        "\n\nUse these memories when relevant to your response.";
+      systemPrompt += "\n\nUse these memories when relevant to your response.";
     }
 
     const response = await this.openai.chat.completions.create({

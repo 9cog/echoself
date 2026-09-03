@@ -8,10 +8,7 @@
  * integrates with GitHub Copilot, and broadcasts refinements to the community.
  */
 
-import {
-  HypergraphSchemeCore,
-  HypergraphNode,
-} from "./hypergraphSchemeCore";
+import { HypergraphSchemeCore, HypergraphNode } from "./hypergraphSchemeCore";
 import { getConfig, getEvolutionaryConfig } from "../evolutionaryConfig";
 
 // --- Interfaces ---
@@ -493,7 +490,8 @@ export class AdaptiveFeedbackService {
   }
 
   private calculateFeedbackUrgency(model: ProjectModel): number {
-    const feedback = model.communityFeedback ?? this.getFeedbackForModel(model.id);
+    const feedback =
+      model.communityFeedback ?? this.getFeedbackForModel(model.id);
     if (feedback.length === 0) return 0;
 
     const weightedUrgency =
@@ -516,13 +514,18 @@ export class AdaptiveFeedbackService {
     }));
   }
 
-  private determineRequestType(model: ProjectModel): CopilotRequest["requestType"] {
+  private determineRequestType(
+    model: ProjectModel
+  ): CopilotRequest["requestType"] {
     const feedbackTypes = (
       model.communityFeedback ?? this.getFeedbackForModel(model.id)
     ).map(f => f.type);
 
     if (feedbackTypes.includes("performance")) return "optimize";
-    if (feedbackTypes.includes("feature_request") || feedbackTypes.includes("feature"))
+    if (
+      feedbackTypes.includes("feature_request") ||
+      feedbackTypes.includes("feature")
+    )
       return "analyze";
     if (feedbackTypes.includes("bug")) return "refactor";
     return "optimize";
@@ -604,7 +607,10 @@ ${(request.requirements ?? []).map(req => `// - ${req}`).join("\n")}
       optimize: ["Reduced cognitive load", "Faster pattern recognition"],
       refactor: ["Updated core algorithms", "Enhanced performance metrics"],
       document: ["Expanded model documentation", "Clearer salience notes"],
-      test: ["Added salience regression coverage", "Validated attention filters"],
+      test: [
+        "Added salience regression coverage",
+        "Validated attention filters",
+      ],
       analyze: [
         "New community feedback integration",
         "Enhanced broadcasting capabilities",
@@ -782,11 +788,14 @@ ${(request.requirements ?? []).map(req => `// - ${req}`).join("\n")}
     }
 
     if (intervalMs > 0) {
-      this.feedbackIntervalId = setInterval(() => {
-        this.triggerFeedbackLoop().catch(err =>
-          console.error("Feedback loop error:", err)
-        );
-      }, Math.max(intervalMs, 30000));
+      this.feedbackIntervalId = setInterval(
+        () => {
+          this.triggerFeedbackLoop().catch(err =>
+            console.error("Feedback loop error:", err)
+          );
+        },
+        Math.max(intervalMs, 30000)
+      );
     }
   }
 }

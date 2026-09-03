@@ -273,11 +273,11 @@ U1 domain types, then U2 Python surface and harmonic node, then U3 TypeScript mi
 
 ## Verification Contract
 
-| Gate | Command | Applies to | Done signal |
-|---|---|---|---|
-| Python smoke | `python -m unittest tests.test_nanecho_surface` | U2, U4 | All tests pass |
-| TypeScript compile | `npm run typecheck` | U1, U3 | New files have no tsc errors. Pre-existing project errors are reported, not hidden. |
-| Safety | No `prepare_nanecho.py`, no guardian `--allow-fresh-start`, no wget/curl of models | all | Working tree has no new `.pt`, `.bin`, or `.gguf` |
+| Gate               | Command                                                                            | Applies to | Done signal                                                                         |
+| ------------------ | ---------------------------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------- |
+| Python smoke       | `python -m unittest tests.test_nanecho_surface`                                    | U2, U4     | All tests pass                                                                      |
+| TypeScript compile | `npm run typecheck`                                                                | U1, U3     | New files have no tsc errors. Pre-existing project errors are reported, not hidden. |
+| Safety             | No `prepare_nanecho.py`, no guardian `--allow-fresh-start`, no wget/curl of models | all        | Working tree has no new `.pt`, `.bin`, or `.gguf`                                   |
 
 Do not start NanEcho training to verify this plan.
 

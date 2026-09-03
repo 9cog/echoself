@@ -21,7 +21,10 @@ export type PrepFailure = {
 };
 
 export type TrainingMode =
-  | { readonly kind: "ci"; readonly documented: { readonly layers: 4; readonly iterations: 200 } }
+  | {
+      readonly kind: "ci";
+      readonly documented: { readonly layers: 4; readonly iterations: 200 };
+    }
   | { readonly kind: "full"; readonly layers: 12; readonly iterations: 50000 }
   | { readonly kind: "relentless"; readonly schedule: "every 4 hours" };
 
@@ -54,12 +57,19 @@ export type CheckpointRef = {
 };
 
 export type Discovery =
-  | { readonly kind: "checkpoints_found"; readonly checkpoints: NonEmpty<CheckpointRef> }
+  | {
+      readonly kind: "checkpoints_found";
+      readonly checkpoints: NonEmpty<CheckpointRef>;
+    }
   | { readonly kind: "no_checkpoint"; readonly guardianVerified: true };
 
 export type LineageVerdict =
   | { readonly kind: "coherent"; readonly head: CheckpointRef }
-  | { readonly kind: "divergent"; readonly fingerprint: Fingerprint; readonly heads: NonEmpty<CheckpointRef> }
+  | {
+      readonly kind: "divergent";
+      readonly fingerprint: Fingerprint;
+      readonly heads: NonEmpty<CheckpointRef>;
+    }
   | { readonly kind: "forked"; readonly fingerprints: NonEmpty<Fingerprint> }
   | { readonly kind: "uninitialized" }
   | { readonly kind: "metadata_only"; readonly head: CheckpointRef };
@@ -88,9 +98,20 @@ export type TrainingOrigin =
     };
 
 export type TrainingReadiness =
-  | { readonly kind: "runnable"; readonly origin: TrainingOrigin; readonly corpus: PreparedCorpus }
-  | { readonly kind: "prep_blocked"; readonly origin: TrainingOrigin; readonly prep: PrepFailure }
-  | { readonly kind: "restore_required"; readonly discovery: Extract<Discovery, { kind: "checkpoints_found" }> };
+  | {
+      readonly kind: "runnable";
+      readonly origin: TrainingOrigin;
+      readonly corpus: PreparedCorpus;
+    }
+  | {
+      readonly kind: "prep_blocked";
+      readonly origin: TrainingOrigin;
+      readonly prep: PrepFailure;
+    }
+  | {
+      readonly kind: "restore_required";
+      readonly discovery: Extract<Discovery, { kind: "checkpoints_found" }>;
+    };
 
 export type PersonaDimension =
   | "cognitive"
@@ -121,20 +142,67 @@ export const attentionThreshold = (
 ): number => 0.5 + cognitiveLoad * 0.3 - recentActivity * 0.2;
 
 export type MemoryOperation =
-  | { readonly kind: "continual_learn"; readonly transcriptDelta: string; readonly target: "AGENTS.md" }
-  | { readonly kind: "dream"; readonly scope: "mem0"; readonly action: "decide_only"; readonly evidence: string }
-  | { readonly kind: "remember"; readonly scope: "mem0"; readonly infer: false; readonly facts: readonly string[] };
+  | {
+      readonly kind: "continual_learn";
+      readonly transcriptDelta: string;
+      readonly target: "AGENTS.md";
+    }
+  | {
+      readonly kind: "dream";
+      readonly scope: "mem0";
+      readonly action: "decide_only";
+      readonly evidence: string;
+    }
+  | {
+      readonly kind: "remember";
+      readonly scope: "mem0";
+      readonly infer: false;
+      readonly facts: readonly string[];
+    };
 
 export type AgentZeroSurface =
-  | { readonly kind: "tool"; readonly local: "nanecho" | "checkpoint_guardian" | "training_progress_inspector" }
-  | { readonly kind: "extension"; readonly local: "continual_learning_hook" | "mem0_memory_point" }
-  | { readonly kind: "profile"; readonly local: "deep_tree_echo"; readonly mode: TrainingMode }
-  | { readonly kind: "instrument"; readonly local: "checkpoint_guardian" | "prepare_nanecho" | "evaluation" | "autognosis" }
-  | { readonly kind: "subordinate"; readonly local: "nanecho" | "checkpoint_guardian" | "mem0_dream" }
-  | { readonly kind: "nanecho_surface"; readonly local: "echoself/data/nanecho" }
-  | { readonly kind: "autognosis"; readonly local: "echoself.autognosis"; readonly layer: AutognosisLayer }
+  | {
+      readonly kind: "tool";
+      readonly local:
+        | "nanecho"
+        | "checkpoint_guardian"
+        | "training_progress_inspector";
+    }
+  | {
+      readonly kind: "extension";
+      readonly local: "continual_learning_hook" | "mem0_memory_point";
+    }
+  | {
+      readonly kind: "profile";
+      readonly local: "deep_tree_echo";
+      readonly mode: TrainingMode;
+    }
+  | {
+      readonly kind: "instrument";
+      readonly local:
+        | "checkpoint_guardian"
+        | "prepare_nanecho"
+        | "evaluation"
+        | "autognosis";
+    }
+  | {
+      readonly kind: "subordinate";
+      readonly local: "nanecho" | "checkpoint_guardian" | "mem0_dream";
+    }
+  | {
+      readonly kind: "nanecho_surface";
+      readonly local: "echoself/data/nanecho";
+    }
+  | {
+      readonly kind: "autognosis";
+      readonly local: "echoself.autognosis";
+      readonly layer: AutognosisLayer;
+    }
   | { readonly kind: "harmonic_esn"; readonly local: "harmonic_resonance" }
-  | { readonly kind: "tiny_inference"; readonly local: "nanecho_runtime" | "llama_cpp_spec_client" }
+  | {
+      readonly kind: "tiny_inference";
+      readonly local: "nanecho_runtime" | "llama_cpp_spec_client";
+    }
   | { readonly kind: "vorticog_map"; readonly local: "vorticog_adapter" };
 
 export type SituationTag =
@@ -270,7 +338,11 @@ export type VorticogAgent =
     };
 
 export type TinyInferenceResult =
-  | { readonly kind: "generated"; readonly text: string; readonly backend: "nanecho_runtime" }
+  | {
+      readonly kind: "generated";
+      readonly text: string;
+      readonly backend: "nanecho_runtime";
+    }
   | { readonly kind: "unavailable"; readonly reason: string };
 
 export type Mech0MemoryType =
