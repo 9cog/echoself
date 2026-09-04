@@ -1,21 +1,12 @@
 {
-  "timestamp": "2026-09-03T16:13:40.473742+00:00",
+  "timestamp": "2026-09-04T04:13:32.495165+00:00",
   "analysis_source": "automation_analysis.json",
   "trigger_source": "next_cycle_trigger.json",
   "eval_report_used": true,
-  "overall_fidelity": 0.652815220352395,
-  "changes_applied": [
-    "n_embd 768 \u2192 922 (fidelity < 0.70 after \u226550k iters) [clamped]",
-    "n_head 12 \u2192 14 (fidelity < 0.70 after \u226550k iters) [clamped]",
-    "n_embd 922 \u2192 910 (rounded down for n_embd % n_head == 0)"
-  ],
-  "changes_delta": {
-    "model": {
-      "n_embd": 910,
-      "n_head": 14
-    }
-  },
-  "total_changes": 3,
-  "config_output": "adapted_config.json",
+  "overall_fidelity": 0.5715551117458576,
+  "changes_applied": [],
+  "changes_delta": {},
+  "total_changes": 0,
+  "config_output": null,
   "delta_clamp": 0.2
 }
