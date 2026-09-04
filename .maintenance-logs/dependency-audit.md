@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-09-03 02:09:55 UTC
+# Dependency Audit Report - 2026-09-04 02:15:37 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-09-03T02:09:53.936Z",
+  "timestamp": "2026-09-04T02:15:35.847Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -235,8 +235,9 @@ Severity: moderate
 estree-util-value-to-estree allows prototype pollution in generated ESTree - https://github.com/advisories/GHSA-f7f6-9jq7-3rqj
 fix available via `npm audit fix`
 node_modules/estree-util-value-to-estree
-  remark-mdx-frontmatter  <=2.1.1
+  remark-mdx-frontmatter  *
   Depends on vulnerable versions of estree-util-value-to-estree
+  Depends on vulnerable versions of toml
   node_modules/remark-mdx-frontmatter
 
 flatted  <=3.4.1
@@ -402,6 +403,13 @@ node_modules/tar
   Depends on vulnerable versions of tar
   node_modules/cacache
 
+toml  <=4.1.2
+Severity: high
+toml-node: Uncontrolled Recursion - https://github.com/advisories/GHSA-82x6-q7mm-w9cf
+toml-node: Prototype Pollution Leads to `Object.prototype` Corruption via `__proto__` Key-Path Desynchronization - https://github.com/advisories/GHSA-v5mp-jgw5-2x6j
+fix available via `npm audit fix`
+node_modules/toml
+
 turbo-stream  <3.0.0
 Severity: high
 React Router vulnerable to Denial of Service via reflected user input in single-fetch - https://github.com/advisories/GHSA-rxv8-25v2-qmq8
@@ -453,7 +461,7 @@ yaml is vulnerable to Stack Overflow via deeply nested YAML collections - https:
 fix available via `npm audit fix`
 node_modules/yaml
 
-53 vulnerabilities (5 low, 15 moderate, 32 high, 1 critical)
+54 vulnerabilities (5 low, 14 moderate, 34 high, 1 critical)
 
 To address issues that do not require attention, run:
   npm audit fix
