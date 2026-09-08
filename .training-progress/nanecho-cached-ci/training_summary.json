@@ -1,7 +1,7 @@
 {
-  "workflow_run": "527",
+  "workflow_run": "528",
   "training_type": ".training-progress/nanecho-cached-ci",
-  "completed_at": "2026-09-08T00:11:12.751357",
+  "completed_at": "2026-09-08T06:07:40.144248",
   "parameters": {
     "max_iters": 500,
     "batch_size": 2,
