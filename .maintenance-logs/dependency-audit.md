@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-09-08 02:05:09 UTC
+# Dependency Audit Report - 2026-09-09 02:05:02 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-09-08T02:05:07.534Z",
+  "timestamp": "2026-09-09T02:05:00.888Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -247,11 +247,12 @@ Prototype Pollution via parse() in NodeJS flatted - https://github.com/advisorie
 fix available via `npm audit fix`
 node_modules/flatted
 
-js-yaml  4.0.0 - 4.3.0
+js-yaml  4.0.0 - 4.3.1
 Severity: high
 JS-YAML: Quadratic-complexity DoS in merge key handling via repeated aliases - https://github.com/advisories/GHSA-h67p-54hq-rp68
 js-yaml: YAML merge-key chains can force quadratic CPU consumption - https://github.com/advisories/GHSA-52cp-r559-cp3m
 JS-YAML: Quadratic CPU consumption in !!omap resolution (3.x and 4.x) — CVE-2026-59870 fix not backported - https://github.com/advisories/GHSA-5p4m-2wfm-xmqj
+js-yaml: maxTotalMergeKeys does not limit CPU use for empty merge sources - https://github.com/advisories/GHSA-2883-xcg3-v3hh
 fix available via `npm audit fix`
 node_modules/js-yaml
 
@@ -327,9 +328,10 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     node_modules/@typescript-eslint/utils
 
-morgan  1.2.0 - 1.10.1
+morgan  <=1.11.0
 Severity: moderate
 morgan vulnerable to Log Forging via unneutralized control characters in :remote-user - https://github.com/advisories/GHSA-4vj7-5mj6-jm8m
+morgan vulnerable to Log Forging via unescaped Unicode line separators - https://github.com/advisories/GHSA-jxfw-x594-9x9m
 fix available via `npm audit fix`
 node_modules/morgan
 
