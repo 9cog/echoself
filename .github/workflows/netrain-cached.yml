@@ -341,10 +341,14 @@ jobs:
         import os
         import numpy as np
         import json
+        import tiktoken
         
         os.makedirs('data/nanecho', exist_ok=True)
         
-        # Sample Echo Self text patterns (character-level tokenization for simplicity)
+        # GPT-2 tokenizer (required for tokenizer provenance validation)
+        enc = tiktoken.get_encoding('gpt2')
+        
+        # Sample Echo Self text patterns
         echo_patterns = [
             'Echo Self is a cognitive architecture with adaptive attention mechanisms.',
             'The persona dimensions include cognitive, introspective, adaptive, and recursive.',
@@ -360,9 +364,9 @@ jobs:
         train_text = ' '.join(echo_patterns * 100)  # Repeat for more data
         val_text = ' '.join(echo_patterns * 20)
         
-        # Simple character-level tokenization
-        train_tokens = np.array([ord(c) % 256 for c in train_text], dtype=np.uint16)
-        val_tokens = np.array([ord(c) % 256 for c in val_text], dtype=np.uint16)
+        # GPT-2 tokenization
+        train_tokens = np.array(enc.encode(train_text), dtype=np.uint16)
+        val_tokens = np.array(enc.encode(val_text), dtype=np.uint16)
         
         # Ensure minimum size
         min_size = 2048  # Minimum tokens needed
@@ -375,15 +379,21 @@ jobs:
         train_tokens.tofile('data/nanecho/train.bin')
         val_tokens.tofile('data/nanecho/val.bin')
         
-        # Create metadata
+        # Create metadata with GPT-2 tokenizer provenance (required by train_nanecho.py)
         metadata = {
             'train_tokens': len(train_tokens),
             'val_tokens': len(val_tokens),
-            'vocab_size': 256,
+            'vocab_size': enc.n_vocab,
+            'tokenizer': {
+                'name': 'gpt2',
+                'vocab_size': enc.n_vocab,
+                'eos_token': '<|endoftext|>',
+                'eos_token_id': enc.eot_token,
+            },
             'echo_depth': 7,
             'persona_weight': 0.95,
             'created_by': 'workflow_fallback',
-            'description': 'Character-level Echo Self training data for CI'
+            'description': 'GPT-2 tokenized Echo Self training data for CI'
         }
         
         with open('data/nanecho/metadata.json', 'w') as f:
