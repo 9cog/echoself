@@ -1,10 +1,12 @@
 {
-  "timestamp": "20260918_201147",
-  "iteration": 200,
-  "val_loss": 5.0001,
-  "output_dir": "out-nanecho-ci",
-  "workflow_run": "794",
-  "commit": "01a0999540ac5624ccf34a6d2ea05d3a5b2edd4f",
-  "backup_count": 3,
-  "orchestrator": "Agent-Neuro"
+  "timestamp": "20260919_001112",
+  "workflow_run": "572",
+  "run_id": "35408375150",
+  "output_dir": ".training-progress/nanecho-cached-ci",
+  "best_checkpoint": "none",
+  "backup_locations": 0,
+  "total_files_swept": 0,
+  "commit": "d92512cbdc531d246e42093ff07d659bf9d68303",
+  "triggered_by": "schedule",
+  "backup_policy": "UNCONDITIONAL — if: always() — nothing can bypass this step"
 }
