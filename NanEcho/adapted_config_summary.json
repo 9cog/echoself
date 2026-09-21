@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-09-21T04:12:06.018189+00:00",
+  "timestamp": "2026-09-21T16:12:35.820473+00:00",
   "analysis_source": "automation_analysis.json",
   "trigger_source": "next_cycle_trigger.json",
   "eval_report_used": true,
-  "overall_fidelity": 0.6580969598134941,
+  "overall_fidelity": 0.6516452059584844,
   "changes_applied": [
     "n_embd 768 \u2192 922 (fidelity < 0.70 after \u226550k iters) [clamped]",
     "n_head 12 \u2192 14 (fidelity < 0.70 after \u226550k iters) [clamped]",
