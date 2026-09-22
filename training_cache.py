@@ -28,8 +28,20 @@ from datetime import datetime, timedelta
 import torch
 import numpy as np
 
-def _checkpoint_tokenizer_provenance() -> Dict[str, Any]:
-    """Attach GPT-2 tokenizer identity to cached checkpoints when runtime is available."""
+def _checkpoint_tokenizer_provenance(
+    model: Optional[torch.nn.Module] = None,
+) -> Dict[str, Any]:
+    """Attach the *actual* dataset tokenizer identity to cached checkpoints.
+
+    Prefers the tokenizer provenance discovered during data loading (attached
+    to the model by the trainer), so persona-selected (non-GPT-2) tokenizers
+    are recorded truthfully. Falls back to GPT-2 for the legacy path.
+    """
+    # Prefer the provenance the trainer attached to the model (Phase 1).
+    if model is not None:
+        attached = getattr(model, "_dataset_tokenizer_provenance", None)
+        if isinstance(attached, dict) and "name" in attached:
+            return dict(attached)
     try:
         from NanEcho.runtime import NanEchoTokenizer
         return NanEchoTokenizer().provenance()
@@ -242,7 +254,7 @@ class TrainingCache:
             'format': 'nanecho-pytorch-v1',
             'connection_ratio': getattr(model, 'connection_ratio', 0.0),
             'current_iteration': getattr(model, 'current_iteration', iteration),
-            'tokenizer': _checkpoint_tokenizer_provenance(),
+            'tokenizer': _checkpoint_tokenizer_provenance(model),
         }
 
         # Persist ESN orchestrator state (Phase 3) when the model carries one.

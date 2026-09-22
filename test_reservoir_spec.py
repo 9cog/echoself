@@ -358,3 +358,41 @@ def test_orchestrator_dimension_weights_from_grip():
     assert d.dimension_weights is not None
     assert d.dimension_weights["cognitive"] > d.dimension_weights["recursive"]
     assert sum(d.dimension_weights.values()) == pytest.approx(1.0)
+
+
+# ---- Phase 5: grip benchmark ----------------------------------------------
+
+from NanEcho.evaluation.grip_benchmark import (
+    model_grip_from_texts,
+    benchmark_tokenizer,
+    run_benchmark,
+)
+from NanEcho.spec import CharTokenizer
+
+PERSONA_CORPUS = (
+    __import__("pathlib").Path(__file__).parent / "NanEcho" / "persona_corpus"
+)
+
+
+def test_model_grip_from_texts():
+    high = model_grip_from_texts(
+        ["I use recursive reasoning and adaptive attention for analysis."]
+    )
+    low = model_grip_from_texts(["the cat sat on the mat"])
+    assert high > low
+    assert model_grip_from_texts([]) == 0.0
+
+
+@pytest.mark.skipif(not PERSONA_CORPUS.exists(), reason="persona corpus missing")
+def test_benchmark_tokenizer_on_corpus():
+    res = benchmark_tokenizer(CharTokenizer(), PERSONA_CORPUS)
+    assert res.name == "tokenizer:char"
+    assert 0.0 <= res.grip <= 1.0
+    assert res.model_grip is None
+
+
+@pytest.mark.skipif(not PERSONA_CORPUS.exists(), reason="persona corpus missing")
+def test_run_benchmark_tokenizers_only():
+    rep = run_benchmark(PERSONA_CORPUS, checkpoints=[], tokenizer_names=["char"])
+    assert rep["num_configurations"] == 1
+    assert rep["best"]["name"] == "tokenizer:char"

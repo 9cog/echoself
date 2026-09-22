@@ -224,7 +224,13 @@ class CachedNanEchoTrainer(NanEchoTrainer):
             'bias': self.config.bias,
             'initial_connections': self.config.initial_connections,
             'connection_growth_rate': self.config.connection_growth_rate,
-            'max_connections': self.config.max_connections
+            'max_connections': self.config.max_connections,
+            # Persist reservoir config so the runtime reconstructs the full
+            # dynamic topology (Phase 2/4) on load.
+            'reservoir_mode': self.config.reservoir_mode,
+            'reservoir_units': self.config.reservoir_units,
+            'reservoir_spectral_radius': self.config.reservoir_spectral_radius,
+            'eos_token_id': getattr(self.model.config, 'eos_token_id', 50256),
         }
         
         training_config = {

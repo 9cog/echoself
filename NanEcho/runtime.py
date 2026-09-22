@@ -113,6 +113,25 @@ def _validate_tokenizer_provenance(
     return expected
 
 
+def _tokenizer_for_checkpoint(declared: Any):
+    """Build a tokenizer adapter matching a checkpoint's declared provenance.
+
+    Uses the ``char`` adapter for char-tokenized checkpoints, and tiktoken for
+    named encodings (e.g. GPT-2). Falls back to the default GPT-2 tokenizer
+    when the declaration is missing or unrecognised so legacy checkpoints keep
+    their existing (strict) validation behaviour.
+    """
+    from NanEcho.spec import TokenizerSpec, tokenizer_from_spec
+
+    if isinstance(declared, dict) and "name" in declared:
+        try:
+            spec = TokenizerSpec.from_provenance(declared)
+            return tokenizer_from_spec(spec)
+        except Exception:
+            pass
+    return NanEchoTokenizer()
+
+
 def _state_persona_dimensions(state_dict: Dict[str, Any]) -> list[str]:
     """Return persona modules actually represented by a checkpoint."""
     dimensions: list[str] = []
@@ -222,7 +241,10 @@ class NanEchoRuntime:
             raise IncompatibleCheckpointError("'model_state_dict' must be a non-empty dictionary")
         state_dict = _normalise_state_dict(state_dict)
 
-        tokenizer = NanEchoTokenizer()
+        # Reconstruct the tokenizer from the checkpoint's declared provenance
+        # so persona-selected (non-GPT-2) checkpoints load (Phase 1). Falls
+        # back to GPT-2 strict validation when the checkpoint declares GPT-2.
+        tokenizer = _tokenizer_for_checkpoint(checkpoint.get("tokenizer"))
         tokenizer_metadata = _validate_tokenizer_provenance(
             checkpoint.get("tokenizer"), tokenizer
         )

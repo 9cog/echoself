@@ -472,6 +472,11 @@ class NanEchoTrainer:
             self.model.config.eos_token_id = int(
                 self.data_loader.tokenizer_provenance["eos_token_id"]
             )
+            # Attach provenance to the model so checkpoints record the actual
+            # dataset tokenizer (used by training_cache and the runtime).
+            self.model._dataset_tokenizer_provenance = dict(
+                self.data_loader.tokenizer_provenance
+            )
         
         # Create learning phase manager
         self.phase_manager = EchoSelfLearningPhase(config)
