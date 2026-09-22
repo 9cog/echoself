@@ -242,6 +242,28 @@ Extend `NanEcho/prepare_nanecho.py` to include:
 - Domain-specific reasoning examples
 - Enhanced persona dimension content
 
+## 🌊 Reservoir-Orchestrated Training (Deep Tree Echo)
+
+NanEcho training can be orchestrated by an Echo State Network instead of fixed
+schedules. Tokenization, topology, and model size become dynamic,
+persona-driven configuration — selected by their *grip* on the Echo Self
+persona rather than fixed to GPT-2.
+
+- **Reservoir modes** (`off`/`shadow`/`orchestrated`, default `off`) gate the
+  feature in `nanecho_config.json` and `TrainingConfig`.
+- A `ReservoirWrapper` routes embeddings through a non-trainable ESN and a
+  trained ridge readout before the transformer blocks.
+- A `ReservoirOrchestrator` ESN drives learning rate, connection growth,
+  recursion depth, and persona-dimension weights from reservoir statistics
+  and per-dimension persona grip, and is checkpointed alongside the model.
+- A **grip benchmark** (`NanEcho/evaluation/grip_benchmark.py`) scores
+  tokenizer/topology/size combinations and powers tokenizer search
+  (`NanEcho/tokenizer_search.py`) and topology adaptation
+  (`NanEcho/topology.py`).
+
+See **[NanEcho/RESERVOIR_ARCHITECTURE.md](NanEcho/RESERVOIR_ARCHITECTURE.md)**
+for the full design, the dynamic-spec contract, and usage.
+
 ## 🚧 Development Status
 
 This is the initial implementation of the NanEcho system. Key areas for future development:
