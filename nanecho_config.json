@@ -113,6 +113,14 @@
     "out_dir": "out-nanecho",
     "eval_dir": "eval-nanecho"
   },
+  "reservoir": {
+    "_comment": "Reservoir computing seam (Deep Tree Echo). reservoir_mode: off|shadow|orchestrated. Default off = legacy transformer-only path with zero behavior change. 'shadow' observes reservoir states without altering outputs; 'orchestrated' lets the ESN orchestrator drive LR, connection growth, recursion depth, and persona-dimension weights from reservoir stats + persona grip.",
+    "reservoir_mode": "off",
+    "reservoir_units": 256,
+    "reservoir_spectral_radius": 0.95,
+    "orchestrator_units": 64,
+    "orchestrator_decision_interval": 1
+  },
   "topology_evolution": {
     "enabled": true,
     "echobeat_period": 9,

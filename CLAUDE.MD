@@ -7,8 +7,8 @@ This file provides essential context for Claude Code when working with the EchoS
 **EchoSelf** is an advanced distributed AGI cognitive architecture featuring:
 
 - **Deep Tree Echo**: Primary AI persona with adaptive cognition
-- **NanEcho**: GPT-2-based model trained on persona-specific data
-- **Echo State Networks**: Temporal pattern recognition and adaptive learning
+- **NanEcho**: Persona-gripped model trained on persona-specific data. Tokenization, topology, and model size are dynamically configured for persona grip (GPT-2 is the default spec, not a hard requirement). See `NanEcho/RESERVOIR_ARCHITECTURE.md`.
+- **Echo State Networks**: Temporal pattern recognition and adaptive learning. An ESN orchestrator can drive NanEcho training hyperparameters (`reservoir_mode`), with ridge-regression readouts between reservoir and transformer.
 - **Hypergraph Pattern Encoding**: Neural-symbolic cognitive associations
 - **Toroidal Dual-Persona Processing**: Interdependent cognitive streams
 - **EchoLayla**: Character-based AI assistant integration
