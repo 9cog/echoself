@@ -1,12 +1,14 @@
 {
-  "timestamp": "20260922_120629",
-  "workflow_run": "586",
-  "run_id": "35725074490",
-  "output_dir": ".training-progress/nanecho-cached-ci",
-  "best_checkpoint": "none",
-  "backup_locations": 0,
-  "total_files_swept": 0,
-  "commit": "7362674f90909437fca86118e81dfed6dd3731e9",
-  "triggered_by": "schedule",
-  "backup_policy": "UNCONDITIONAL — if: always() — nothing can bypass this step"
+  "timestamp": "20260922_122207",
+  "iteration": 200,
+  "val_loss": 3.7679,
+  "output_dir": "out-nanecho-ci",
+  "workflow_run": "752",
+  "commit": "b1f23d3487d0cb5cc18645350321238dd1a9cc4c",
+  "backup_count": 3,
+  "locations": [
+    ".training-progress/checkpoints/latest_checkpoint.pt",
+    ".training-progress/cache/ckpt.pt",
+    "artifacts (via actions/upload-artifact)"
+  ]
 }
