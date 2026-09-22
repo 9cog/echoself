@@ -1003,6 +1003,8 @@ jobs:
     needs: train
     if: always()
     continue-on-error: true
+    permissions:
+      contents: read
     steps:
       - name: Checkout echoself repository
         uses: actions/checkout@v4
