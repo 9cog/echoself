@@ -56,7 +56,12 @@ class NanEchoConfig:
     # Hypergraph patterns
     pattern_injection_rate: float = 0.25
     pattern_complexity_scaling: bool = True
-    
+
+    # Reservoir computing seam (Phase 0/2; default off = zero behavior change)
+    reservoir_mode: str = "off"  # off|shadow|orchestrated
+    reservoir_units: int = 256
+    reservoir_spectral_radius: float = 0.95
+
     def __post_init__(self):
         if self.persona_dimensions is None:
             self.persona_dimensions = [
@@ -64,8 +69,13 @@ class NanEchoConfig:
                 'synergistic', 'holographic', 'neural_symbolic', 'dynamic'
             ]
         if self.dimension_weights is None:
-            self.dimension_weights = {dim: 1.0/len(self.persona_dimensions) 
+            self.dimension_weights = {dim: 1.0/len(self.persona_dimensions)
                                      for dim in self.persona_dimensions}
+        if self.reservoir_mode not in ("off", "shadow", "orchestrated"):
+            raise ValueError(
+                f"reservoir_mode must be off|shadow|orchestrated, "
+                f"got {self.reservoir_mode!r}"
+            )
 
 
 class ConnectionMask(nn.Module):

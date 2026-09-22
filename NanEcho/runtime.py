@@ -17,12 +17,16 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from nanecho_model import NanEchoConfig, NanEchoModel
+from NanEcho.spec import GPT2_SPEC, TokenizerSpec
 
-
-TOKENIZER_NAME = "gpt2"
-TOKENIZER_VOCAB_SIZE = 50257
-TOKENIZER_EOS_TOKEN = "<|endoftext|>"
-TOKENIZER_EOS_TOKEN_ID = 50256
+# Backward-compatible module constants, now derived from the active spec.
+# GPT-2 remains the default spec until a persona-fit tokenizer replaces it
+# (see NanEcho/spec.py — arbitrary fitting to GPT-2 is not the end goal).
+_DEFAULT_SPEC = GPT2_SPEC
+TOKENIZER_NAME = _DEFAULT_SPEC.name
+TOKENIZER_VOCAB_SIZE = _DEFAULT_SPEC.vocab_size
+TOKENIZER_EOS_TOKEN = _DEFAULT_SPEC.eos_token
+TOKENIZER_EOS_TOKEN_ID = _DEFAULT_SPEC.eos_token_id
 CHECKPOINT_FORMAT = "nanecho-pytorch-v1"
 # exp(80) remains finite in standard Python floats while bounding unusable losses.
 MAX_PERPLEXITY_LOSS = 80.0
@@ -33,29 +37,32 @@ class IncompatibleCheckpointError(ValueError):
 
 
 class NanEchoTokenizer:
-    """Single GPT-2 tokenizer implementation used throughout NanEcho."""
+    """tiktoken-backed tokenizer satisfying the ``TokenizerAdapter`` protocol.
 
-    name = TOKENIZER_NAME
-    eos_token = TOKENIZER_EOS_TOKEN
+    Defaults to GPT-2 for backward compatibility. The spec is now explicit
+    so future persona-fit tokenizers can be substituted without changing
+    call sites.
+    """
 
-    def __init__(self) -> None:
+    def __init__(self, spec: TokenizerSpec = _DEFAULT_SPEC) -> None:
+        self.spec = spec
+        self.name = spec.name
+        self.eos_token = spec.eos_token
         self._encoding = tiktoken.get_encoding(self.name)
         self.eos_token_id = self._encoding.eot_token
         self.vocab_size = self._encoding.n_vocab
         if (
-            self.vocab_size != TOKENIZER_VOCAB_SIZE
-            or self.eos_token_id != TOKENIZER_EOS_TOKEN_ID
+            self.vocab_size != spec.vocab_size
+            or self.eos_token_id != spec.eos_token_id
         ):
-            raise RuntimeError("Installed GPT-2 tokenizer metadata is incompatible")
+            raise RuntimeError(
+                f"Installed {self.name} tokenizer metadata is incompatible "
+                f"with spec {spec!r}"
+            )
 
     def provenance(self) -> Dict[str, Any]:
         """Return the complete, portable tokenizer identity declaration."""
-        return {
-            "name": self.name,
-            "vocab_size": self.vocab_size,
-            "eos_token": self.eos_token,
-            "eos_token_id": self.eos_token_id,
-        }
+        return self.spec.provenance()
 
     def encode(self, text: str) -> list[int]:
         return self._encoding.encode(text, allowed_special=set(), disallowed_special=())
@@ -100,8 +107,8 @@ def _validate_tokenizer_provenance(
     ]
     if incompatible:
         raise IncompatibleCheckpointError(
-            "Checkpoint tokenizer provenance is incompatible with GPT-2: "
-            + "; ".join(incompatible)
+            f"Checkpoint tokenizer provenance is incompatible with "
+            f"{tokenizer.spec.name}: " + "; ".join(incompatible)
         )
     return expected
 
@@ -161,9 +168,9 @@ def _build_config(raw_config: Dict[str, Any], tokenizer: NanEchoTokenizer) -> Na
         raise IncompatibleCheckpointError("n_layer must be positive and block_size must exceed 1")
     if config.vocab_size < tokenizer.vocab_size:
         raise IncompatibleCheckpointError(
-            f"Checkpoint vocabulary ({config.vocab_size}) is smaller than GPT-2 "
-            f"tokenizer vocabulary ({tokenizer.vocab_size}); legacy character-tokenized "
-            "checkpoints are not supported"
+            f"Checkpoint vocabulary ({config.vocab_size}) is smaller than "
+            f"{tokenizer.spec.name} tokenizer vocabulary ({tokenizer.vocab_size}); "
+            "legacy character-tokenized checkpoints are not supported"
         )
     return config
 

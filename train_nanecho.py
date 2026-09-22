@@ -44,6 +44,7 @@ except ImportError:
 from nanecho_model import NanEchoModel, NanEchoConfig
 from NanEcho.drift import score_persona_text
 from NanEcho.runtime import NanEchoTokenizer
+from NanEcho.spec import RESERVOIR_MODES
 
 PERSONA_DIMENSIONS = [
     "cognitive",
@@ -137,6 +138,18 @@ class TrainingConfig:
     # DDP settings
     backend: str = "nccl"
     ddp: bool = False
+
+    # Reservoir computing seam (Phase 0; default off = zero behavior change)
+    reservoir_mode: str = "off"  # one of RESERVOIR_MODES: off|shadow|orchestrated
+    reservoir_units: int = 256
+    reservoir_spectral_radius: float = 0.95
+
+    def __post_init__(self):
+        if self.reservoir_mode not in RESERVOIR_MODES:
+            raise ValueError(
+                f"reservoir_mode must be one of {RESERVOIR_MODES}, "
+                f"got {self.reservoir_mode!r}"
+            )
 
 
 class EchoSelfLearningPhase:
