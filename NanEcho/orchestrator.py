@@ -46,6 +46,7 @@ if str(_NANECHO_DIR) not in sys.path:
 
 from dte_nodes.echo_reservoir import EchoReservoir
 from dte_nodes.cognitive_readout import CognitiveReadout
+from NanEcho.topology import TopologyAdvisor
 
 
 @dataclass
@@ -125,6 +126,11 @@ class ReservoirOrchestrator:
         self.readout = CognitiveReadout(
             output_dim=DECISION_DIM, ridge=1e-4, mode="offline", name="OrchestratorRidge"
         )
+        # Phase 4: topology advisor turns per-dimension grip contributions into
+        # dimension-weight grow/prune proposals consumed by ``decide``.
+        self.topology_advisor = TopologyAdvisor()
+        self._dimension_grip: Dict[str, float] = {}
+        self._current_weights: Dict[str, float] = {}
 
         # History for online ridge re-fit: (state, decision, reward).
         self._states: List[np.ndarray] = []
@@ -142,8 +148,18 @@ class ReservoirOrchestrator:
         val_loss: float = 0.0,
         connection_ratio: float = 0.0,
         persona_grip: float = 0.0,
+        dimension_grip: Optional[Dict[str, float]] = None,
+        current_weights: Optional[Dict[str, float]] = None,
     ) -> np.ndarray:
-        """Fold one training observation into the orchestrator ESN."""
+        """Fold one training observation into the orchestrator ESN.
+
+        ``dimension_grip`` (per-dimension persona coverage) and
+        ``current_weights`` feed the Phase-4 topology advisor.
+        """
+        if dimension_grip:
+            self._dimension_grip = dict(dimension_grip)
+        if current_weights:
+            self._current_weights = dict(current_weights)
         stats = reservoir_stats or {}
         vec = np.array(
             [
@@ -186,6 +202,16 @@ class ReservoirOrchestrator:
             connection_growth_rate=growth,
             recursion_depth=recursion,
         ).clamp()
+
+        # Phase 4: derive dimension-weight proposals from per-dimension grip.
+        if self._current_weights and self._dimension_grip:
+            proposal = self.topology_advisor.propose(
+                self._current_weights, self._dimension_grip
+            )
+            decision.dimension_weights = proposal.dimension_weights
+            decision.clamp()
+            # Remember the proposal as the new baseline for the next interval.
+            self._current_weights = dict(proposal.dimension_weights)
 
         # Record for the online re-fit and history.
         self._states.append(getattr(self, "_current_state", np.zeros(self.reservoir.units)).copy())

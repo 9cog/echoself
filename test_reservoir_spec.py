@@ -285,3 +285,76 @@ def test_orchestrator_state_roundtrip():
 def test_orchestrator_rejects_bad_mode():
     with pytest.raises(ValueError):
         ReservoirOrchestrator(mode="bogus")
+
+
+# ---- Phase 4: dynamic topology & model size -------------------------------
+
+from NanEcho.topology import TopologyAdvisor, ModelSizeSelector
+
+
+def test_topology_advisor_grow_and_prune():
+    advisor = TopologyAdvisor(grow_threshold=0.5, prune_threshold=0.15, learning_rate=0.2)
+    current = {"cognitive": 0.25, "recursive": 0.25, "dynamic": 0.25, "adaptive": 0.25}
+    grip = {"cognitive": 0.9, "recursive": 0.05, "dynamic": 0.3, "adaptive": 0.8}
+    proposal = advisor.propose(current, grip)
+    assert set(proposal.grow) == {"cognitive", "adaptive"}
+    assert set(proposal.prune) == {"recursive"}
+    # Weights renormalize to 1.
+    assert sum(proposal.dimension_weights.values()) == pytest.approx(1.0)
+    # Grown dimensions outweigh pruned ones.
+    assert proposal.dimension_weights["cognitive"] > proposal.dimension_weights["recursive"]
+
+
+def test_topology_advisor_empty_is_safe():
+    advisor = TopologyAdvisor()
+    assert advisor.propose({}, {}).dimension_weights == {}
+
+
+def test_model_size_selector_starts_small_with_little_data():
+    sel = ModelSizeSelector()
+    cands = [(12, 768), (4, 256), (8, 512)]
+    # Too few observations -> smallest candidate.
+    assert sel.recommended_size(cands) == (4, 256)
+
+
+def test_model_size_selector_saturates():
+    sel = ModelSizeSelector(tolerance=0.05)
+    # Grip saturates quickly with size.
+    for n_layer, n_embd, grip in [
+        (2, 128, 0.5), (4, 256, 0.8), (6, 384, 0.9),
+        (8, 512, 0.94), (10, 640, 0.96), (12, 768, 0.97),
+    ]:
+        sel.record(n_layer, n_embd, grip)
+    cands = [(2, 128), (4, 256), (6, 384), (8, 512), (12, 768)]
+    pick = sel.recommended_size(cands)
+    # Should pick a smaller-than-max size since grip saturates.
+    assert pick != (12, 768)
+    assert pick in cands
+
+
+def test_model_size_selector_state_roundtrip():
+    sel = ModelSizeSelector(tolerance=0.03)
+    sel.record(4, 256, 0.8)
+    sel.record(8, 512, 0.95)
+    state = sel.state_dict()
+    fresh = ModelSizeSelector()
+    fresh.load_state_dict(state)
+    assert fresh.tolerance == pytest.approx(0.03)
+    assert len(fresh.observations) == 2
+
+
+def test_orchestrator_dimension_weights_from_grip():
+    orch = ReservoirOrchestrator(mode="orchestrated", reservoir_units=16)
+    weights = {"cognitive": 0.5, "recursive": 0.5}
+    grip = {"cognitive": 0.9, "recursive": 0.05}
+    orch.observe(
+        val_loss=1.0,
+        persona_grip=0.5,
+        dimension_grip=grip,
+        current_weights=weights,
+    )
+    d = orch.decide()
+    # The topology advisor should re-weight toward the high-grip dimension.
+    assert d.dimension_weights is not None
+    assert d.dimension_weights["cognitive"] > d.dimension_weights["recursive"]
+    assert sum(d.dimension_weights.values()) == pytest.approx(1.0)

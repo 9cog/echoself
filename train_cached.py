@@ -299,24 +299,33 @@ class CachedNanEchoTrainer(NanEchoTrainer):
             print(f"⚠️  Failed to save checkpoint: {e}")
             return None
 
-    def _persona_grip_score(self) -> float:
-        """Scalar persona grip = mean dimension coverage from introspection.
+    def _persona_grip_breakdown(self) -> Tuple[float, Dict[str, float]]:
+        """Return (scalar grip, per-dimension grip) from introspection history.
 
-        Uses ``Introspection.evaluate_echo_self_quality`` history when
-        available; falls back to 0.0 so the orchestrator still observes.
+        The scalar is the mean dimension coverage; the breakdown feeds the
+        Phase-4 topology advisor. Falls back to (0.0, {}) so the orchestrator
+        still observes when introspection has not run yet.
         """
         history = getattr(self.introspection, "metrics_history", [])
         if not history:
-            return 0.0
+            return 0.0, {}
         latest = history[-1]
-        dim_scores = [
-            v for k, v in latest.items()
-            if isinstance(v, (int, float)) and k.startswith("persona_")
-        ]
-        if not dim_scores:
-            # Fall back to any numeric metric as a weak grip proxy.
-            dim_scores = [v for v in latest.values() if isinstance(v, (int, float))]
-        return float(sum(dim_scores) / len(dim_scores)) if dim_scores else 0.0
+        per_dim = {
+            k[len("persona_"):]: float(v)
+            for k, v in latest.items()
+            if isinstance(v, (int, float))
+            and k.startswith("persona_")
+            and k != "persona_consistency"
+        }
+        if per_dim:
+            return float(sum(per_dim.values()) / len(per_dim)), per_dim
+        # Fall back to any numeric metric as a weak grip proxy.
+        numeric = [float(v) for v in latest.values() if isinstance(v, (int, float))]
+        return (float(sum(numeric) / len(numeric)) if numeric else 0.0), {}
+
+    def _persona_grip_score(self) -> float:
+        """Scalar persona grip = mean dimension coverage from introspection."""
+        return self._persona_grip_breakdown()[0]
 
     def _orchestrator_step(self, iteration: int, eval_metrics: Dict[str, float]):
         """Observe training state, decide hyperparameters, and learn (Phase 3)."""
@@ -329,13 +338,15 @@ class CachedNanEchoTrainer(NanEchoTrainer):
         if wrapper is not None and wrapper.last_states is not None:
             reservoir_stats = wrapper.reservoir.state_stats(wrapper.last_states)
 
-        grip = self._persona_grip_score()
+        grip, per_dim_grip = self._persona_grip_breakdown()
 
         self.orchestrator.observe(
             reservoir_stats=reservoir_stats,
             val_loss=eval_metrics.get("val_loss", 0.0),
             connection_ratio=getattr(self.model, "connection_ratio", 0.0),
             persona_grip=grip,
+            dimension_grip=per_dim_grip,
+            current_weights=dict(getattr(self.model.config, "dimension_weights", {}) or {}),
         )
         decision = self.orchestrator.decide()
         self._last_orchestrator_decision = decision
