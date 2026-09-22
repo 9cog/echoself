@@ -44,7 +44,12 @@ except ImportError:
 from nanecho_model import NanEchoModel, NanEchoConfig
 from NanEcho.drift import score_persona_text
 from NanEcho.runtime import NanEchoTokenizer
-from NanEcho.spec import RESERVOIR_MODES
+from NanEcho.spec import (
+    RESERVOIR_MODES,
+    GPT2_SPEC,
+    TokenizerSpec,
+    tokenizer_from_spec,
+)
 
 PERSONA_DIMENSIONS = [
     "cognitive",
@@ -58,19 +63,35 @@ PERSONA_DIMENSIONS = [
 ]
 
 
-def validate_dataset_tokenizer_provenance(metadata: Dict[str, Any]) -> Dict[str, Any]:
-    """Require complete GPT-2 provenance before a dataset can train a checkpoint."""
+#: Required keys for any tokenizer provenance declaration (spec-agnostic).
+REQUIRED_PROVENANCE_KEYS = ("name", "vocab_size", "eos_token", "eos_token_id")
+
+
+def validate_dataset_tokenizer_provenance(
+    metadata: Dict[str, Any],
+    expected: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Require complete, consistent tokenizer provenance before training.
+
+    The declaration must contain the required keys. When ``expected`` is
+    provided (e.g. the GPT-2 spec for strict compatibility), the declaration
+    must match it exactly; otherwise the declared spec is trusted so that any
+    persona-selected tokenizer (Phase 1) can train a checkpoint. This removes
+    the hard-coded GPT-2 requirement in favor of spec-driven validation.
+    """
     declared = metadata.get("tokenizer")
     if not isinstance(declared, dict):
         raise ValueError(
             "Dataset tokenizer provenance must be an object; regenerate the dataset"
         )
-    expected = NanEchoTokenizer().provenance()
-    missing = [key for key in expected if key not in declared]
+    missing = [key for key in REQUIRED_PROVENANCE_KEYS if key not in declared]
     if missing:
         raise ValueError(
             "Dataset tokenizer provenance is incomplete; missing " + ", ".join(missing)
         )
+    if expected is None:
+        # Trust the declared spec (dynamic tokenization path).
+        return {key: declared[key] for key in REQUIRED_PROVENANCE_KEYS}
     incompatible = [
         f"{key}={declared.get(key)!r} (expected {value!r})"
         for key, value in expected.items()
@@ -78,8 +99,8 @@ def validate_dataset_tokenizer_provenance(metadata: Dict[str, Any]) -> Dict[str,
     ]
     if incompatible:
         raise ValueError(
-            "Dataset tokenizer provenance is incompatible with GPT-2: "
-            + "; ".join(incompatible)
+            f"Dataset tokenizer provenance is incompatible with "
+            f"{expected.get('name', 'expected')}: " + "; ".join(incompatible)
         )
     return expected
 
@@ -247,10 +268,18 @@ class DataLoader:
             raise ValueError("Dataset metadata.json is required")
         with open(metadata_path, encoding="utf-8") as handle:
             metadata = json.load(handle)
-        self.tokenizer_provenance = validate_dataset_tokenizer_provenance(metadata)
+        # Strict GPT-2 check only when the model is configured for GPT-2;
+        # otherwise trust the dataset's declared (persona-selected) spec.
+        expected = None
+        if self.config.vocab_size >= GPT2_SPEC.vocab_size:
+            expected = NanEchoTokenizer().provenance()
+        self.tokenizer_provenance = validate_dataset_tokenizer_provenance(
+            metadata, expected=expected
+        )
         if self.config.vocab_size < self.tokenizer_provenance["vocab_size"]:
             raise ValueError(
-                "Model vocabulary is smaller than the declared GPT-2 dataset vocabulary"
+                "Model vocabulary is smaller than the declared "
+                f"{self.tokenizer_provenance.get('name', 'dataset')} dataset vocabulary"
             )
         
         self.train_data = np.memmap(train_path, dtype=np.uint16, mode='r')
@@ -294,12 +323,24 @@ class DataLoader:
 
 class Introspection:
     """Handles model introspection and quality evaluation."""
-    
-    def __init__(self, model: NanEchoModel, config: TrainingConfig):
+
+    def __init__(
+        self,
+        model: NanEchoModel,
+        config: TrainingConfig,
+        tokenizer: Optional[Any] = None,
+    ):
         self.model = model
         self.config = config
         self.metrics_history = []
-        self.tokenizer = NanEchoTokenizer()
+        # Use the dataset's tokenizer when provided (dynamic tokenization);
+        # otherwise fall back to the default GPT-2 tokenizer for the legacy
+        # path. The tokenizer vocab must fit the model's embedding.
+        self.tokenizer = tokenizer if tokenizer is not None else NanEchoTokenizer()
+        # Clamp prompt ids so a tokenizer whose vocab exceeds the model's
+        # embedding cannot crash generation (defensive; the trainer already
+        # guarantees model vocab >= dataset tokenizer vocab).
+        self._max_id = self.model.config.vocab_size - 1
         self.feedback_dir = Path(config.eval_dir) / "persona_feedback"
         self.feedback_dir.mkdir(parents=True, exist_ok=True)
     
@@ -312,6 +353,8 @@ class Introspection:
             prompt_ids = self.tokenizer.encode(
                 "User: Describe how your persona affects careful reasoning.\nEcho:"
             )
+            # Clamp ids to the model's vocabulary to avoid embedding OOB.
+            prompt_ids = [min(int(t), self._max_id) for t in prompt_ids]
             prompt = torch.tensor([prompt_ids], device=self.config.device)
             generated = self.model.generate(
                 prompt,
@@ -405,7 +448,10 @@ class NanEchoTrainer:
             bias=config.bias,
             initial_connections=config.initial_connections,
             connection_growth_rate=config.connection_growth_rate,
-            max_connections=config.max_connections
+            max_connections=config.max_connections,
+            reservoir_mode=config.reservoir_mode,
+            reservoir_units=config.reservoir_units,
+            reservoir_spectral_radius=config.reservoir_spectral_radius,
         )
         self.model = NanEchoModel(model_config).to(self.device)
         
@@ -420,12 +466,27 @@ class NanEchoTrainer:
         # Create data loader
         self.data_loader = DataLoader(config)
         self.data_loader.load_data()
+        # Align the model's EOS id with the dataset tokenizer so generation
+        # terminates correctly for non-GPT-2 tokenizers (dynamic tokenization).
+        if self.data_loader.tokenizer_provenance is not None:
+            self.model.config.eos_token_id = int(
+                self.data_loader.tokenizer_provenance["eos_token_id"]
+            )
         
         # Create learning phase manager
         self.phase_manager = EchoSelfLearningPhase(config)
-        
-        # Create introspection module
-        self.introspection = Introspection(self.model, config)
+
+        # Create introspection module, using the dataset's tokenizer so
+        # non-GPT-2 (persona-selected) datasets evaluate correctly (Phase 1).
+        dataset_tokenizer = None
+        if self.data_loader.tokenizer_provenance is not None:
+            try:
+                dataset_tokenizer = tokenizer_from_spec(
+                    TokenizerSpec.from_provenance(self.data_loader.tokenizer_provenance)
+                )
+            except Exception:
+                dataset_tokenizer = None  # fall back to default GPT-2 tokenizer
+        self.introspection = Introspection(self.model, config, tokenizer=dataset_tokenizer)
         
         # Setup logging
         os.makedirs(config.out_dir, exist_ok=True)

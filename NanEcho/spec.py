@@ -158,3 +158,17 @@ class CharTokenizer:
 CHAR_SPEC = TokenizerSpec(
     name="char", vocab_size=256, eos_token="<|endoftext|>", eos_token_id=255
 )
+
+
+def tokenizer_from_spec(spec: TokenizerSpec) -> TokenizerAdapter:
+    """Instantiate a tokenizer adapter from its spec.
+
+    The ``char`` tokenizer is dependency-free; anything else is assumed to be
+    a tiktoken encoding (e.g. ``gpt2``). Additional persona-fit tokenizers can
+    be registered here as the Phase-1 search discovers them.
+    """
+    if spec.name == CHAR_SPEC.name:
+        return CharTokenizer()
+    from NanEcho.runtime import NanEchoTokenizer
+
+    return NanEchoTokenizer(spec)

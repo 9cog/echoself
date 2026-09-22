@@ -27,6 +27,7 @@ class NanEchoConfig:
     block_size: int = 1024
     dropout: float = 0.1
     bias: bool = True
+    eos_token_id: int = 50256  # GPT-2 default; override for other tokenizers
     
     # Iterative connection building
     initial_connections: float = 0.1  # Start with 10% of connections
@@ -498,6 +499,147 @@ class NanEchoBlock(nn.Module):
         return x
 
 
+class TorchEchoReservoir(nn.Module):
+    """Torch-native multi-scale echo state reservoir (the Arena).
+
+    A differentiable-friendly, device-correct ESN mirroring
+    ``NanEcho/dte_nodes/echo_reservoir.py`` (fast + slow pools, leaky
+    integration, spectral-radius-scaled sparse recurrent weights). The
+    recurrent weights are buffers — they are not trained by gradient
+    descent; only the ridge readout (a ``nn.Linear``) is trained, which is
+    the defining property of reservoir computing.
+    """
+
+    def __init__(
+        self,
+        input_dim: int,
+        units: int = 256,
+        spectral_radius: float = 0.95,
+        input_scaling: float = 0.1,
+        leak_rate_fast: float = 0.8,
+        leak_rate_slow: float = 0.1,
+        density: float = 0.1,
+        seed: int = 42,
+    ):
+        super().__init__()
+        self.input_dim = input_dim
+        self.units = units
+        self.spectral_radius = spectral_radius
+        self.input_scaling = input_scaling
+        self.leak_rate_fast = leak_rate_fast
+        self.leak_rate_slow = leak_rate_slow
+        self.density = density
+        self.fast_units = units // 2
+        self.slow_units = units - self.fast_units
+
+        gen = torch.Generator().manual_seed(seed)
+        Win = torch.randn(units, input_dim, generator=gen) * input_scaling
+        W = torch.randn(units, units, generator=gen)
+        mask = (torch.rand(units, units, generator=gen) < density).float()
+        W = W * mask
+        # Scale to the target spectral radius.
+        try:
+            eigmax = torch.linalg.eigvals(W).abs().max().item()
+        except Exception:
+            eigmax = 1.0
+        if eigmax > 0:
+            W = W * (spectral_radius / eigmax)
+        # Cross-coupling between fast and slow pools.
+        coupling = 0.05
+        W[self.fast_units:, : self.fast_units] *= 1 + coupling
+        W[: self.fast_units, self.fast_units :] *= 1 + coupling
+
+        self.register_buffer("Win", Win)
+        self.register_buffer("W", W)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Run the reservoir over a sequence.
+
+        Parameters
+        ----------
+        x : Tensor, shape (B, T, input_dim)
+
+        Returns
+        -------
+        Tensor, shape (B, T, units) — reservoir states at each timestep.
+        """
+        B, T, _ = x.shape
+        fast = torch.zeros(B, self.fast_units, device=x.device, dtype=x.dtype)
+        slow = torch.zeros(B, self.slow_units, device=x.device, dtype=x.dtype)
+        outputs = []
+        for t in range(T):
+            xt = x[:, t, :]
+            h = torch.cat([fast, slow], dim=-1)
+            pre = xt @ self.Win.t() + h @ self.W.t()
+            pre_fast = pre[:, : self.fast_units]
+            pre_slow = pre[:, self.fast_units :]
+            fast = (1 - self.leak_rate_fast) * fast + self.leak_rate_fast * torch.tanh(
+                pre_fast
+            )
+            slow = (1 - self.leak_rate_slow) * slow + self.leak_rate_slow * torch.tanh(
+                pre_slow
+            )
+            outputs.append(torch.cat([fast, slow], dim=-1))
+        return torch.stack(outputs, dim=1)
+
+    def state_stats(self, states: torch.Tensor) -> Dict[str, float]:
+        """Summary statistics used by the Phase-3 orchestrator."""
+        with torch.no_grad():
+            s = states.detach()
+            mean_abs = s.abs().mean().item()
+            # Normalized entropy of |state| distribution as a stability proxy.
+            p = s.abs().flatten()
+            p = p / (p.sum() + 1e-9)
+            entropy = -(p * (p + 1e-9).log()).sum().item()
+            max_entropy = math.log(p.numel()) if p.numel() > 1 else 1.0
+            return {
+                "state_mean_abs": mean_abs,
+                "state_entropy_ratio": entropy / max_entropy if max_entropy else 0.0,
+                "spectral_radius": self.spectral_radius,
+            }
+
+
+class ReservoirWrapper(nn.Module):
+    """Routes transformer embeddings through a reservoir and ridge readout.
+
+    Modes:
+      - ``shadow``:       reservoir states are computed and exposed for
+                          observation, but the embedding is passed through
+                          unchanged (zero effect on outputs).
+      - ``orchestrated``: embedding = embedding + mix * ridge(reservoir(emb))
+                          so the reservoir modulates the block stack input.
+
+    The ridge readout (``readout``) is the only gradient-trained component —
+    the "ridge" between the reservoir and the transformer.
+    """
+
+    def __init__(self, config: "NanEchoConfig"):
+        super().__init__()
+        self.config = config
+        self.mode = config.reservoir_mode
+        self.reservoir = TorchEchoReservoir(
+            input_dim=config.n_embd,
+            units=config.reservoir_units,
+            spectral_radius=config.reservoir_spectral_radius,
+        )
+        # Ridge readout mapping reservoir states back to embedding space.
+        self.readout = nn.Linear(config.reservoir_units, config.n_embd, bias=True)
+        nn.init.normal_(self.readout.weight, mean=0.0, std=0.02)
+        nn.init.zeros_(self.readout.bias)
+        # Learnable-but-small mixing gate so orchestrated mode starts gentle.
+        self.mix = nn.Parameter(torch.zeros(1))
+        self.last_states: Optional[torch.Tensor] = None
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        states = self.reservoir(x)
+        self.last_states = states.detach()
+        if self.mode == "orchestrated":
+            gated = torch.tanh(self.mix) * self.readout(states)
+            return x + gated
+        # shadow mode: observe only
+        return x
+
+
 class NanEchoModel(nn.Module):
     """
     NanEcho Transformer Model
@@ -519,7 +661,13 @@ class NanEchoModel(nn.Module):
         self.token_embedding = nn.Embedding(config.vocab_size, config.n_embd)
         self.position_embedding = nn.Embedding(config.block_size, config.n_embd)
         self.dropout = nn.Dropout(config.dropout)
-        
+
+        # Optional reservoir wrapper (Phase 2). Only created when the
+        # reservoir_mode flag is enabled, so the legacy path is untouched.
+        self.reservoir_wrapper = (
+            ReservoirWrapper(config) if config.reservoir_mode != "off" else None
+        )
+
         # Transformer blocks
         self.blocks = nn.ModuleList([
             NanEchoBlock(config, i) for i in range(config.n_layer)
@@ -598,7 +746,11 @@ class NanEchoModel(nn.Module):
         
         # Combine embeddings
         x = self.dropout(tok_emb + pos_emb)
-        
+
+        # Optional reservoir modulation of the embedding stream (Phase 2).
+        if self.reservoir_wrapper is not None:
+            x = self.reservoir_wrapper(x)
+
         # Pass through transformer blocks
         for block in self.blocks:
             x = block(x, self.current_iteration, generator=generator)
@@ -624,12 +776,21 @@ class NanEchoModel(nn.Module):
             )
         
         if return_dict:
-            return {
+            result = {
                 'loss': loss,
                 'logits': logits,
                 'hidden_states': x,
                 'connection_ratio': self.connection_ratio
             }
+            if self.reservoir_wrapper is not None:
+                states = self.reservoir_wrapper.last_states
+                result['reservoir_states'] = states
+                result['reservoir_stats'] = (
+                    self.reservoir_wrapper.reservoir.state_stats(states)
+                    if states is not None
+                    else {}
+                )
+            return result
         
         return (loss, logits) if loss is not None else logits
     
@@ -683,10 +844,12 @@ class NanEchoModel(nn.Module):
                 # Append to sequence
                 input_ids = torch.cat([input_ids, next_token], dim=1)
                 
-                # Break if we hit end of sequence token
-                if next_token.item() == 50256:  # GPT-2 EOS token
+                # Break if we hit the end-of-sequence token. The EOS id is
+                # configurable so non-GPT-2 (persona-selected) tokenizers work;
+                # it defaults to the GPT-2 id for backward compatibility.
+                if next_token.item() == getattr(self.config, "eos_token_id", 50256):
                     break
-        
+
         return input_ids
 
 

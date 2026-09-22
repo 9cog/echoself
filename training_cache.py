@@ -244,6 +244,18 @@ class TrainingCache:
             'current_iteration': getattr(model, 'current_iteration', iteration),
             'tokenizer': _checkpoint_tokenizer_provenance(),
         }
+
+        # Persist ESN orchestrator state (Phase 3) when the model carries one.
+        # Stored under a reserved key so cumulative training resumes with its
+        # conductor intact; absent on the legacy 'off' path.
+        orchestrator_state = getattr(model, '_orchestrator_state_dict', None)
+        if callable(orchestrator_state):
+            try:
+                state = orchestrator_state()
+                if state is not None:
+                    checkpoint_data['orchestrator'] = state
+            except Exception:
+                pass  # orchestrator persistence must never break checkpointing
         
         # Save checkpoint file
         checkpoint_path = self.checkpoints_dir / f"{checkpoint_id}.pt"

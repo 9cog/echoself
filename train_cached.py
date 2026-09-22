@@ -26,9 +26,10 @@ from training_cache import TrainingCache, CacheConfig, CheckpointMetadata
 # Import existing training components
 from nanecho_model import NanEchoModel, NanEchoConfig
 from train_nanecho import (
-    TrainingConfig, NanEchoTrainer, DataLoader, 
+    TrainingConfig, NanEchoTrainer, DataLoader,
     EchoSelfLearningPhase, Introspection
 )
+from NanEcho.orchestrator import ReservoirOrchestrator, OrchestratorDecision
 
 
 class CachedNanEchoTrainer(NanEchoTrainer):
@@ -62,12 +63,25 @@ class CachedNanEchoTrainer(NanEchoTrainer):
         
         self.cache = TrainingCache(cache_config)
         self.force_fresh_start = force_fresh_start
-        
+
+        # Phase 3: ESN orchestrator. Only constructed when the reservoir_mode
+        # flag enables it; default 'off' leaves the trainer untouched.
+        self.orchestrator = (
+            ReservoirOrchestrator(mode=config.reservoir_mode)
+            if config.reservoir_mode in ("shadow", "orchestrated")
+            else None
+        )
+        self._last_orchestrator_decision: Optional[OrchestratorDecision] = None
+
+        # Expose orchestrator persistence hook to the cache layer (Phase 3).
+        if self.orchestrator is not None:
+            self.model._orchestrator_state_dict = self.orchestrator.state_dict
+
         # Resume from checkpoint if available
         self.resumed_from_checkpoint = False
         self.starting_iteration = 0
         self.starting_epoch = 0
-        
+
         if not force_fresh_start:
             self._attempt_resume_from_cache()
     
@@ -130,6 +144,15 @@ class CachedNanEchoTrainer(NanEchoTrainer):
                     if saved_ratio is not None and abs(self.model.connection_ratio - saved_ratio) > 0.01:
                         print(f"⚠️  Connection ratio mismatch, adjusting: {self.model.connection_ratio:.3f} -> {saved_ratio:.3f}")
                         self.model.connection_ratio = saved_ratio
+
+                # Restore the ESN orchestrator so training resumes with its
+                # conductor intact (Phase 3).
+                if self.orchestrator is not None and 'orchestrator' in checkpoint_data:
+                    try:
+                        self.orchestrator.load_state_dict(checkpoint_data['orchestrator'])
+                        print("🎛️  Restored orchestrator state from checkpoint")
+                    except Exception as e:
+                        print(f"⚠️  Could not restore orchestrator state: {e}")
                 
                 print(f"✅ Successfully resumed from checkpoint!")
                 print(f"   Starting iteration: {self.starting_iteration:,}")
@@ -233,6 +256,12 @@ class CachedNanEchoTrainer(NanEchoTrainer):
             'tokens_processed': iteration * self.config.batch_size * self.config.block_size,
             'training_speed_iters_per_sec': getattr(self, '_recent_speed', 0.0)
         })
+        # Persist the ESN orchestrator alongside the model so cumulative
+        # training resumes with its conductor intact (Phase 3).
+        if self.orchestrator is not None:
+            enhanced_metrics['orchestrator_intervals'] = float(
+                self.orchestrator._interval_count
+            )
         
         # Generate tags
         tags = self._create_checkpoint_tags(iteration, enhanced_metrics)
@@ -269,7 +298,68 @@ class CachedNanEchoTrainer(NanEchoTrainer):
         except Exception as e:
             print(f"⚠️  Failed to save checkpoint: {e}")
             return None
-    
+
+    def _persona_grip_score(self) -> float:
+        """Scalar persona grip = mean dimension coverage from introspection.
+
+        Uses ``Introspection.evaluate_echo_self_quality`` history when
+        available; falls back to 0.0 so the orchestrator still observes.
+        """
+        history = getattr(self.introspection, "metrics_history", [])
+        if not history:
+            return 0.0
+        latest = history[-1]
+        dim_scores = [
+            v for k, v in latest.items()
+            if isinstance(v, (int, float)) and k.startswith("persona_")
+        ]
+        if not dim_scores:
+            # Fall back to any numeric metric as a weak grip proxy.
+            dim_scores = [v for v in latest.values() if isinstance(v, (int, float))]
+        return float(sum(dim_scores) / len(dim_scores)) if dim_scores else 0.0
+
+    def _orchestrator_step(self, iteration: int, eval_metrics: Dict[str, float]):
+        """Observe training state, decide hyperparameters, and learn (Phase 3)."""
+        if self.orchestrator is None:
+            return
+
+        # Reservoir statistics from the model's wrapper, if present.
+        reservoir_stats = None
+        wrapper = getattr(self.model, "reservoir_wrapper", None)
+        if wrapper is not None and wrapper.last_states is not None:
+            reservoir_stats = wrapper.reservoir.state_stats(wrapper.last_states)
+
+        grip = self._persona_grip_score()
+
+        self.orchestrator.observe(
+            reservoir_stats=reservoir_stats,
+            val_loss=eval_metrics.get("val_loss", 0.0),
+            connection_ratio=getattr(self.model, "connection_ratio", 0.0),
+            persona_grip=grip,
+        )
+        decision = self.orchestrator.decide()
+        self._last_orchestrator_decision = decision
+        self.orchestrator.report_grip(grip)
+
+        if self.config.reservoir_mode == "orchestrated":
+            # Apply dimension weights immediately (used every forward pass).
+            if decision.dimension_weights is not None:
+                self.model.config.dimension_weights = decision.dimension_weights
+            # Apply recursion depth bounds.
+            self.model.config.max_recursion_depth = max(
+                decision.recursion_depth, self.model.config.min_recursion_depth
+            )
+            print(
+                f"🎛️  Orchestrator: lr_scale={decision.lr_scale:.3f} "
+                f"growth={decision.connection_growth_rate:.3f} "
+                f"recursion={decision.recursion_depth} grip={grip:.3f}"
+            )
+        elif self.config.reservoir_mode == "shadow":
+            print(f"👁️  Orchestrator (shadow) observing: grip={grip:.3f}")
+
+    def _orchestrator_state(self) -> Optional[Dict[str, Any]]:
+        return self.orchestrator.state_dict() if self.orchestrator is not None else None
+
     def train(self):
         """Enhanced training loop with caching integration."""
         print(f"""
@@ -339,13 +429,23 @@ class CachedNanEchoTrainer(NanEchoTrainer):
             # Get current learning phase
             phase_name, phase_config = self.phase_manager.get_current_phase(iteration)
             
-            # Update learning rate
+            # Update learning rate (optionally scaled by the ESN orchestrator)
             lr = self.get_lr(iteration)
+            if self._last_orchestrator_decision is not None:
+                lr = lr * self._last_orchestrator_decision.lr_scale
             for param_group in self.optimizer.param_groups:
                 param_group['lr'] = lr
             
             # Grow connections periodically - use absolute iteration count, not relative
             if iteration > 0 and iteration % self.config.connection_growth_interval == 0:
+                # Let the orchestrator adjust the growth rate (orchestrated mode).
+                if (
+                    self._last_orchestrator_decision is not None
+                    and self.config.reservoir_mode == "orchestrated"
+                ):
+                    self.model.config.connection_growth_rate = (
+                        self._last_orchestrator_decision.connection_growth_rate
+                    )
                 old_ratio = self.model.connection_ratio
                 self.model.grow_connections()
                 new_ratio = self.model.connection_ratio
@@ -476,7 +576,11 @@ class CachedNanEchoTrainer(NanEchoTrainer):
             if iteration % self.config.eval_interval == 0:
                 eval_metrics = self.evaluate()
                 print(f"Iter {iteration:5d} | Val Loss: {eval_metrics['val_loss']:.4f}")
-                
+
+                # Phase 3: feed the orchestrator and get hyperparameter decisions.
+                if self.orchestrator is not None:
+                    self._orchestrator_step(iteration, eval_metrics)
+
                 # Save checkpoint using cache system
                 checkpoint_id = self.save_training_checkpoint(
                     iteration, 0, avg_loss if 'avg_loss' in locals() else 0.0,
