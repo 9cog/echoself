@@ -246,7 +246,7 @@ Extend `NanEcho/prepare_nanecho.py` to include:
 
 NanEcho training can be orchestrated by an Echo State Network instead of fixed
 schedules. Tokenization, topology, and model size become dynamic,
-persona-driven configuration — selected by their *grip* on the Echo Self
+persona-driven configuration — selected by their _grip_ on the Echo Self
 persona rather than fixed to GPT-2.
 
 - **Reservoir modes** (`off`/`shadow`/`orchestrated`, default `off`) gate the

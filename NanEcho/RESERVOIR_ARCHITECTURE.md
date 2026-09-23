@@ -3,8 +3,8 @@
 ## Guiding principle
 
 Tokenization, topology, and model size are **dynamic, persona-driven
-configuration** — not fixed GPT-2 constants. The transformer is *emulated
-between reservoirs & ridges*: an Echo State Network orchestrates the training
+configuration** — not fixed GPT-2 constants. The transformer is _emulated
+between reservoirs & ridges_: an Echo State Network orchestrates the training
 loop, and ridge-regression readouts mediate between the reservoir and the
 transformer. Arbitrary fitting to the GPT-2 architecture (or any fixed model)
 is a compatibility baseline, not the goal.
@@ -14,11 +14,11 @@ is a compatibility baseline, not the goal.
 Everything is gated by `reservoir_mode` (in `TrainingConfig`, `NanEchoConfig`,
 and `nanecho_config.json` under the `reservoir` key):
 
-| Mode           | Behavior |
-| -------------- | -------- |
-| `off`          | Legacy transformer-only path. **Default; zero behavior change.** |
+| Mode           | Behavior                                                                                                                            |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `off`          | Legacy transformer-only path. **Default; zero behavior change.**                                                                    |
 | `shadow`       | Reservoir computes alongside the transformer and records states, but does **not** alter outputs. For observation/metric collection. |
-| `orchestrated` | The reservoir modulates embeddings and the ESN orchestrator drives training hyperparameters. |
+| `orchestrated` | The reservoir modulates embeddings and the ESN orchestrator drives training hyperparameters.                                        |
 
 Enable via config JSON (the `reservoir_mode`, `reservoir_units`,
 `reservoir_spectral_radius` keys) or `TrainingConfig(reservoir_mode=...)`.
@@ -26,12 +26,14 @@ Enable via config JSON (the `reservoir_mode`, `reservoir_units`,
 ## Components
 
 ### TokenizerSpec / ModelSpec — `NanEcho/spec.py`
+
 Centralizes tokenizer and topology/size declarations. `GPT2_SPEC` is one
 instance, not the law. `TokenizerAdapter` is the protocol every tokenizer
 (GPT-2/tiktoken, `dte_tokenizer`, `CharTokenizer` fallback) satisfies.
 `tokenizer_from_spec()` reconstructs an adapter from its provenance.
 
 ### Tokenizer search — `NanEcho/tokenizer_search.py`
+
 Scores candidate tokenizers on the persona corpus by a **grip metric** =
 persona coverage (round-tripped `score_persona_text`) + inverse fertility +
 cheap ridge-probe perplexity. The winner's provenance is written into dataset
@@ -39,12 +41,14 @@ cheap ridge-probe perplexity. The winner's provenance is written into dataset
 tokenizer.
 
 ### ReservoirWrapper — `nanecho_model.py`
+
 `TorchEchoReservoir` (fast+slow pools, leaky integration, spectral-radius
 buffers — never gradient-trained) + a ridge readout (`nn.Linear`, the only
 trained "ridge"). Routes embedding → reservoir → ridge → block stack. Shadow
 mode is a pure pass-through; orchestrated mode adds a tanh-gated residual.
 
 ### ReservoirOrchestrator — `NanEcho/orchestrator.py`
+
 The conductor. An internal `EchoReservoir` integrates observations (reservoir
 stats + val loss + connection ratio + persona grip); a `CognitiveReadout`
 ridge maps states to **bounded decisions** (`lr_scale`,
@@ -53,12 +57,14 @@ is re-fit online from grip improvements. Orchestrator state is persisted in
 checkpoints so cumulative training resumes with its conductor intact.
 
 ### Topology & size — `NanEcho/topology.py`
+
 `TopologyAdvisor` turns per-dimension grip contributions into grow/prune
 dimension-weight proposals (consumed by the orchestrator).
 `ModelSizeSelector` fits a saturating-exponential grip curve to (size, grip)
 and picks the smallest grip-saturating configuration.
 
 ### Grip benchmark — `NanEcho/evaluation/grip_benchmark.py`
+
 The objective function. Combines tokenizer grip and model grip (persona
 coverage of generated text on conversation-pattern prompts) into a single
 score per (tokenizer, topology, size) configuration. Used by the Phase-1 and
