@@ -1,32 +1,32 @@
 [
   {
-    "iteration": 1000,
+    "iteration": 2000,
     "persona_cognitive": 0.0,
     "persona_introspective": 0.0,
-    "persona_adaptive": 0.0,
+    "persona_adaptive": 0.3333333333333333,
     "persona_recursive": 0.0,
     "persona_synergistic": 0.3333333333333333,
     "persona_holographic": 0.0,
     "persona_neural_symbolic": 0.0,
-    "persona_dynamic": 0.0,
-    "persona_consistency": 0.041666666666666664,
+    "persona_dynamic": 0.6666666666666666,
+    "persona_consistency": 0.16666666666666666,
     "echo_identity": 0.0,
-    "connection_ratio": 0.6,
-    "training_progress": 2.0
+    "connection_ratio": 1.0,
+    "training_progress": 4.0
   },
   {
-    "iteration": 1000,
-    "persona_cognitive": 0.0,
+    "iteration": 2000,
+    "persona_cognitive": 0.3333333333333333,
     "persona_introspective": 0.0,
-    "persona_adaptive": 0.0,
+    "persona_adaptive": 0.6666666666666666,
     "persona_recursive": 0.0,
     "persona_synergistic": 0.3333333333333333,
     "persona_holographic": 0.0,
     "persona_neural_symbolic": 0.0,
-    "persona_dynamic": 0.0,
-    "persona_consistency": 0.041666666666666664,
+    "persona_dynamic": 0.3333333333333333,
+    "persona_consistency": 0.20833333333333331,
     "echo_identity": 0.0,
-    "connection_ratio": 0.6,
-    "training_progress": 2.0
+    "connection_ratio": 1.0,
+    "training_progress": 4.0
   }
 ]
