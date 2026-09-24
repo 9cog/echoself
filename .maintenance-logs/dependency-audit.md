@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-09-23 02:05:02 UTC
+# Dependency Audit Report - 2026-09-24 02:06:07 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-09-23T02:05:00.482Z",
+  "timestamp": "2026-09-24T02:06:05.215Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -235,7 +235,7 @@ Severity: moderate
 estree-util-value-to-estree allows prototype pollution in generated ESTree - https://github.com/advisories/GHSA-f7f6-9jq7-3rqj
 fix available via `npm audit fix`
 node_modules/estree-util-value-to-estree
-  remark-mdx-frontmatter  *
+  remark-mdx-frontmatter  <=5.2.0
   Depends on vulnerable versions of estree-util-value-to-estree
   Depends on vulnerable versions of toml
   node_modules/remark-mdx-frontmatter
@@ -320,13 +320,13 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
 
 morgan  <=1.11.0
 Severity: moderate
