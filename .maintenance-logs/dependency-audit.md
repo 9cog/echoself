@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-09-28 02:12:47 UTC
+# Dependency Audit Report - 2026-09-29 02:09:17 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-09-28T02:12:46.269Z",
+  "timestamp": "2026-09-29T02:09:15.926Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -320,18 +320,19 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
 
-morgan  <=1.11.0
+morgan  <=1.12.0
 Severity: moderate
 morgan vulnerable to Log Forging via unneutralized control characters in :remote-user - https://github.com/advisories/GHSA-4vj7-5mj6-jm8m
 morgan vulnerable to Log Forging via unescaped Unicode line separators - https://github.com/advisories/GHSA-jxfw-x594-9x9m
+morgan vulnerable to Log Injection via unescaped double quote in quoted log fields - https://github.com/advisories/GHSA-9f6g-j8ch-79g4
 fix available via `npm audit fix`
 node_modules/morgan
 
