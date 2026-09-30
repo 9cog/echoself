@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-09-29 02:09:17 UTC
+# Dependency Audit Report - 2026-09-30 02:11:27 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-09-29T02:09:15.926Z",
+  "timestamp": "2026-09-30T02:11:26.547Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -320,13 +320,13 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
 
 morgan  <=1.12.0
 Severity: moderate
@@ -419,7 +419,7 @@ React Router vulnerable to Denial of Service via reflected user input in single-
 fix available via `npm audit fix`
 node_modules/turbo-stream
 
-undici  <=6.27.0
+undici  <=6.28.0
 Severity: high
 Undici: Malicious WebSocket 64-bit length overflows parser and crashes the client - https://github.com/advisories/GHSA-f269-vfmq-vjvj
 Undici has an HTTP Request/Response Smuggling issue - https://github.com/advisories/GHSA-2mjp-6q6p-2qxm
@@ -433,6 +433,8 @@ undici vulnerable to downstream response desynchronization via retry interceptor
 undici vulnerable to CRLF Injection via blob-like body 'type' property - https://github.com/advisories/GHSA-m8rv-5g2x-5cg5
 undici vulnerable to cookie attribute injection via unsanitized domain and unparsed setCookie fields - https://github.com/advisories/GHSA-v3r7-h72x-cjcm
 undici vulnerable to HTTP response queue poisoning via keep-alive socket reuse - https://github.com/advisories/GHSA-35p6-xmwp-9g52
+undici vulnerable to downstream response splitting via retry interceptor - https://github.com/advisories/GHSA-r53p-7pc4-xj5r
+undici vulnerable to Denial of Service via unrequested WebSocket subprotocol - https://github.com/advisories/GHSA-rfgv-xxqx-mfg5
 fix available via `npm audit fix`
 node_modules/undici
 
