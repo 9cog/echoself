@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-09-30 02:11:27 UTC
+# Dependency Audit Report - 2026-10-01 02:16:54 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-09-30T02:11:26.547Z",
+  "timestamp": "2026-10-01T02:16:52.122Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -160,7 +160,7 @@ body-parser vulnerable to denial of service when invalid limit value silently di
 fix available via `npm audit fix`
 node_modules/body-parser
 
-brace-expansion  <=1.1.17 || 2.0.0 - 2.1.3
+brace-expansion  <=1.1.20 || 2.0.0 - 2.1.6
 Severity: high
 brace-expansion: Zero-step sequence causes process hang and memory exhaustion - https://github.com/advisories/GHSA-f886-m6hf-6m8v
 brace-expansion: Zero-step sequence causes process hang and memory exhaustion - https://github.com/advisories/GHSA-f886-m6hf-6m8v
@@ -170,6 +170,12 @@ brace-expansion: DoS via unbounded expansion length causing an out-of-memory pro
 brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash - https://github.com/advisories/GHSA-mh99-v99m-4gvg
 brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation - https://github.com/advisories/GHSA-rgw5-rvv9-x895
 brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation - https://github.com/advisories/GHSA-rgw5-rvv9-x895
+brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service - https://github.com/advisories/GHSA-q2hr-2g5m-vwhr
+brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service - https://github.com/advisories/GHSA-q2hr-2g5m-vwhr
+brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion - https://github.com/advisories/GHSA-qhr7-859c-m2p7
+brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion - https://github.com/advisories/GHSA-qhr7-859c-m2p7
+brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion - https://github.com/advisories/GHSA-6j4f-fj2g-mc7p
+brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion - https://github.com/advisories/GHSA-6j4f-fj2g-mc7p
 fix available via `npm audit fix`
 node_modules/@eslint/eslintrc/node_modules/brace-expansion
 node_modules/@humanwhocodes/config-array/node_modules/brace-expansion
@@ -320,13 +326,13 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
 
 morgan  <=1.12.0
 Severity: moderate
