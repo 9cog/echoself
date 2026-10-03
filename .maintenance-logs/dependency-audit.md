@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-10-02 02:11:27 UTC
+# Dependency Audit Report - 2026-10-03 02:05:06 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-10-02T02:11:25.580Z",
+  "timestamp": "2026-10-03T02:05:05.523Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -114,6 +114,7 @@ node_modules/@remix-run/router
   Depends on vulnerable versions of @remix-run/server-runtime
   Depends on vulnerable versions of @vanilla-extract/integration
   Depends on vulnerable versions of cacache
+  Depends on vulnerable versions of chokidar
   Depends on vulnerable versions of esbuild
   Depends on vulnerable versions of remark-mdx-frontmatter
   node_modules/@remix-run/dev
@@ -134,9 +135,10 @@ node_modules/@remix-run/router
       @remix-run/express  2.10.0-pre.0 - 2.17.4
       Depends on vulnerable versions of @remix-run/node
       node_modules/@remix-run/express
-      @remix-run/serve  2.10.0-pre.0 - 2.17.4
+      @remix-run/serve  <=0.0.0-nightly-fef7d16-20240205 || >=2.0.0-pre.0
       Depends on vulnerable versions of @remix-run/express
       Depends on vulnerable versions of @remix-run/node
+      Depends on vulnerable versions of chokidar
       node_modules/@remix-run/serve
   react-router  6.0.0 - 7.17.0
   Depends on vulnerable versions of @remix-run/router
@@ -186,6 +188,45 @@ node_modules/eslint-plugin-react/node_modules/brace-expansion
 node_modules/eslint/node_modules/brace-expansion
 node_modules/rimraf/node_modules/brace-expansion
 
+braces  *
+Severity: high
+braces vulnerable to stack-exhaustion denial of service through deeply nested patterns - https://github.com/advisories/GHSA-vfj7-8cjw-p6xm
+fix available via `npm audit fix`
+node_modules/braces
+  chokidar  2.0.0 - 3.6.0
+  Depends on vulnerable versions of braces
+  node_modules/chokidar
+  micromatch  >=0.2.0
+  Depends on vulnerable versions of braces
+  node_modules/micromatch
+    @parcel/watcher  2.1.0 - 2.5.1
+    Depends on vulnerable versions of micromatch
+    node_modules/@parcel/watcher
+    fast-glob  *
+    Depends on vulnerable versions of micromatch
+    node_modules/fast-glob
+      globby  >=8.0.0
+      Depends on vulnerable versions of fast-glob
+      node_modules/globby
+        @typescript-eslint/typescript-estree  3.10.2-alpha.0 - 8.2.1-alpha.25
+        Depends on vulnerable versions of globby
+        Depends on vulnerable versions of minimatch
+        node_modules/@typescript-eslint/typescript-estree
+          @typescript-eslint/parser  6.16.0 - 7.5.0
+          Depends on vulnerable versions of @typescript-eslint/typescript-estree
+          node_modules/@typescript-eslint/parser
+          @typescript-eslint/type-utils  6.16.0 - 7.5.0
+          Depends on vulnerable versions of @typescript-eslint/typescript-estree
+          Depends on vulnerable versions of @typescript-eslint/utils
+          node_modules/@typescript-eslint/type-utils
+          @typescript-eslint/utils  6.16.0 - 7.5.0
+          Depends on vulnerable versions of @typescript-eslint/typescript-estree
+          node_modules/@typescript-eslint/utils
+            @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
+            Depends on vulnerable versions of @typescript-eslint/type-utils
+            Depends on vulnerable versions of @typescript-eslint/utils
+            node_modules/@typescript-eslint/eslint-plugin
+
 browserslist  <=4.28.6
 Severity: high
 Browserslist: Unbounded memory growth (no cache eviction) via distinct query results, leading to eventual OOM - https://github.com/advisories/GHSA-c83g-rgw3-j3cx
@@ -203,7 +244,6 @@ DOMPurify: Prototype Pollution to XSS Bypass via CUSTOM_ELEMENT_HANDLING Fallbac
 DOMPurify: Cross-realm IN_PLACE sanitization leaves executable markup intact via realm-bound `instanceof` checks - https://github.com/advisories/GHSA-hpcv-96wg-7vj8
 DOMPurify: IN_PLACE mode preserves attributes of a clobbered root element, allowing XSS via attacker-controlled root DOM - https://github.com/advisories/GHSA-r47g-fvhr-h676
 DOMPurify IN_PLACE Sanitization Bypass via Attached Shadow Root Inside <template>.content - https://github.com/advisories/GHSA-rp9w-3fw7-7cwq
-DOMPurify: `CUSTOM_ELEMENT_HANDLING` bypasses `afterSanitizeElements` for allowed custom elements. - https://github.com/advisories/GHSA-c2j3-45gr-mqc4
 DOMPurify: Permanent `ALLOWED_ATTR` pollution via `setConfig()` bypassing the hook clone-guard (incomplete fix of the 3.4.7 hook-pollution patch) - https://github.com/advisories/GHSA-cmwh-pvxp-8882
 DOMPurify: Trusted Types policy survives `clearConfig()` and can poison later `RETURN_TRUSTED_TYPE` output - https://github.com/advisories/GHSA-vxr8-fq34-vvx9
 DOMPurify: SAFE_FOR_TEMPLATES bypass - template expressions survive sanitization inside <template> content when using DOM output modes - https://github.com/advisories/GHSA-gvmj-g25r-r7wr
@@ -214,6 +254,7 @@ DOMPurify ADD_ATTR predicate skips URI validation - https://github.com/advisorie
 DOMPurify USE_PROFILES prototype pollution allows event handlers - https://github.com/advisories/GHSA-cj63-jhhr-wcxv
 DOMPurify is vulnerable to mutation-XSS via Re-Contextualization  - https://github.com/advisories/GHSA-h8r8-wccr-v5f2
 DOMPurify: IN_PLACE hook removal leaves a detached subtree executable, causing XSS - https://github.com/advisories/GHSA-55q2-fjhq-7xh7
+DOMPurify: `CUSTOM_ELEMENT_HANDLING` bypasses `afterSanitizeElements` for allowed custom elements. - https://github.com/advisories/GHSA-c2j3-45gr-mqc4
 fix available via `npm audit fix`
 node_modules/dompurify
 
@@ -316,23 +357,6 @@ minimatch has ReDoS: matchOne() combinatorial backtracking via multiple non-adja
 minimatch ReDoS: nested *() extglobs generate catastrophically backtracking regular expressions - https://github.com/advisories/GHSA-23c5-xmqv-rm74
 fix available via `npm audit fix`
 node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
-  @typescript-eslint/typescript-estree  6.16.0 - 7.5.0
-  Depends on vulnerable versions of minimatch
-  node_modules/@typescript-eslint/typescript-estree
-    @typescript-eslint/parser  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/parser
-    @typescript-eslint/type-utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    Depends on vulnerable versions of @typescript-eslint/utils
-    node_modules/@typescript-eslint/type-utils
-      @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
-      Depends on vulnerable versions of @typescript-eslint/type-utils
-      Depends on vulnerable versions of @typescript-eslint/utils
-      node_modules/@typescript-eslint/eslint-plugin
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
 
 morgan  <=1.12.0
 Severity: moderate
@@ -472,7 +496,7 @@ yaml is vulnerable to Stack Overflow via deeply nested YAML collections - https:
 fix available via `npm audit fix`
 node_modules/yaml
 
-54 vulnerabilities (5 low, 14 moderate, 34 high, 1 critical)
+60 vulnerabilities (5 low, 14 moderate, 40 high, 1 critical)
 
 To address issues that do not require attention, run:
   npm audit fix
