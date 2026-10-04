@@ -61,6 +61,8 @@ def validate(checkpoint: dict, source_manifest: dict, data_dir: Path) -> dict:
     checkpoint_id = checkpoint.get('checkpoint_id')
     if not isinstance(checkpoint_id, str) or not checkpoint_id.startswith('ckpt_'):
         raise ValueError('Native candidate lacks its cache checkpoint ID')
+    if int(checkpoint.get('iteration', 0)) < 1:
+        raise ValueError('An iteration-zero baseline is not a trained candidate')
     return {'format': 'nanecho-dte-native-candidate-v1', 'checkpoint_id': checkpoint_id,
             'iteration': int(checkpoint.get('iteration', 0)),
             'source_revision': source_manifest.get('source_revision'),
@@ -93,6 +95,8 @@ def select(cache_dir: Path, source_manifest: dict, data_dir: Path) -> tuple[Path
     entries = json.loads(metadata_file.read_text())
     candidates = []
     for checkpoint_id, meta in entries.items():
+        if int(meta.get('iteration', 0)) < 1:
+            continue
         path = cache_dir / 'checkpoints' / (checkpoint_id + '.pt')
         if not path.is_file():
             continue
@@ -123,13 +127,19 @@ def pull(repo_id: str, cache_dir: Path, manifest: dict, data_dir: Path, token: s
     if not info.private:
         raise ValueError('Refusing to resume from public/unreviewed Hugging Face model')
     try:
-        files = [Path(hf_hub_download(repo_id, item, token=token, revision=info.sha))
-                 for item in (MANIFEST_PATH, METADATA_PATH, PATH)]
+        manifest_file = Path(hf_hub_download(repo_id, MANIFEST_PATH, token=token, revision=info.sha))
     except EntryNotFoundError:
         if allow_missing:
             return {'status': 'no_prior_candidate', 'repo_id': repo_id}
         raise
-    remote = json.loads(files[0].read_text())
+    remote = json.loads(manifest_file.read_text())
+    if int(remote.get('iteration', 0)) < 1:
+        if allow_missing and remote.get('status') == 'candidate_not_promoted':
+            return {'status': 'untrained_baseline_ignored', 'repo_id': repo_id,
+                    'hub_sha': info.sha, 'reason': 'iteration_zero_cannot_resume'}
+        raise ValueError('Refusing to resume from an untrained Hub checkpoint')
+    files = [manifest_file] + [Path(hf_hub_download(repo_id, item, token=token, revision=info.sha))
+                               for item in (METADATA_PATH, PATH)]
     meta = json.loads(files[1].read_text())
     if remote.get('sha256') != sha256(files[2]):
         raise ValueError('Hub native checkpoint content hash mismatch')

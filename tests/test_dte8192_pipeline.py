@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from NanEcho.hf_checkpoint_bridge import MODEL, _safe_value, validate
+from NanEcho.hf_checkpoint_bridge import MODEL, _safe_value, pull, validate
 from NanEcho.prepare_dte_grouped import compile_dataset, digest
 from NanEcho.spec import TokenizerSpec, tokenizer_from_spec
 from scripts.audit_nanecho_data import audit
@@ -59,6 +59,19 @@ class PipelineTests(unittest.TestCase):
         self.assertIs(type(cleaned['metrics']['validation']), float)
         self.assertIs(type(cleaned['metrics']['tokens']), int)
 
+    def test_private_untrained_candidate_is_not_resumed(self):
+        with tempfile.TemporaryDirectory() as folder:
+            manifest_file = Path(folder) / 'hub_manifest.json'
+            manifest_file.write_text(json.dumps({'iteration': 0, 'status': 'candidate_not_promoted'}))
+            info = types.SimpleNamespace(private=True, sha='test-revision')
+            with patch('huggingface_hub.HfApi') as api, patch(
+                    'huggingface_hub.hf_hub_download', return_value=str(manifest_file)) as download:
+                api.return_value.model_info.return_value = info
+                result = pull('drzo/echoself-dte', Path(folder) / 'cache', {},
+                              Path(folder), 'fake', allow_missing=True)
+            self.assertEqual(result['status'], 'untrained_baseline_ignored')
+            self.assertEqual(download.call_count, 1)
+
     def test_compiled_grouped_split_and_bridge_checks(self):
         with tempfile.TemporaryDirectory(dir=ROOT) as folder:
             root = Path(folder)
@@ -84,6 +97,9 @@ class PipelineTests(unittest.TestCase):
                                 for name in ('train.bin', 'val.bin', 'metadata.json', 'source_manifest.json')},
             }
             self.assertEqual(validate(checkpoint, manifest, out)['iteration'], 1)
+            untrained = dict(checkpoint, iteration=0)
+            with self.assertRaisesRegex(ValueError, 'iteration-zero baseline'):
+                validate(untrained, manifest, out)
             tampered = dict(checkpoint, tokenizer=dict(checkpoint['tokenizer'], tokenizer_sha256='f' * 64))
             with self.assertRaisesRegex(ValueError, 'tokenizer'):
                 validate(tampered, manifest, out)
