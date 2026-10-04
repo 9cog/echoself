@@ -315,10 +315,10 @@ class DataLoader:
             torch.from_numpy(data[i:i+self.config.block_size].astype(np.int64))
             for i in ix
         ])
-        y = torch.stack([
-            torch.from_numpy(data[i+1:i+1+self.config.block_size].astype(np.int64))
-            for i in ix
-        ])
+        # NanEchoModel.forward shifts labels internally (logits[:-1] vs
+        # labels[1:]). Pre-shifting labels here trains a *two-token-ahead*
+        # objective and invalidates standard next-token NLL/perplexity.
+        y = x.clone()
         
         # Move to device
         device = torch.device(self.config.device)

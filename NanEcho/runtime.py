@@ -215,7 +215,9 @@ class NanEchoRuntime:
         self.config = model.config
 
     @classmethod
-    def load(cls, checkpoint_path: str | Path, device: str = "cpu") -> "NanEchoRuntime":
+    def load(
+        cls, checkpoint_path: str | Path, device: str = "cpu", *, trusted_local: bool = False
+    ) -> "NanEchoRuntime":
         path = Path(checkpoint_path).expanduser().resolve()
         if not path.is_file():
             raise FileNotFoundError(f"NanEcho checkpoint not found: {path}")
@@ -224,19 +226,13 @@ class NanEchoRuntime:
         resolved_device = torch.device(device)
 
         try:
-            checkpoint = torch.load(path, map_location="cpu", weights_only=True)
-        except TypeError:  # PyTorch 2.0 compatibility
-            checkpoint = torch.load(path, map_location="cpu", weights_only=False)
-        except Exception:
-            # Existing trainer checkpoints may contain NumPy scalar metrics, which the
-            # restricted loader rejects. The path is an operator-supplied local artifact,
-            # never request data; deployment documentation requires it to be trusted.
-            try:
-                checkpoint = torch.load(path, map_location="cpu", weights_only=False)
-            except Exception as exc:
-                raise IncompatibleCheckpointError(
-                    f"Unable to read checkpoint: {exc}"
-                ) from exc
+            checkpoint = torch.load(path, map_location="cpu", weights_only=not trusted_local)
+        except Exception as exc:
+            raise IncompatibleCheckpointError(
+                "Unable to read native checkpoint with the restricted loader. "
+                "Use trusted_local=True only for a locally produced, trusted legacy checkpoint. "
+                f"Original error: {exc}"
+            ) from exc
 
         state_dict, raw_config, schema = _checkpoint_parts(checkpoint)
         if not isinstance(state_dict, dict) or not state_dict:

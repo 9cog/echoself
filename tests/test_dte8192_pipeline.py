@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from NanEcho.hf_checkpoint_bridge import MODEL, _safe_value, pull, select, validate
+from NanEcho.hf_checkpoint_bridge import MODEL, OBJECTIVE_ID, _safe_value, pull, select, validate
 from NanEcho.prepare_dte_grouped import compile_dataset, digest
 from NanEcho.spec import TokenizerSpec, tokenizer_from_spec
 from scripts.audit_nanecho_data import audit
@@ -112,10 +112,15 @@ class PipelineTests(unittest.TestCase):
                 'model_state_dict': {'token_embedding.weight': Shape()},
                 'model_config': config, 'tokenizer': manifest['tokenizer'],
                 'optimizer_state_dict': {}, 'checkpoint_id': 'ckpt_test', 'iteration': 1,
-                'data_config': {name + '_sha256': digest(out / name)
-                                for name in ('train.bin', 'val.bin', 'metadata.json', 'source_manifest.json')},
+                'data_config': dict({name + '_sha256': digest(out / name)
+                                     for name in ('train.bin', 'val.bin', 'metadata.json', 'source_manifest.json')},
+                                    objective_id=OBJECTIVE_ID),
             }
             self.assertEqual(validate(checkpoint, manifest, out)['iteration'], 1)
+            legacy = dict(checkpoint, data_config={k: v for k, v in checkpoint['data_config'].items()
+                                                   if k != 'objective_id'})
+            with self.assertRaisesRegex(ValueError, 'single-shift'):
+                validate(legacy, manifest, out)
             untrained = dict(checkpoint, iteration=0)
             with self.assertRaisesRegex(ValueError, 'iteration-zero baseline'):
                 validate(untrained, manifest, out)

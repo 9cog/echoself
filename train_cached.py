@@ -198,6 +198,9 @@ class CachedNanEchoTrainer(NanEchoTrainer):
                 for block in iter(lambda: stream.read(1024 * 1024), b''):
                     h.update(block)
             result[name + '_sha256'] = h.hexdigest()
+        if (self.data_loader.tokenizer_provenance or {}).get('name') == 'dte_bpe':
+            from NanEcho.hf_checkpoint_bridge import OBJECTIVE_ID
+            result['objective_id'] = OBJECTIVE_ID
         return result
 
     def _create_checkpoint_tags(self, iteration: int, metrics: Dict[str, float]) -> list:

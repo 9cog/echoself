@@ -6,6 +6,10 @@ on:
       - 'scripts/audit_nanecho_data.py'
       - 'tests/test_nanecho_data_audit.py'
       - 'tests/test_dte8192_pipeline.py'
+      - 'tests/test_dte_identity_candidate_eval.py'
+      - 'scripts/evaluate_dte_candidate.py'
+      - 'NanEcho/evaluate_dte8192.py'
+      - 'NanEcho/runtime.py'
       - 'NanEcho/prepare_dte_grouped.py'
       - 'NanEcho/hf_checkpoint_bridge.py'
       - 'NanEcho/spec.py'
@@ -23,6 +27,10 @@ on:
       - 'scripts/audit_nanecho_data.py'
       - 'tests/test_nanecho_data_audit.py'
       - 'tests/test_dte8192_pipeline.py'
+      - 'tests/test_dte_identity_candidate_eval.py'
+      - 'scripts/evaluate_dte_candidate.py'
+      - 'NanEcho/evaluate_dte8192.py'
+      - 'NanEcho/runtime.py'
       - 'NanEcho/prepare_dte_grouped.py'
       - 'NanEcho/hf_checkpoint_bridge.py'
       - 'NanEcho/spec.py'
@@ -70,3 +78,17 @@ jobs:
           assert '  workflow_dispatch:' in head
           print('Candidate-only manual training guard verified.')
           PY
+
+  objective-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install 'numpy>=1.24,<3' 'tokenizers>=0.20,<0.23' 'tiktoken>=0.8,<1' 'huggingface_hub>=0.28,<2'
+      - run: python -m unittest discover -s tests -p test_dte_identity_candidate_eval.py -v

@@ -27,8 +27,8 @@ def fixed_windows(length: int, block_size: int = 1024, count: int = 8) -> list[i
     return [(i * maximum) // (count - 1) for i in range(count)]
 
 
-def score(path: Path, validation: np.memmap, positions: list[int]) -> dict:
-    checkpoint = load_native(path, trusted_local=True)
+def score(path: Path, validation: np.memmap, positions: list[int], *, trusted_local: bool = False) -> dict:
+    checkpoint = load_native(path, trusted_local=trusted_local)
     config = checkpoint.get('model_config') or checkpoint.get('config')
     for name, expected in MODEL.items():
         if config.get(name) != expected:
@@ -41,10 +41,13 @@ def score(path: Path, validation: np.memmap, positions: list[int]) -> dict:
     model.eval()
     losses = []
     with torch.no_grad():
-        for start in positions:
+        for index, start in enumerate(positions):
             x = torch.from_numpy(validation[start:start + 1024].astype(np.int64)).unsqueeze(0)
-            y = torch.from_numpy(validation[start + 1:start + 1025].astype(np.int64)).unsqueeze(0)
-            value = float(model(x, labels=y)['loss'].item())
+            # Model.forward already shifts labels once. Using val[start+1:]
+            # for labels here silently scored TWO tokens ahead (historical v1).
+            with torch.random.fork_rng(devices=[]):
+                torch.manual_seed(91000 + index)
+                value = float(model(x, labels=x)['loss'].item())
             if not math.isfinite(value):
                 raise ValueError('Non-finite held-out loss')
             losses.append(value)
@@ -69,9 +72,11 @@ def main() -> int:
     chosen = [min(entries, key=lambda x: x[0]), max(entries, key=lambda x: x[0])]
     if chosen[0][0] == chosen[1][0]:
         chosen = [chosen[1]]
-    scored = [score(path, validation, positions) for _, path in chosen]
+    scored = [score(path, validation, positions, trusted_local=True) for _, path in chosen]
     report = {'status': 'candidate_not_promoted', 'validation_sha256': sha256(validation_file),
-              'fixed_window_starts': positions, 'window_tokens': 1024,
+              'metric_version': 'next-token-nll-shift-once-v2',
+              'fixed_window_starts': positions, 'window_input_tokens': 1024,
+              'predicted_tokens_per_window': 1023,
               'checkpoints': scored, 'identity_improvement_proven': False}
     if len(scored) == 2:
         report['nll_delta_last_minus_first'] = scored[1]['mean_nll'] - scored[0]['mean_nll']

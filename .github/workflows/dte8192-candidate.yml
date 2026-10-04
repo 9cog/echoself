@@ -9,7 +9,7 @@ on:
         default: '2'
         type: string
       backup_candidate_to_hf:
-        description: 'Backup unpromoted native checkpoint to PRIVATE drzo/echoself-dte'
+        description: 'Backup corrected CLM checkpoint to PRIVATE drzo/echoself-dte-clm-v2'
         required: true
         default: false
         type: boolean
@@ -69,7 +69,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HFESELF }}
         run: |
           python -m NanEcho.hf_checkpoint_bridge pull \
-            --repo-id drzo/echoself-dte \
+            --repo-id drzo/echoself-dte-clm-v2 \
             --cache-dir .training-progress/dte-8192-runs/cache \
             --data-dir data/nanecho_dte_curated \
             --source-manifest data/nanecho_dte_curated/source_manifest.json \
@@ -130,7 +130,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HFESELF }}
         run: |
           python -m NanEcho.hf_checkpoint_bridge push \
-            --repo-id drzo/echoself-dte \
+            --repo-id drzo/echoself-dte-clm-v2 \
             --cache-dir .training-progress/dte-8192-runs/cache \
             --data-dir data/nanecho_dte_curated \
             --source-manifest data/nanecho_dte_curated/source_manifest.json \

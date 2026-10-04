@@ -15,6 +15,7 @@ import shutil
 import tempfile
 
 MODEL = {'vocab_size': 8192, 'n_embd': 256, 'n_head': 4, 'n_layer': 4, 'block_size': 1024}
+OBJECTIVE_ID = 'nanecho-next-token-shift-once-v2'
 PATH = 'candidate/native_checkpoint.pt'
 MANIFEST_PATH = 'candidate/checkpoint_manifest.json'
 METADATA_PATH = 'candidate/cache_metadata.json'
@@ -46,6 +47,8 @@ def validate(checkpoint: dict, source_manifest: dict, data_dir: Path) -> dict:
     data = checkpoint.get('data_config')
     if not isinstance(data, dict):
         raise ValueError('Checkpoint has no content-addressed dataset lineage')
+    if data.get('objective_id') != OBJECTIVE_ID:
+        raise ValueError('DTE checkpoint does not use the single-shift next-token objective')
     for name in ('train.bin', 'val.bin', 'metadata.json', 'source_manifest.json'):
         local = data_dir / name
         if not local.is_file() or data.get(name + '_sha256') != sha256(local):
@@ -66,7 +69,7 @@ def validate(checkpoint: dict, source_manifest: dict, data_dir: Path) -> dict:
     return {'format': 'nanecho-dte-native-candidate-v1', 'checkpoint_id': checkpoint_id,
             'iteration': int(checkpoint.get('iteration', 0)),
             'source_revision': source_manifest.get('source_revision'),
-            'tokenizer_sha256': tok['tokenizer_sha256']}
+            'tokenizer_sha256': tok['tokenizer_sha256'], 'objective_id': OBJECTIVE_ID}
 
 
 def load_native(path: Path, *, trusted_local: bool = False) -> dict:
@@ -141,6 +144,8 @@ def pull(repo_id: str, cache_dir: Path, manifest: dict, data_dir: Path, token: s
             return {'status': 'untrained_baseline_ignored', 'repo_id': repo_id,
                     'hub_sha': info.sha, 'reason': 'iteration_zero_cannot_resume'}
         raise ValueError('Refusing to resume from an untrained Hub checkpoint')
+    if remote.get('objective_id') != OBJECTIVE_ID:
+        raise ValueError('Hub candidate uses a different training objective; do not resume')
     files = [manifest_file] + [Path(hf_hub_download(repo_id, item, token=token, revision=info.sha))
                                for item in (METADATA_PATH, PATH)]
     meta = json.loads(files[1].read_text())
@@ -181,7 +186,8 @@ def push(repo_id: str, cache_dir: Path, manifest: dict, data_dir: Path, token: s
     if previous_file:
         previous = json.loads(Path(previous_file).read_text())
         if (previous.get('source_revision') != evidence['source_revision']
-                or previous.get('tokenizer_sha256') != evidence['tokenizer_sha256']):
+                or previous.get('tokenizer_sha256') != evidence['tokenizer_sha256']
+                or previous.get('objective_id') != OBJECTIVE_ID):
             raise ValueError('Existing Hub candidate belongs to a different corpus/tokenizer lineage')
         if int(previous.get('iteration', 0)) >= evidence['iteration']:
             raise ValueError('Refusing to replace private candidate with a non-advancing iteration')
