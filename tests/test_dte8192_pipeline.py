@@ -7,6 +7,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -97,6 +99,26 @@ class PipelineTests(unittest.TestCase):
             elif isinstance(node, ast.ImportFrom) and node.module:
                 top_level.append(node.module.split('.')[0])
         self.assertNotIn('numpy', top_level)
+        blocked = subprocess.run(
+            [sys.executable, '-c', (
+                'import sys\n'
+                'class BlockNumpy:\n'
+                '    def find_spec(self, fullname, path=None, target=None):\n'
+                "        if fullname == 'numpy' or fullname.startswith('numpy.'):\n"
+                '            raise ModuleNotFoundError(fullname)\n'
+                '        return None\n'
+                'sys.meta_path.insert(0, BlockNumpy())\n'
+                'from NanEcho.prepare_dte_grouped import compile_dataset, digest\n'
+                'from NanEcho.prepare_dte_data import load_jsonl_texts\n'
+                'print("imports_ok_without_numpy")\n'
+            )],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(blocked.returncode, 0, blocked.stderr)
+        self.assertIn('imports_ok_without_numpy', blocked.stdout)
 
 
 if __name__ == '__main__':
