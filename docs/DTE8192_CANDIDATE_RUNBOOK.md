@@ -25,6 +25,8 @@ On a manual run, the job attempts to **pull** only a private *native NanEcho che
 
 **Minimum-step safeguard:** cached iteration 0 is an untrained baseline even if stochastic two-batch validation makes its loss appear smaller. The bridge now skips step-zero checkpoints when selecting a candidate, and treats an accidentally backed-up step-zero checkpoint as `untrained_baseline_ignored` rather than resuming it. A replacement must have at least one completed optimizer step; this does not imply that it improved.
 
+Future runs also compare the first and last available native checkpoints on **eight identical, distributed 1,024-token validation windows**, retaining `fixed_heldout_report.json`. A negative NLL delta on that fixed set is a better technical signal than differently sampled two-batch evaluations, but it still says nothing conclusive about persona, group memory, safety, source rights, or independent test quality. The fixed validation stream participates in training-loop checkpoint selection; a separate untouched evaluation remains mandatory for promotion.
+
 `secrets.HFESELF` is read at runtime; never commit or print it. The job retains only manifests/audits in GitHub Actions artifacts for 30 days. Checkpoint weights are kept in the private candidate repo only if `backup_candidate_to_hf=true`. Model promotion remains blocked even after a technically successful smoke train.
 
 ## Evidence required before claiming identity refinement

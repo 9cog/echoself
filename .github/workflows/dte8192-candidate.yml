@@ -118,6 +118,12 @@ jobs:
             --data-dir data/nanecho_dte_curated \
             --source-manifest data/nanecho_dte_curated/source_manifest.json \
             --report .training-progress/dte-8192-runs/native_verify_report.json
+      - name: Compare checkpoints on fixed held-out validation windows
+        run: |
+          python -m NanEcho.evaluate_dte8192 \
+            --cache-dir .training-progress/dte-8192-runs/cache \
+            --data-dir data/nanecho_dte_curated \
+            --report .training-progress/dte-8192-runs/fixed_heldout_report.json
       - name: Backup unpromoted checkpoint to PRIVATE Hugging Face candidate repository
         if: inputs.backup_candidate_to_hf
         env:
@@ -141,6 +147,7 @@ jobs:
             data/nanecho_dte_curated/data_audit.json
             .training-progress/dte-8192-runs/hf_resume_report.json
             .training-progress/dte-8192-runs/native_verify_report.json
+            .training-progress/dte-8192-runs/fixed_heldout_report.json
             .training-progress/dte-8192-runs/hf_backup_report.json
             .training-progress/dte-8192-runs/cache/metadata.json
           if-no-files-found: warn

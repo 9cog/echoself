@@ -180,6 +180,8 @@ def push(repo_id: str, cache_dir: Path, manifest: dict, data_dir: Path, token: s
         if (previous.get('source_revision') != evidence['source_revision']
                 or previous.get('tokenizer_sha256') != evidence['tokenizer_sha256']):
             raise ValueError('Existing Hub candidate belongs to a different corpus/tokenizer lineage')
+        if int(previous.get('iteration', 0)) >= evidence['iteration']:
+            raise ValueError('Refusing to replace private candidate with a non-advancing iteration')
     with tempfile.TemporaryDirectory() as directory:
         candidate = Path(directory) / 'native_checkpoint.pt'
         # Local trusted training output may contain NumPy scalar metrics.
