@@ -1,74 +1,57 @@
 name: Train NanEcho Model with Caching - Deep Tree Echo Persona
 
+# Identity training is manual-only until an independent source-separated corpus,
+# identity evaluation and promotion policy are reviewed. Do not schedule synthetic
+# CI data to update the deployed model.
 on:
-  push:
-    branches: [ main, master ]
-    paths:
-      - 'NanEcho/**'
-      - 'echoself.md'
-      - 'echo/**'
-      - 'echogenesis/**'
-      - 'training_cache.py'
-      - 'train_cached.py'
-      - '.github/workflows/netrain-cached.yml'
-  pull_request:
-    branches: [ main, master ]
-    paths:
-      - 'NanEcho/**'
-      - 'echoself.md'
-      - 'echo/**'
-      - 'echogenesis/**'
-      - 'training_cache.py'
-      - 'train_cached.py'
-      - '.github/workflows/netrain-cached.yml'
-  schedule:
-    # Run iterative training every 6 hours to continuously improve
-    - cron: '0 */6 * * *'
   workflow_dispatch:
     inputs:
       training_type:
         description: 'Training type (ci or full)'
-        required: True
+        required: true
         default: 'ci'
         type: choice
-        options:
-          - ci
-          - full
+        options: [ci, full]
       max_iters:
         description: 'Maximum training iterations per session'
-        required: False
+        required: false
         default: '1000'
         type: string
       force_fresh_start:
-        description: 'DANGEROUS: Force fresh start - ONLY use if you understand this deletes all training progress'
-        required: False
+        description: 'Start a new model lineage (never deletes prior checkpoints)'
+        required: false
         default: 'false'
         type: boolean
       confirm_fresh_start:
-        description: 'Type "I CONFIRM FRESH START" to enable force_fresh_start (required safety check)'
-        required: False
+        description: 'Type I CONFIRM FRESH START when starting a new model lineage'
+        required: false
         default: ''
         type: string
       max_checkpoints:
         description: 'Maximum cached checkpoints to keep'
-        required: False
+        required: false
         default: '10'
         type: string
       max_cache_size_gb:
         description: 'Maximum cache size in GB'
-        required: False
+        required: false
         default: '5.0'
         type: string
       download_from_hf:
-        description: 'Download initial model from HuggingFace Hub before training'
-        required: False
+        description: 'Import a checkpoint for an explicitly audited lineage'
+        required: false
         default: false
         type: boolean
       hf_repo_id:
-        description: 'HuggingFace repository ID to download from (uses HFMODEL secret if empty)'
-        required: False
+        description: 'Hugging Face source repository ID'
+        required: false
         default: ''
         type: string
+
+# Never allow concurrent writers to the same checkpoint directory.
+concurrency:
+  group: nanecho-cached-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   # Use Node.js 24 for GitHub Actions to address deprecation warnings
@@ -332,95 +315,17 @@ jobs:
 
         echo "✅ Checkpoint restore from artifacts complete"
 
-    - name: Create minimal training data
+    - name: Audit curated training and validation data
       run: |
         cd echoself
-        
-        # Create minimal Echo Self training data for CI
-        cat << 'EOFPYTHON' > /tmp/create_training_data.py
-        import os
-        import numpy as np
-        import json
-        
-        os.makedirs('data/nanecho', exist_ok=True)
-        
-        # Sample Echo Self text patterns
-        echo_patterns = [
-            'Echo Self is a cognitive architecture with adaptive attention mechanisms.',
-            'The persona dimensions include cognitive, introspective, adaptive, and recursive.',
-            'Hypergraph patterns enable neural-symbolic reasoning and pattern encoding.',
-            'Recursive reasoning allows multi-level introspection and self-examination.',
-            'Adaptive attention adjusts thresholds based on cognitive load estimation.',
-            'The holographic dimension enables comprehensive system modeling.',
-            'Synergistic properties emerge from the interaction of persona dimensions.',
-            'Dynamic evolution enables continuous learning and adaptation.',
-        ]
-        
-        # Generate training text
-        train_text = ' '.join(echo_patterns * 100)  # Repeat for more data
-        val_text = ' '.join(echo_patterns * 20)
-        
-        # Phase 1/5: select the tokenizer by persona grip when the search is
-        # available; otherwise fall back to GPT-2. This keeps CI green while
-        # exercising the dynamic tokenization path.
-        tokenizer = None
-        try:
-            from NanEcho.tokenizer_search import search
-            from NanEcho.spec import TokenizerSpec, tokenizer_from_spec
-            result = search('NanEcho/persona_corpus')
-            spec = TokenizerSpec.from_provenance(result['winner'])
-            tokenizer = tokenizer_from_spec(spec)
-            print(f"🔎 Tokenizer selected by grip: {spec.name} (grip in report)")
-        except Exception as e:
-            print(f"⚠️ Grip search unavailable ({e}); using GPT-2 fallback")
-            import tiktoken
-            class _GPT2:
-                name, eos_token = 'gpt2', '<|endoftext|>'
-                def __init__(self):
-                    self._e = tiktoken.get_encoding('gpt2')
-                    self.vocab_size = self._e.n_vocab
-                    self.eos_token_id = self._e.eot_token
-                def encode(self, t): return self._e.encode(t)
-                def decode(self, ids): return self._e.decode(list(ids))
-                def provenance(self):
-                    return {'name': self.name, 'vocab_size': self.vocab_size,
-                            'eos_token': self.eos_token, 'eos_token_id': self.eos_token_id}
-            tokenizer = _GPT2()
-        
-        # Tokenize with the selected tokenizer
-        train_tokens = np.array(tokenizer.encode(train_text), dtype=np.uint16)
-        val_tokens = np.array(tokenizer.encode(val_text), dtype=np.uint16)
-        
-        # Ensure minimum size
-        min_size = 2048  # Minimum tokens needed
-        if len(train_tokens) < min_size:
-            train_tokens = np.tile(train_tokens, (min_size // len(train_tokens)) + 1)[:min_size]
-        if len(val_tokens) < 512:
-            val_tokens = np.tile(val_tokens, (512 // len(val_tokens)) + 1)[:512]
-        
-        # Save to binary files
-        train_tokens.tofile('data/nanecho/train.bin')
-        val_tokens.tofile('data/nanecho/val.bin')
-        
-        # Create metadata with the *selected* tokenizer's provenance so the
-        # provenance validator passes for any persona-selected tokenizer.
-        metadata = {
-            'train_tokens': len(train_tokens),
-            'val_tokens': len(val_tokens),
-            'vocab_size': tokenizer.vocab_size,
-            'tokenizer': tokenizer.provenance(),
-            'echo_depth': 7,
-            'persona_weight': 0.95,
-            'created_by': 'workflow_fallback',
-            'description': f'{tokenizer.name} tokenized Echo Self training data for CI'
-        }
-        
-        with open('data/nanecho/metadata.json', 'w') as f:
-            json.dump(metadata, f, indent=2)
-        
-        print(f'✅ Created training data: {len(train_tokens)} train, {len(val_tokens)} val tokens (tokenizer={tokenizer.name})')
-        EOFPYTHON
-        python /tmp/create_training_data.py
+        # No fallback creation: the current repository has no eligible
+        # independently held-out data. A curated source-group manifest must be
+        # supplied and reviewed before a training run can proceed.
+        python scripts/audit_nanecho_data.py \
+          --data-dir data/nanecho \
+          --block-size 1024 \
+          --model-vocab 50257 \
+          --report .training-progress/data_audit.json
 
     - name: Run cached training
       run: |
@@ -793,49 +698,12 @@ jobs:
     # published model stays in sync with the latest training run.
     # Requires HFESELF (write token) and HFMODEL (repo id) secrets.
     # ================================================================
-    - name: Upload model to HuggingFace Hub
+    # Candidate checkpoints are retained as artifacts, not published. A
+    # separate reviewed promotion job must prove independent held-out identity,
+    # diversity, safety and tokenizer invariants before any Hub write.
+    - name: Hold candidate for independent identity evaluation
       if: always()
-      continue-on-error: true
-      env:
-        HF_TOKEN: ${{ secrets.HFESELF }}
-        REPO_ID: ${{ secrets.HFMODEL }}
-        COMMIT_MESSAGE: "Training update: run ${{ github.run_number }}, ${{ steps.params.outputs.max_iters }} iters, cache_key=${{ steps.params.outputs.cache_key }}"
-      run: |
-        cd echoself
-
-        if [ -z "$HF_TOKEN" ] || [ -z "$REPO_ID" ]; then
-          echo "⚠️ Skipping HuggingFace upload: HFESELF or HFMODEL secret not configured"
-          exit 0
-        fi
-
-        # Locate the best available model (priority order)
-        BEST_MODEL=""
-        if [ -f "${{ steps.params.outputs.output_dir }}/best_model_export.pt" ]; then
-          BEST_MODEL="${{ steps.params.outputs.output_dir }}/best_model_export.pt"
-        elif [ -f ".training-progress/checkpoints/latest_checkpoint.pt" ]; then
-          BEST_MODEL=".training-progress/checkpoints/latest_checkpoint.pt"
-        fi
-
-        if [ -z "$BEST_MODEL" ]; then
-          echo "⚠️ No trained model found — skipping HuggingFace upload"
-          exit 0
-        fi
-
-        echo "📤 Uploading model to HuggingFace Hub..."
-        echo "   Source: $BEST_MODEL"
-        echo "   Repository: $REPO_ID"
-
-        pip install huggingface_hub --quiet
-
-        # Convert NanEcho checkpoint to HuggingFace format
-        python NanEcho/convert_to_huggingface.py \
-          --checkpoint "$BEST_MODEL" \
-          --output-dir hf-model
-
-        # Upload converted model folder to the Hub
-        python scripts/upload_to_huggingface.py
-
-        echo "✅ Model uploaded to HuggingFace Hub: $REPO_ID"
+      run: echo "Candidate only — automatic Hugging Face upload disabled."
 
     - name: Upload cached training artifacts
       if: always()
@@ -888,7 +756,9 @@ jobs:
         git config user.email "actions@github.com"
     
     - name: Commit and push training progress
-      if: always()
+      # Failed data audits and failed training preserve emergency artifacts, but
+      # must never write misleading "progress" onto the source branch.
+      if: success()
       continue-on-error: true
       run: |
         cd echoself
@@ -1001,7 +871,7 @@ jobs:
   grip-eval:
     runs-on: ubuntu-latest
     needs: train
-    if: always()
+    if: needs.train.result == 'success'
     continue-on-error: true
     permissions:
       contents: read
