@@ -51,7 +51,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install DTE BPE runtime for offline tests
-        run: python -m pip install 'tokenizers>=0.20,<0.23'
+        run: python -m pip install 'tokenizers>=0.20,<0.23' 'numpy>=1.24,<3'
       - name: Test split-integrity and fail-closed behavior
         run: python -m unittest discover -s tests -p test_nanecho_data_audit.py -v
       - name: Test DTE tokenizer, source-group compiler and native HF bridge contract
