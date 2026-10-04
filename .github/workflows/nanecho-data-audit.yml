@@ -5,6 +5,16 @@ on:
     paths:
       - 'scripts/audit_nanecho_data.py'
       - 'tests/test_nanecho_data_audit.py'
+      - 'tests/test_dte8192_pipeline.py'
+      - 'NanEcho/prepare_dte_grouped.py'
+      - 'NanEcho/hf_checkpoint_bridge.py'
+      - 'NanEcho/spec.py'
+      - 'NanEcho/dte_tokenizer/**'
+      - 'data/training_sources/**'
+      - 'train_cached.py'
+      - 'train_nanecho.py'
+      - 'training_cache.py'
+      - '.github/workflows/dte8192-candidate.yml'
       - '.github/workflows/netrain-cached.yml'
       - '.github/workflows/nanecho-data-audit.yml'
   push:
@@ -12,6 +22,16 @@ on:
     paths:
       - 'scripts/audit_nanecho_data.py'
       - 'tests/test_nanecho_data_audit.py'
+      - 'tests/test_dte8192_pipeline.py'
+      - 'NanEcho/prepare_dte_grouped.py'
+      - 'NanEcho/hf_checkpoint_bridge.py'
+      - 'NanEcho/spec.py'
+      - 'NanEcho/dte_tokenizer/**'
+      - 'data/training_sources/**'
+      - 'train_cached.py'
+      - 'train_nanecho.py'
+      - 'training_cache.py'
+      - '.github/workflows/dte8192-candidate.yml'
       - '.github/workflows/netrain-cached.yml'
       - '.github/workflows/nanecho-data-audit.yml'
   workflow_dispatch:
@@ -30,8 +50,12 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
+      - name: Install DTE BPE runtime for offline tests
+        run: python -m pip install 'tokenizers>=0.20,<0.23'
       - name: Test split-integrity and fail-closed behavior
         run: python -m unittest discover -s tests -p test_nanecho_data_audit.py -v
+      - name: Test DTE tokenizer, source-group compiler and native HF bridge contract
+        run: python -m unittest discover -s tests -p test_dte8192_pipeline.py -v
       - name: Check workflow stays manual and non-publishing
         run: |
           python - <<'PY'

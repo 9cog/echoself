@@ -9,8 +9,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import math
-import struct
+from array import array
 from pathlib import Path
 
 SCHEMA = "nanecho-curated-split-v1"
@@ -26,9 +25,30 @@ def _sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def _tokens(path: Path) -> list[int]:
-    raw = path.read_bytes()
-    return [x[0] for x in struct.iter_unpack("<H", raw)]
+def _tokens(path: Path) -> array:
+    import sys
+    raw = array("H")
+    with path.open("rb") as source:
+        raw.fromfile(source, path.stat().st_size // 2)
+    if sys.byteorder != "little":
+        raw.byteswap()
+    return raw
+
+
+def _rolling_windows(tokens: array):
+    """O(n) memory-compact rolling 64-token windows; hash collisions fail closed."""
+    if len(tokens) < WINDOW:
+        return
+    mask = (1 << 64) - 1
+    base = 65599
+    power = pow(base, WINDOW - 1, 1 << 64)
+    value = 0
+    for token in tokens[:WINDOW]:
+        value = (value * base + int(token) + 1) & mask
+    yield value
+    for i in range(WINDOW, len(tokens)):
+        value = ((value - (int(tokens[i - WINDOW]) + 1) * power) * base + int(tokens[i]) + 1) & mask
+        yield value
 
 
 def audit(data_dir: Path, block_size: int = 1024, model_vocab: int = 50257) -> dict:
@@ -53,7 +73,34 @@ def audit(data_dir: Path, block_size: int = 1024, model_vocab: int = 50257) -> d
         errors.append("tokenizer and model vocabulary mismatch")
     if manifest.get("tokenizer") != tok:
         errors.append("source manifest tokenizer disagrees with dataset metadata")
-    sequences: dict[str, list[int]] = {}
+    if isinstance(tok, dict) and tok.get("name") == "dte_bpe":
+        tokenizer_path = Path(__file__).resolve().parents[1] / "NanEcho/dte_tokenizer/tokenizer.json"
+        try:
+            tokenizer_sha = hashlib.sha256(json.dumps(
+                json.loads(tokenizer_path.read_text(encoding="utf-8")), sort_keys=True,
+            ).encode()).hexdigest()
+        except (OSError, ValueError):
+            tokenizer_sha = ""
+        if (not tokenizer_sha or tok.get("tokenizer_sha256") != tokenizer_sha
+                or metadata.get("tokenizer_semantic_sha256") != tokenizer_sha
+                or manifest.get("tokenizer_semantic_sha256") != tokenizer_sha):
+            errors.append("DTE 8192 tokenizer semantic digest mismatched or missing")
+        sources = manifest.get("source_files_sha256")
+        if not isinstance(sources, dict) or not sources:
+            errors.append("DTE source-file content hashes missing")
+        else:
+            root = Path(__file__).resolve().parents[1]
+            for name, expected_hash in sources.items():
+                path = (root / name).resolve()
+                if not path.is_relative_to(root) or not path.is_file() or _sha256(path) != expected_hash:
+                    errors.append(f"DTE source-file hash mismatch: {name}")
+            declared_groups = set()
+            for record in (manifest.get("train"), manifest.get("val")):
+                if isinstance(record, dict):
+                    declared_groups.update(record.get("source_groups", []))
+            if declared_groups != set(sources):
+                errors.append("DTE source groups do not cover exactly the hashed source files")
+    sequences: dict[str, array] = {}
     groups: dict[str, set[str]] = {}
     for split in ("train", "val"):
         record = manifest.get(split, {})
@@ -85,9 +132,9 @@ def audit(data_dir: Path, block_size: int = 1024, model_vocab: int = 50257) -> d
         errors.append("train/val source groups overlap")
     if len(sequences) == 2:
         train, val = sequences["train"], sequences["val"]
-        train_windows = {tuple(train[i : i + WINDOW]) for i in range(len(train) - WINDOW + 1)}
+        train_windows = set(_rolling_windows(train))
         val_total = max(0, len(val) - WINDOW + 1)
-        fraction = sum(tuple(val[i : i + WINDOW]) in train_windows for i in range(val_total)) / max(1, val_total)
+        fraction = sum(window in train_windows for window in _rolling_windows(val)) / max(1, val_total)
         result["overlapping_64_token_windows_fraction"] = fraction
         if fraction > 0.01:
             errors.append("train/val 64-token overlap exceeds 1% (contamination or repeated corpus)")

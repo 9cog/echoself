@@ -1,0 +1,147 @@
+name: DTE 8192 native candidate training and private HF backup
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_iters:
+        description: 'NEW training iterations (2 for first CPU smoke, 100+ after review)'
+        required: true
+        default: '2'
+        type: string
+      backup_candidate_to_hf:
+        description: 'Backup unpromoted native checkpoint to PRIVATE drzo/echoself-dte'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dte8192-candidate-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  train-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.11'
+      - name: Install native NanEcho training requirements
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt 'tokenizers>=0.20,<0.23' 'huggingface_hub>=0.28,<2'
+      - name: Bound manual training request
+        env:
+          ITERATIONS: ${{ inputs.max_iters }}
+        run: |
+          [[ "$ITERATIONS" =~ ^[0-9]{1,4}$ ]] && (( ITERATIONS >= 1 && ITERATIONS <= 2000 ))
+      - name: Compile source-family-disjoint DTE 8192 corpus
+        run: |
+          python -m NanEcho.prepare_dte_grouped \
+            --train-files \
+              data/training_sources/deep_tree_echo_dan_conversation.jsonl \
+              data/training_sources/training_dataset_dtesnn.jsonl \
+              data/training_sources/tree_polytope_kernel_corpus_v1.1.0.jsonl \
+              data/training_sources/live2d_skillm_corpus_v1.2.0.jsonl \
+            --val-files \
+              data/training_sources/echobeats_autonomous_corpus_v0.8.0.jsonl \
+              data/training_sources/echobeats_corpus_v0.7.0.jsonl \
+              data/training_sources/echobeats_corpus_v0.9.0.jsonl \
+              data/training_sources/echobeats_corpus_v1.0.0.jsonl \
+            --tokenizer-file NanEcho/dte_tokenizer/tokenizer.json \
+            --output-dir data/nanecho_dte_curated \
+            --reviewed-by 'automated-source-boundary-audit; human-review-pending'
+      - name: Reject changed tokenizer, source file, or train/val leakage
+        run: |
+          python scripts/audit_nanecho_data.py \
+            --data-dir data/nanecho_dte_curated \
+            --model-vocab 8192 \
+            --block-size 1024 \
+            --report data/nanecho_dte_curated/data_audit.json
+      - name: Resume a compatible native DTE candidate from private Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HFESELF }}
+        run: |
+          python -m NanEcho.hf_checkpoint_bridge pull \
+            --repo-id drzo/echoself-dte \
+            --cache-dir .training-progress/dte-8192-runs/cache \
+            --data-dir data/nanecho_dte_curated \
+            --source-manifest data/nanecho_dte_curated/source_manifest.json \
+            --allow-missing \
+            --report .training-progress/dte-8192-runs/hf_resume_report.json
+      - name: Train native NanEcho on DTE 8192 tokens
+        env:
+          ITERATIONS: ${{ inputs.max_iters }}
+        run: |
+          cat > /tmp/dte8192_training_config.json <<'JSON'
+          {
+            "data_dir": "data/nanecho_dte_curated",
+            "out_dir": ".training-progress/dte-8192-runs",
+            "vocab_size": 8192,
+            "n_embd": 256,
+            "n_head": 4,
+            "n_layer": 4,
+            "block_size": 1024,
+            "batch_size": 1,
+            "gradient_accumulation_steps": 1,
+            "learning_rate": 0.0003,
+            "warmup_iters": 100,
+            "lr_decay_iters": 2000,
+            "eval_interval": 20,
+            "eval_iters": 2,
+            "checkpoint_interval": 20,
+            "enable_introspection": false,
+            "reservoir_mode": "off",
+            "device": "cpu",
+            "dtype": "float32"
+          }
+          JSON
+          python train_cached.py \
+            --config /tmp/dte8192_training_config.json \
+            --data_dir data/nanecho_dte_curated \
+            --out_dir .training-progress/dte-8192-runs \
+            --max_iters "$ITERATIONS" \
+            --batch_size 1 \
+            --device cpu \
+            --max_checkpoints 10 \
+            --max_cache_size_gb 3.0
+      - name: Verify saved native DTE candidate and optimizer lineage
+        run: |
+          python -m NanEcho.hf_checkpoint_bridge verify \
+            --cache-dir .training-progress/dte-8192-runs/cache \
+            --data-dir data/nanecho_dte_curated \
+            --source-manifest data/nanecho_dte_curated/source_manifest.json \
+            --report .training-progress/dte-8192-runs/native_verify_report.json
+      - name: Backup unpromoted checkpoint to PRIVATE Hugging Face candidate repository
+        if: inputs.backup_candidate_to_hf
+        env:
+          HF_TOKEN: ${{ secrets.HFESELF }}
+        run: |
+          python -m NanEcho.hf_checkpoint_bridge push \
+            --repo-id drzo/echoself-dte \
+            --cache-dir .training-progress/dte-8192-runs/cache \
+            --data-dir data/nanecho_dte_curated \
+            --source-manifest data/nanecho_dte_curated/source_manifest.json \
+            --run-id '${{ github.run_id }}' \
+            --report .training-progress/dte-8192-runs/hf_backup_report.json
+      - name: Retain source and candidate evidence as private run artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dte8192-candidate-${{ github.run_id }}
+          path: |
+            data/nanecho_dte_curated/metadata.json
+            data/nanecho_dte_curated/source_manifest.json
+            data/nanecho_dte_curated/data_audit.json
+            .training-progress/dte-8192-runs/hf_resume_report.json
+            .training-progress/dte-8192-runs/native_verify_report.json
+            .training-progress/dte-8192-runs/hf_backup_report.json
+            .training-progress/dte-8192-runs/cache/metadata.json
+          if-no-files-found: warn
+          retention-days: 30

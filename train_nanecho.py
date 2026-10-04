@@ -89,9 +89,15 @@ def validate_dataset_tokenizer_provenance(
         raise ValueError(
             "Dataset tokenizer provenance is incomplete; missing " + ", ".join(missing)
         )
+    if declared["name"] == "dte_bpe" and not declared.get("tokenizer_sha256"):
+        raise ValueError("DTE BPE tokenizer requires a semantic tokenizer_sha256")
     if expected is None:
         # Trust the declared spec (dynamic tokenization path).
-        return {key: declared[key] for key in REQUIRED_PROVENANCE_KEYS}
+        return {
+            key: declared[key]
+            for key in (*REQUIRED_PROVENANCE_KEYS, "tokenizer_sha256")
+            if key in declared
+        }
     incompatible = [
         f"{key}={declared.get(key)!r} (expected {value!r})"
         for key, value in expected.items()
@@ -490,7 +496,9 @@ class NanEchoTrainer:
                     TokenizerSpec.from_provenance(self.data_loader.tokenizer_provenance)
                 )
             except Exception:
-                dataset_tokenizer = None  # fall back to default GPT-2 tokenizer
+                if self.data_loader.tokenizer_provenance["name"] != "gpt2":
+                    raise  # an incompatible persona tokenizer must not become GPT-2
+                dataset_tokenizer = None
         self.introspection = Introspection(self.model, config, tokenizer=dataset_tokenizer)
         
         # Setup logging

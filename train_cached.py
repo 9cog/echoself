@@ -12,6 +12,7 @@ import os
 import sys
 import time
 import argparse
+import hashlib
 import json
 from pathlib import Path
 from typing import Optional, Dict, Any, Tuple
@@ -100,11 +101,7 @@ class CachedNanEchoTrainer(NanEchoTrainer):
             'bias': self.config.bias
         }
         
-        data_config = {
-            'data_dir': self.config.data_dir,
-            'batch_size': self.config.batch_size,
-            'block_size': self.config.block_size
-        }
+        data_config = self._data_fingerprint()
         
         # Find compatible checkpoints
         compatible_checkpoints = self.cache.get_compatible_checkpoints(
@@ -119,6 +116,13 @@ class CachedNanEchoTrainer(NanEchoTrainer):
         for i, checkpoint_id in enumerate(compatible_checkpoints):
             try:
                 print(f"🔄 Attempting to resume from checkpoint {i + 1}/{len(compatible_checkpoints)}: {checkpoint_id}")
+                if (self.data_loader.tokenizer_provenance or {}).get('name') == 'dte_bpe':
+                    from NanEcho.hf_checkpoint_bridge import load_native
+                    candidate = load_native(
+                        self.cache.checkpoints_dir / f'{checkpoint_id}.pt', trusted_local=True
+                    )
+                    if candidate.get('tokenizer') != self.data_loader.tokenizer_provenance:
+                        raise ValueError('DTE checkpoint tokenizer digest mismatch before resume')
                 
                 checkpoint_data, metadata = self.cache.load_checkpoint(
                     checkpoint_id,
@@ -164,6 +168,8 @@ class CachedNanEchoTrainer(NanEchoTrainer):
                 
             except Exception as e:
                 print(f"⚠️  Failed to resume from checkpoint {checkpoint_id}: {e}")
+                if (self.data_loader.tokenizer_provenance or {}).get('name') == 'dte_bpe':
+                    raise RuntimeError('Refusing silent fresh restart after DTE checkpoint resume failure') from e
                 if i < len(compatible_checkpoints) - 1:
                     print(f"🔄 Trying next checkpoint...")
                     continue
@@ -172,6 +178,28 @@ class CachedNanEchoTrainer(NanEchoTrainer):
                     print("📝 Starting fresh training as last resort")
                     return False
     
+    def _data_fingerprint(self) -> Dict[str, Any]:
+        """Bind resume to actual dataset bytes instead of a reused directory name."""
+        root = Path(self.config.data_dir)
+        result: Dict[str, Any] = {
+            'data_dir': self.config.data_dir,
+            'batch_size': self.config.batch_size,
+            'block_size': self.config.block_size,
+        }
+        for name in ('train.bin', 'val.bin', 'metadata.json', 'source_manifest.json'):
+            path = root / name
+            if not path.is_file():
+                if name == 'source_manifest.json':
+                    result[name + '_sha256'] = None  # segregate historical corpora
+                    continue
+                raise FileNotFoundError(f'Dataset fingerprint file missing: {path}')
+            h = hashlib.sha256()
+            with path.open('rb') as stream:
+                for block in iter(lambda: stream.read(1024 * 1024), b''):
+                    h.update(block)
+            result[name + '_sha256'] = h.hexdigest()
+        return result
+
     def _create_checkpoint_tags(self, iteration: int, metrics: Dict[str, float]) -> list:
         """Create tags for checkpoint categorization."""
         tags = []
@@ -246,11 +274,7 @@ class CachedNanEchoTrainer(NanEchoTrainer):
             'enable_introspection': self.config.enable_introspection
         }
         
-        data_config = {
-            'data_dir': self.config.data_dir,
-            'batch_size': self.config.batch_size,
-            'block_size': self.config.block_size
-        }
+        data_config = self._data_fingerprint()
         
         # Get current learning rate
         current_lr = self.optimizer.param_groups[0]['lr']
@@ -639,7 +663,17 @@ class CachedNanEchoTrainer(NanEchoTrainer):
         # Export best model for deployment
         export_path = os.path.join(self.config.out_dir, 'best_model_export.pt')
         try:
-            best_checkpoint_id = self.cache.export_best_checkpoint(export_path)
+            best_checkpoint_id = self.cache.export_best_checkpoint(
+                export_path,
+                model_config={
+                    'n_layer': self.config.n_layer,
+                    'n_head': self.config.n_head,
+                    'n_embd': self.config.n_embd,
+                    'vocab_size': self.config.vocab_size,
+                    'block_size': self.config.block_size,
+                },
+                data_config=self._data_fingerprint(),
+            )
         except ValueError as e:
             print(f"\n⚠️  Could not export best checkpoint: {e}")
             print("   Saving current model state as fallback export...")

@@ -178,23 +178,11 @@ class TrainingCache:
         return f"ckpt_{timestamp}_{iteration}_{config_hash}_{data_hash[:8]}"
     
     def _calculate_quality_score(self, metadata: CheckpointMetadata) -> float:
-        """Calculate quality score for a checkpoint."""
-        # Lower loss is better (inverse relationship)
-        loss_score = 1.0 / (1.0 + metadata.val_loss)
-        
-        # Metrics score (higher is better)
-        metrics_score = 0.0
-        if metadata.metrics:
-            # Consider specific metrics like accuracy, perplexity, etc.
-            metrics_score = sum(metadata.metrics.values()) / len(metadata.metrics)
-        
-        # Weighted combination
-        quality_score = (
-            self.config.quality_weight_loss * loss_score +
-            self.config.quality_weight_metrics * metrics_score
-        )
-        
-        return quality_score
+        """Bounded convenience score; NEVER a cross-dataset identity metric."""
+        import math
+        if not math.isfinite(metadata.val_loss) or metadata.val_loss < 0:
+            return 0.0
+        return 1.0 / (1.0 + metadata.val_loss)
     
     def _get_data_hash(self, data_config: Dict[str, Any]) -> str:
         """Generate hash for data configuration."""
@@ -228,11 +216,15 @@ class TrainingCache:
         
         # Check if we should save based on improvement
         if not force_save and self.metadata:
-            best_loss = min(m.val_loss for m in self.metadata.values())
-            improvement = (best_loss - val_loss) / best_loss
-            if improvement < self.config.min_improvement_threshold:
-                print(f"⏭️  Skipping save - improvement {improvement:.3%} below threshold")
-                return checkpoint_id
+            compatible_losses = [m.val_loss for m in self.metadata.values()
+                                 if self._is_model_compatible(m.model_config, model_config)
+                                 and self._get_data_hash(m.data_config) == data_hash]
+            if compatible_losses:
+                best_loss = min(compatible_losses)
+                improvement = (best_loss - val_loss) / max(best_loss, 1e-12)
+                if improvement < self.config.min_improvement_threshold:
+                    print(f"⏭️  Skipping save - improvement {improvement:.3%} below threshold")
+                    return checkpoint_id
         
         # Create checkpoint data
         checkpoint_data = {
@@ -371,7 +363,7 @@ class TrainingCache:
     
     def get_best_checkpoint(
         self, 
-        metric: str = "quality_score",
+        metric: str = "val_loss",
         tags: List[str] = None
     ) -> Optional[str]:
         """Get the best checkpoint based on specified metric."""
@@ -418,10 +410,9 @@ class TrainingCache:
                 if checkpoint_data_hash == current_data_hash:
                     compatible.append(checkpoint_id)
         
-        # Sort by quality score
+        # Same-lineage comparison only; legacy cross-run scores are unbounded.
         compatible.sort(
-            key=lambda k: self.metadata[k].quality_score,
-            reverse=True
+            key=lambda k: self.metadata[k].val_loss
         )
         
         return compatible
@@ -613,7 +604,9 @@ class TrainingCache:
     def export_best_checkpoint(
         self,
         export_path: str,
-        include_optimizer: bool = False
+        include_optimizer: bool = False,
+        model_config: Optional[Dict[str, Any]] = None,
+        data_config: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Export the best checkpoint for deployment.
         
@@ -624,11 +617,11 @@ class TrainingCache:
         if not self.metadata:
             raise ValueError("No checkpoints available")
         
-        sorted_ids = sorted(
-            self.metadata.keys(),
-            key=lambda k: self.metadata[k].quality_score,
-            reverse=True
-        )
+        if (model_config is None) != (data_config is None):
+            raise ValueError("Export needs both model_config and data_config, or neither")
+        candidates = (self.get_compatible_checkpoints(model_config, data_config)
+                      if model_config is not None else list(self.metadata))
+        sorted_ids = sorted(candidates, key=lambda k: self.metadata[k].val_loss)
         
         checkpoint_data = None
         metadata = None

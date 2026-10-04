@@ -18,6 +18,10 @@ Reservoir modes
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
+import hashlib
+import json
+import os
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Protocol, runtime_checkable
 
 # Valid reservoir modes
@@ -38,15 +42,19 @@ class TokenizerSpec:
     vocab_size: int
     eos_token: str
     eos_token_id: int
+    tokenizer_sha256: str = ""
 
     def provenance(self) -> Dict[str, Any]:
         """Return the provenance dict persisted in datasets and checkpoints."""
-        return {
+        result = {
             "name": self.name,
             "vocab_size": self.vocab_size,
             "eos_token": self.eos_token,
             "eos_token_id": self.eos_token_id,
         }
+        if self.tokenizer_sha256:
+            result["tokenizer_sha256"] = self.tokenizer_sha256
+        return result
 
     @classmethod
     def from_provenance(cls, declared: Dict[str, Any]) -> "TokenizerSpec":
@@ -55,6 +63,7 @@ class TokenizerSpec:
             vocab_size=int(declared["vocab_size"]),
             eos_token=str(declared["eos_token"]),
             eos_token_id=int(declared["eos_token_id"]),
+            tokenizer_sha256=str(declared.get("tokenizer_sha256", "")),
         )
 
 
@@ -160,6 +169,46 @@ CHAR_SPEC = TokenizerSpec(
 )
 
 
+class DTEBpeTokenizer:
+    """Load only the committed DTE BPE bytes; never substitute tiktoken."""
+    name = "dte_bpe"
+    eos_token = "<|endoftext|>"
+    eos_token_id = 1
+    vocab_size = 8192
+
+    def __init__(self, spec: TokenizerSpec):
+        from tokenizers import Tokenizer
+
+        path = Path(os.environ.get(
+            "NANECHO_DTE_TOKENIZER_FILE",
+            str(Path(__file__).resolve().parent / "dte_tokenizer" / "tokenizer.json"),
+        ))
+        content = json.loads(path.read_text(encoding="utf-8"))
+        digest = hashlib.sha256(json.dumps(content, sort_keys=True).encode()).hexdigest()
+        if not spec.tokenizer_sha256 or digest != spec.tokenizer_sha256:
+            raise ValueError("DTE tokenizer semantic digest missing or mismatched")
+        self._tokenizer = Tokenizer.from_file(str(path))
+        if (self._tokenizer.get_vocab_size() != 8192
+                or self._tokenizer.token_to_id(self.eos_token) != 1
+                or self._tokenizer.token_to_id("<|pad|>") != 0
+                or spec.vocab_size != 8192 or spec.eos_token_id != 1
+                or spec.eos_token != self.eos_token):
+            raise ValueError("DTE tokenizer vocabulary/special token IDs do not match checkpoint")
+        self.spec = spec
+
+    def provenance(self) -> Dict[str, Any]:
+        return self.spec.provenance()
+
+    def encode(self, text: str) -> List[int]:
+        return self._tokenizer.encode(text, add_special_tokens=False).ids
+
+    def decode(self, token_ids: Iterable[int]) -> str:
+        ids = [int(token_id) for token_id in token_ids]
+        if any(token_id < 0 or token_id >= 8192 for token_id in ids):
+            raise ValueError("Invalid DTE token ID")
+        return self._tokenizer.decode(ids, skip_special_tokens=False)
+
+
 def tokenizer_from_spec(spec: TokenizerSpec) -> TokenizerAdapter:
     """Instantiate a tokenizer adapter from its spec.
 
@@ -169,6 +218,10 @@ def tokenizer_from_spec(spec: TokenizerSpec) -> TokenizerAdapter:
     """
     if spec.name == CHAR_SPEC.name:
         return CharTokenizer()
+    if spec.name == DTEBpeTokenizer.name:
+        return DTEBpeTokenizer(spec)
+    if spec.name != GPT2_SPEC.name:
+        raise ValueError(f"Unsupported tokenizer {spec.name!r}; no GPT-2 fallback")
     from NanEcho.runtime import NanEchoTokenizer
 
     return NanEchoTokenizer(spec)

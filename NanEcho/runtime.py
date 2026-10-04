@@ -127,8 +127,10 @@ def _tokenizer_for_checkpoint(declared: Any):
         try:
             spec = TokenizerSpec.from_provenance(declared)
             return tokenizer_from_spec(spec)
-        except Exception:
-            pass
+        except Exception as exc:
+            raise IncompatibleCheckpointError(
+                f"Declared tokenizer could not be reproduced: {exc}"
+            ) from exc
     return NanEchoTokenizer()
 
 
