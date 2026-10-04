@@ -12,7 +12,7 @@ import numpy as np
 import torch
 
 from NanEcho.evaluate_dte8192 import fixed_windows, score
-from scripts.evaluate_dte_candidate import (canonical_hash, diagnostics, load_probes,
+from scripts.evaluate_dte_candidate import (aggregate_diagnostics, canonical_hash, diagnostics, load_probes,
                                              private_write, teacher_forced_nll)
 from train_nanecho import DataLoader, TrainingConfig
 
@@ -89,6 +89,14 @@ class IdentityCandidateTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Duplicate'):
                 load_probes(path)
             self.assertTrue(diagnostics('')['empty'])
+
+    def test_identical_zero_word_outputs_flag_collapse(self):
+        samples=[{'generation_sha256':'same','diagnostics': {'words':0}},
+                 {'generation_sha256':'same','diagnostics': {'words':0}}]
+        summary=aggregate_diagnostics(samples)
+        self.assertTrue(summary['collapse_warning'])
+        self.assertEqual(summary['zero_word_generations'],2)
+        self.assertIsNone(summary['human_identity_verdict'])
 
 
 if __name__ == '__main__':

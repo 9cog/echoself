@@ -149,6 +149,15 @@ def diagnostics(text: str) -> dict:
             'empty': not text.strip(), 'replacement_characters': text.count('\ufffd')}
 
 
+def aggregate_diagnostics(results: list[dict]) -> dict:
+    distinct = len({item['generation_sha256'] for item in results})
+    zero_words = sum(item['diagnostics']['words'] == 0 for item in results)
+    return {'probe_count': len(results), 'distinct_generation_count': distinct,
+            'zero_word_generations': zero_words,
+            'collapse_warning': distinct == 1 or zero_words == len(results),
+            'human_identity_verdict': None}
+
+
 def private_write(path: Path, data: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
@@ -229,11 +238,12 @@ def main() -> int:
                   'status': 'candidate_not_promoted', 'identity_improvement_proven': False,
                   'training_objective_id': manifest['verified_objective_id'],
                   'legacy_double_shift_training': manifest['verified_objective_id'] == 'legacy-double-shift-invalid-clm'}
-    private_write(args.output, {'provenance': provenance, 'results': scored})
+    summary = aggregate_diagnostics(scored)
+    private_write(args.output, {'provenance': provenance, 'results': scored, 'summary': summary})
     if args.evidence_output:
         private_write(args.evidence_output, {'provenance': provenance,
                       'results': [{k: v for k, v in result.items() if k not in ('prompt', 'reference', 'generation')}
-                                  for result in scored],
+                                  for result in scored], 'summary': summary,
                       'note': 'Automatic diagnostics only; no independent identity or human quality verdict.'})
     print(json.dumps({'status': provenance['status'], 'iteration': provenance['iteration'],
                       'probe_count': len(scored), 'private_report': str(args.output),
