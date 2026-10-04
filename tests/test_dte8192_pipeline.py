@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from array import array
+import ast
 import hashlib
 import json
 import os
@@ -85,6 +86,17 @@ class PipelineTests(unittest.TestCase):
     def test_identical_file_cannot_be_train_and_val(self):
         with self.assertRaisesRegex(ValueError, 'disjoint'):
             compile_dataset([TOKENIZER], [TOKENIZER], TOKENIZER, ROOT / 'unused-dte-test', 'test')
+
+    def test_jsonl_loader_stays_importable_without_numpy(self):
+        """The provenance guard installs only tokenizers; numpy must stay optional."""
+        tree = ast.parse((ROOT / 'NanEcho/prepare_dte_data.py').read_text(encoding='utf-8'))
+        top_level = []
+        for node in tree.body:
+            if isinstance(node, ast.Import):
+                top_level.extend(alias.name.split('.')[0] for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                top_level.append(node.module.split('.')[0])
+        self.assertNotIn('numpy', top_level)
 
 
 if __name__ == '__main__':

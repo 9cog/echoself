@@ -21,7 +21,6 @@ the nanoGPT data loading format used by train_cached.py and train_nanecho.py.
 import argparse
 import json
 import os
-import numpy as np
 from pathlib import Path
 from typing import List
 
@@ -158,7 +157,9 @@ def main():
     print(f"Max token ID: {max_id} (uint16 max: 65535)")
     assert max_id < 65536, f"Token ID {max_id} exceeds uint16 range!"
     
-    # Convert and split
+    # Convert and split. Import numpy only here so the shared JSONL loader
+    # stays usable by the offline provenance compiler without ML deps.
+    import numpy as np
     token_array = np.array(all_token_ids, dtype=np.uint16)
     n_val = int(total_tokens * args.val_split)
     n_train = total_tokens - n_val
