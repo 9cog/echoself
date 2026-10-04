@@ -9,6 +9,8 @@ on:
       - 'tests/test_dte8192_pipeline.py'
       - 'tests/test_dte_identity_candidate_eval.py'
       - 'NanEcho/prepare_dte_grouped.py'
+      - 'NanEcho/import_echo_garden.py'
+      - 'tests/test_echo_garden_import.py'
       - 'NanEcho/hf_checkpoint_bridge.py'
       - 'NanEcho/evaluate_dte8192.py'
       - 'NanEcho/runtime.py'
@@ -32,6 +34,8 @@ on:
       - 'tests/test_dte8192_pipeline.py'
       - 'tests/test_dte_identity_candidate_eval.py'
       - 'NanEcho/prepare_dte_grouped.py'
+      - 'NanEcho/import_echo_garden.py'
+      - 'tests/test_echo_garden_import.py'
       - 'NanEcho/hf_checkpoint_bridge.py'
       - 'NanEcho/evaluate_dte8192.py'
       - 'NanEcho/runtime.py'
@@ -68,6 +72,8 @@ jobs:
         run: python -m unittest discover -s tests -p test_nanecho_data_audit.py -v
       - name: Test DTE tokenizer, source-group compiler and native HF bridge contract
         run: python -m unittest discover -s tests -p test_dte8192_pipeline.py -v
+      - name: Test pinned Echo Garden import and duplicate-family rejection
+        run: python -m unittest discover -s tests -p test_echo_garden_import.py -v
       - name: Check manual-only training and no legacy auto-publishing
         run: |
           python - <<'PY'

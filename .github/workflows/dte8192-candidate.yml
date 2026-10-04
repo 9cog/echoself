@@ -13,6 +13,11 @@ on:
         required: true
         default: false
         type: boolean
+      include_garden:
+        description: 'Import two pinned Garden vision documents as a distinct source family; uses separate private candidate lineage'
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -41,14 +46,36 @@ jobs:
           ITERATIONS: ${{ inputs.max_iters }}
         run: |
           [[ "$ITERATIONS" =~ ^[0-9]{1,4}$ ]] && (( ITERATIONS >= 1 && ITERATIONS <= 2000 ))
-      - name: Compile source-family-disjoint DTE 8192 corpus
+      - name: Select immutable source-family lineage
+        env:
+          INCLUDE_GARDEN: ${{ inputs.include_garden }}
         run: |
+          if [[ "$INCLUDE_GARDEN" == 'true' ]]; then
+            echo 'DTE_CANDIDATE_REPO=drzo/echoself-dte-garden-clm-v2' >> "$GITHUB_ENV"
+          else
+            echo 'DTE_CANDIDATE_REPO=drzo/echoself-dte-clm-v2' >> "$GITHUB_ENV"
+          fi
+      - name: Import pinned Echo Garden source family (no raw data in Git)
+        if: inputs.include_garden
+        run: |
+          python -m NanEcho.import_echo_garden \
+            --existing-dir data/training_sources \
+            --output-dir data/garden_import
+      - name: Compile source-family-disjoint DTE 8192 corpus
+        env:
+          INCLUDE_GARDEN: ${{ inputs.include_garden }}
+        run: |
+          train_files=(
+            data/training_sources/deep_tree_echo_dan_conversation.jsonl
+            data/training_sources/training_dataset_dtesnn.jsonl
+            data/training_sources/tree_polytope_kernel_corpus_v1.1.0.jsonl
+            data/training_sources/live2d_skillm_corpus_v1.2.0.jsonl
+          )
+          if [[ "$INCLUDE_GARDEN" == 'true' ]]; then
+            train_files+=(data/garden_import/garden_vision.jsonl)
+          fi
           python -m NanEcho.prepare_dte_grouped \
-            --train-files \
-              data/training_sources/deep_tree_echo_dan_conversation.jsonl \
-              data/training_sources/training_dataset_dtesnn.jsonl \
-              data/training_sources/tree_polytope_kernel_corpus_v1.1.0.jsonl \
-              data/training_sources/live2d_skillm_corpus_v1.2.0.jsonl \
+            --train-files "${train_files[@]}" \
             --val-files \
               data/training_sources/echobeats_autonomous_corpus_v0.8.0.jsonl \
               data/training_sources/echobeats_corpus_v0.7.0.jsonl \
@@ -69,7 +96,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HFESELF }}
         run: |
           python -m NanEcho.hf_checkpoint_bridge pull \
-            --repo-id drzo/echoself-dte-clm-v2 \
+            --repo-id "$DTE_CANDIDATE_REPO" \
             --cache-dir .training-progress/dte-8192-runs/cache \
             --data-dir data/nanecho_dte_curated \
             --source-manifest data/nanecho_dte_curated/source_manifest.json \
@@ -130,7 +157,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HFESELF }}
         run: |
           python -m NanEcho.hf_checkpoint_bridge push \
-            --repo-id drzo/echoself-dte-clm-v2 \
+            --repo-id "$DTE_CANDIDATE_REPO" \
             --cache-dir .training-progress/dte-8192-runs/cache \
             --data-dir data/nanecho_dte_curated \
             --source-manifest data/nanecho_dte_curated/source_manifest.json \
@@ -142,6 +169,7 @@ jobs:
         with:
           name: dte8192-candidate-${{ github.run_id }}
           path: |
+            data/garden_import/source_manifest.json
             data/nanecho_dte_curated/metadata.json
             data/nanecho_dte_curated/source_manifest.json
             data/nanecho_dte_curated/data_audit.json
