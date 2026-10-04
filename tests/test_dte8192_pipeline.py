@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from NanEcho.hf_checkpoint_bridge import MODEL, _safe_value, pull, validate
+from NanEcho.hf_checkpoint_bridge import MODEL, _safe_value, pull, select, validate
 from NanEcho.prepare_dte_grouped import compile_dataset, digest
 from NanEcho.spec import TokenizerSpec, tokenizer_from_spec
 from scripts.audit_nanecho_data import audit
@@ -71,6 +71,25 @@ class PipelineTests(unittest.TestCase):
                               Path(folder), 'fake', allow_missing=True)
             self.assertEqual(result['status'], 'untrained_baseline_ignored')
             self.assertEqual(download.call_count, 1)
+
+    def test_native_candidate_advances_to_latest_trained_iteration(self):
+        with tempfile.TemporaryDirectory() as folder:
+            cache = Path(folder)
+            (cache / 'checkpoints').mkdir()
+            entries = {}
+            for step, sampled_loss in ((0, 8.2), (20, 8.1), (22, 8.4)):
+                name = f'ckpt_{step}'
+                (cache / 'checkpoints' / f'{name}.pt').write_bytes(b'fixture')
+                entries[name] = {'iteration': step, 'val_loss': sampled_loss,
+                                 'model_config': MODEL}
+            (cache / 'metadata.json').write_text(json.dumps(entries))
+            with patch('NanEcho.hf_checkpoint_bridge.load_native',
+                       side_effect=lambda p, trusted_local: {'iteration': int(p.stem.split('_')[1])}), patch(
+                       'NanEcho.hf_checkpoint_bridge.validate',
+                       side_effect=lambda cp, manifest, path: {'iteration': cp['iteration']}):
+                path, _, evidence = select(cache, {}, cache)
+            self.assertEqual(evidence['iteration'], 22)
+            self.assertEqual(path.stem, 'ckpt_22')
 
     def test_compiled_grouped_split_and_bridge_checks(self):
         with tempfile.TemporaryDirectory(dir=ROOT) as folder:

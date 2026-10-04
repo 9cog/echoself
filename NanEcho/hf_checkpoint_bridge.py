@@ -107,10 +107,13 @@ def select(cache_dir: Path, source_manifest: dict, data_dir: Path) -> tuple[Path
             evidence = validate(data, source_manifest, data_dir)
         except (ValueError, RuntimeError, KeyError):
             continue
-        candidates.append((float(meta['val_loss']), path, meta, evidence))
+        candidates.append((int(meta['iteration']), float(meta['val_loss']), path, meta, evidence))
     if not candidates:
         raise ValueError('No matching native DTE 8192 checkpoint with optimizer state found')
-    _, path, meta, evidence = min(candidates, key=lambda candidate: candidate[0])
+    # This is a *continuation* pointer, not a best-model promotion decision.
+    # Publishing an older low-loss checkpoint would make cumulative training
+    # silently stall if sampled validation noise temporarily favours it.
+    _, _, path, meta, evidence = max(candidates, key=lambda candidate: (candidate[0], -candidate[1]))
     return path, meta, evidence
 
 
