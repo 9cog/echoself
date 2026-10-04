@@ -6,11 +6,15 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import sys
 import tempfile
+import types
 import unittest
 from unittest.mock import patch
 
-from NanEcho.hf_checkpoint_bridge import MODEL, validate
+import numpy as np
+
+from NanEcho.hf_checkpoint_bridge import MODEL, _safe_value, validate
 from NanEcho.prepare_dte_grouped import compile_dataset, digest
 from NanEcho.spec import TokenizerSpec, tokenizer_from_spec
 from scripts.audit_nanecho_data import audit
@@ -46,6 +50,14 @@ class PipelineTests(unittest.TestCase):
     def test_unknown_tokenizer_never_maps_to_gpt2(self):
         with self.assertRaisesRegex(ValueError, 'Unsupported tokenizer'):
             tokenizer_from_spec(TokenizerSpec('unapproved', 8192, '<|endoftext|>', 1))
+
+    def test_hub_payload_strips_numpy_scalars_in_nested_metrics(self):
+        fake_torch = types.SimpleNamespace(Tensor=type('FakeTensor', (), {}))
+        with patch.dict(sys.modules, {'torch': fake_torch}):
+            cleaned = _safe_value({'metrics': {'validation': np.float64(6.2),
+                                               'tokens': np.int64(10)}})
+        self.assertIs(type(cleaned['metrics']['validation']), float)
+        self.assertIs(type(cleaned['metrics']['tokens']), int)
 
     def test_compiled_grouped_split_and_bridge_checks(self):
         with tempfile.TemporaryDirectory(dir=ROOT) as folder:

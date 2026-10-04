@@ -77,10 +77,10 @@ def load_native(path: Path, *, trusted_local: bool = False) -> dict:
 def _safe_value(value):
     import numpy as np
     import torch
-    if isinstance(value, torch.Tensor) or value is None or isinstance(value, (str, bool, int, float)):
-        return value
     if isinstance(value, np.generic):
         return value.item()
+    if isinstance(value, torch.Tensor) or value is None or isinstance(value, (str, bool, int, float)):
+        return value
     if isinstance(value, dict):
         return {str(k) if not isinstance(k, (int, str)) else k: _safe_value(v) for k, v in value.items()}
     if isinstance(value, (list, tuple)):
