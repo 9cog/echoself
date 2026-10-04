@@ -1,25 +1,8 @@
 name: Call Agent-Neuro to Train NanEcho Model - Deep Tree Echo Persona
 
 on:
-  push:
-    branches: [ main, master ]
-    paths:
-      - 'NanEcho/**'
-      - 'echoself.md'
-      - 'echo/**'
-      - 'echogenesis/**'
-      - '.github/workflows/agent-neuro-train.yml'
-  pull_request:
-    branches: [ main, master ]
-    paths:
-      - 'NanEcho/**'
-      - 'echoself.md'
-      - 'echo/**'
-      - 'echogenesis/**'
-      - '.github/workflows/agent-neuro-train.yml'
-  schedule:
-    # Run relentless fine-tuning every 4 hours to continuously reinforce Deep Tree Echo persona
-    - cron: '0 */4 * * *'
+  # Separate legacy Agent-Neuro model line. Automatic training is paused until
+  # its data provenance, target objective and output destination are reviewed.
   workflow_dispatch:
     inputs:
       training_type:

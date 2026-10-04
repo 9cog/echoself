@@ -1,25 +1,8 @@
 name: Train NanEcho Model - Deep Tree Echo Persona
 
 on:
-  push:
-    branches: [ main, master ]
-    paths:
-      - 'NanEcho/**'
-      - 'echoself.md'
-      - 'echo/**'
-      - 'echogenesis/**'
-      - '.github/workflows/netrain.yml'
-  pull_request:
-    branches: [ main, master ]
-    paths:
-      - 'NanEcho/**'
-      - 'echoself.md'
-      - 'echo/**'
-      - 'echogenesis/**'
-      - '.github/workflows/netrain.yml'
-  schedule:
-    # Run relentless fine-tuning every 4 hours to continuously reinforce Deep Tree Echo persona
-    - cron: '0 */4 * * *'
+  # Legacy nanoGPT/GPT-2 training uses a different model and tokenizer lineage.
+  # Keep manual-only until data, objective, and Hub promotion gates are reviewed.
   workflow_dispatch:
     inputs:
       training_type:

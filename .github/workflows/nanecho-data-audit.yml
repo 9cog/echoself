@@ -4,14 +4,14 @@ on:
   pull_request:
     paths:
       - 'scripts/audit_nanecho_data.py'
+      - 'scripts/evaluate_dte_candidate.py'
       - 'tests/test_nanecho_data_audit.py'
       - 'tests/test_dte8192_pipeline.py'
       - 'tests/test_dte_identity_candidate_eval.py'
-      - 'scripts/evaluate_dte_candidate.py'
-      - 'NanEcho/evaluate_dte8192.py'
-      - 'NanEcho/runtime.py'
       - 'NanEcho/prepare_dte_grouped.py'
       - 'NanEcho/hf_checkpoint_bridge.py'
+      - 'NanEcho/evaluate_dte8192.py'
+      - 'NanEcho/runtime.py'
       - 'NanEcho/spec.py'
       - 'NanEcho/dte_tokenizer/**'
       - 'data/training_sources/**'
@@ -20,19 +20,21 @@ on:
       - 'training_cache.py'
       - '.github/workflows/dte8192-candidate.yml'
       - '.github/workflows/netrain-cached.yml'
+      - '.github/workflows/netrain.yml'
+      - '.github/workflows/agent-neuro-train.yml'
       - '.github/workflows/nanecho-data-audit.yml'
   push:
     branches: [main, master]
     paths:
       - 'scripts/audit_nanecho_data.py'
+      - 'scripts/evaluate_dte_candidate.py'
       - 'tests/test_nanecho_data_audit.py'
       - 'tests/test_dte8192_pipeline.py'
       - 'tests/test_dte_identity_candidate_eval.py'
-      - 'scripts/evaluate_dte_candidate.py'
-      - 'NanEcho/evaluate_dte8192.py'
-      - 'NanEcho/runtime.py'
       - 'NanEcho/prepare_dte_grouped.py'
       - 'NanEcho/hf_checkpoint_bridge.py'
+      - 'NanEcho/evaluate_dte8192.py'
+      - 'NanEcho/runtime.py'
       - 'NanEcho/spec.py'
       - 'NanEcho/dte_tokenizer/**'
       - 'data/training_sources/**'
@@ -41,6 +43,8 @@ on:
       - 'training_cache.py'
       - '.github/workflows/dte8192-candidate.yml'
       - '.github/workflows/netrain-cached.yml'
+      - '.github/workflows/netrain.yml'
+      - '.github/workflows/agent-neuro-train.yml'
       - '.github/workflows/nanecho-data-audit.yml'
   workflow_dispatch:
 
@@ -64,7 +68,7 @@ jobs:
         run: python -m unittest discover -s tests -p test_nanecho_data_audit.py -v
       - name: Test DTE tokenizer, source-group compiler and native HF bridge contract
         run: python -m unittest discover -s tests -p test_dte8192_pipeline.py -v
-      - name: Check workflow stays manual and non-publishing
+      - name: Check manual-only training and no legacy auto-publishing
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -73,10 +77,11 @@ jobs:
           assert 'python scripts/audit_nanecho_data.py' in workflow
           assert '    - name: Upload model to HuggingFace Hub' not in workflow
           assert 'python scripts/upload_to_huggingface.py' not in workflow
-          head = workflow.split('\nenv:', 1)[0]
-          assert '  schedule:' not in head and '  push:' not in head
-          assert '  workflow_dispatch:' in head
-          print('Candidate-only manual training guard verified.')
+          for legacy in ('netrain-cached.yml', 'netrain.yml', 'agent-neuro-train.yml'):
+              other = Path('.github/workflows', legacy).read_text().split('\nenv:', 1)[0]
+              assert '  schedule:' not in other and '  push:' not in other and '  pull_request:' not in other
+              assert '  workflow_dispatch:' in other
+          print('Manual-only candidate/legacy training guard verified.')
           PY
 
   objective-regressions:
