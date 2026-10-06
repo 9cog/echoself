@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-10-05 02:16:16 UTC
+# Dependency Audit Report - 2026-10-06 02:09:38 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-10-05T02:16:14.520Z",
+  "timestamp": "2026-10-06T02:09:37.225Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -234,7 +234,13 @@ Browserslist: Uncaught crash / prototype write via untrusted browserslist-stats.
 fix available via `npm audit fix`
 node_modules/browserslist
 
-dompurify  <=3.4.12
+compression  <1.8.2
+Severity: high
+compression vulnerable to Denial of Service via memory leak on premature response close - https://github.com/advisories/GHSA-vc2v-76pw-4v95
+fix available via `npm audit fix`
+node_modules/compression
+
+dompurify  <=3.4.15
 Severity: moderate
 DOMPurify contains a Cross-site Scripting vulnerability - https://github.com/advisories/GHSA-v8jm-5vwx-cfxm
 DOMPurify contains a Cross-site Scripting vulnerability - https://github.com/advisories/GHSA-v2wj-7wpq-c8vv
@@ -255,6 +261,7 @@ DOMPurify USE_PROFILES prototype pollution allows event handlers - https://githu
 DOMPurify is vulnerable to mutation-XSS via Re-Contextualization  - https://github.com/advisories/GHSA-h8r8-wccr-v5f2
 DOMPurify: IN_PLACE hook removal leaves a detached subtree executable, causing XSS - https://github.com/advisories/GHSA-55q2-fjhq-7xh7
 DOMPurify: `CUSTOM_ELEMENT_HANDLING` bypasses `afterSanitizeElements` for allowed custom elements. - https://github.com/advisories/GHSA-c2j3-45gr-mqc4
+DOMPurify: IN_PLACE returns a force-removed rawtext root whose text carries attacker markup — pure HTML reparse executes - https://github.com/advisories/GHSA-6688-9rhm-gjv2
 fix available via `npm audit fix`
 node_modules/dompurify
 
@@ -303,6 +310,14 @@ js-yaml: maxTotalMergeKeys does not limit CPU use for empty merge sources - http
 fix available via `npm audit fix`
 node_modules/js-yaml
 
+katex  0.11.0 - 0.18.1
+KaTeX: Existing prototype pollution can bypass trust restrictions - https://github.com/advisories/GHSA-238p-pmpm-9mq7
+fix available via `npm audit fix`
+node_modules/katex
+  mermaid  >=10.9.0-rc.1
+  Depends on vulnerable versions of katex
+  node_modules/mermaid
+
 lodash  <=4.17.23
 Severity: high
 lodash vulnerable to Code Injection via `_.template` imports key names - https://github.com/advisories/GHSA-r5fr-rjxr-66jc
@@ -336,19 +351,6 @@ node_modules/lodash-es
     Depends on vulnerable versions of chevrotain-allstar
     node_modules/langium
 
-mermaid  11.0.0-alpha.1 - 11.16.0
-Severity: moderate
-Mermaid: Improper sanitization of `classDef` in state diagrams leads to HTML injection - https://github.com/advisories/GHSA-ghcm-xqfw-q4vr
-Mermaid: Improper sanitization of `classDefs` in diagrams leads to CSS injection - https://github.com/advisories/GHSA-xcj9-5m2h-648r
-Mermaid Gantt Charts are vulnerable to an Infinite Loop DoS - https://github.com/advisories/GHSA-6m6c-36f7-fhxh
-Mermaid: Improper sanitization of configuration leads to CSS injection - https://github.com/advisories/GHSA-87f9-hvmw-gh4p
-Mermaid configuration APIs allow prototype pollution - https://github.com/advisories/GHSA-c4c3-pg64-4m4v
-Mermaid allows CSS injection applying to sibling elements of the diagram - https://github.com/advisories/GHSA-6x64-9x62-f2gx
-Mermaid Architecture diagrams are vulnerable to prototype pollution - https://github.com/advisories/GHSA-3rrr-jr9j-h3q3
-Mermaid XY Charts are vulnerable to an infinite loop DoS - https://github.com/advisories/GHSA-2v8p-3f2j-5mp7
-Mermaid radar diagrams are vulnerable to DoS - https://github.com/advisories/GHSA-rhh3-jpg6-66xh
-fix available via `npm audit fix`
-node_modules/mermaid
 
 minimatch  9.0.0 - 9.0.6
 Severity: high
@@ -399,10 +401,18 @@ PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) l
 fix available via `npm audit fix`
 node_modules/postcss
 
-postcss-selector-parser  7.1.0 - 7.1.2
+postcss-selector-parser  <=7.1.5
+Severity: moderate
 postcss-selector-parser allows denial of service through uncontrolled AST recursion - https://github.com/advisories/GHSA-w9m9-85wc-3x92
+PostCSS: Quadratic complexity in flat selector parsing allows CPU exhaustion - https://github.com/advisories/GHSA-rj75-hqrm-r3gf
 fix available via `npm audit fix`
 node_modules/postcss-selector-parser
+
+proxy-addr  1.1.0 - 2.0.7
+Severity: critical
+proxy-addr vulnerable to IP spoofing via IPv4-mapped IPv6 trust subnet - https://github.com/advisories/GHSA-jqcg-44mw-7w3h
+fix available via `npm audit fix`
+node_modules/proxy-addr
 
 qs  2.2.5 - 6.15.3
 Severity: moderate
@@ -413,6 +423,12 @@ fix available via `npm audit fix`
 node_modules/qs
 
 
+
+source-map-js  1.0.0 - 1.2.1
+Severity: high
+source-map-js allows event-loop denial of service through indexed source-map section offsets - https://github.com/advisories/GHSA-68fv-2mgg-jv7q
+fix available via `npm audit fix`
+node_modules/source-map-js
 
 tar  <=7.5.20
 Severity: critical
@@ -496,7 +512,7 @@ yaml is vulnerable to Stack Overflow via deeply nested YAML collections - https:
 fix available via `npm audit fix`
 node_modules/yaml
 
-60 vulnerabilities (5 low, 14 moderate, 40 high, 1 critical)
+64 vulnerabilities (5 low, 15 moderate, 42 high, 2 critical)
 
 To address issues that do not require attention, run:
   npm audit fix
