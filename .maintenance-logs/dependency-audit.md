@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-10-06 02:09:38 UTC
+# Dependency Audit Report - 2026-10-07 02:14:02 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-10-06T02:09:37.225Z",
+  "timestamp": "2026-10-07T02:14:01.290Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -269,7 +269,7 @@ esbuild  <=0.24.2
 Severity: moderate
 esbuild enables any website to send any requests to the development server and read the response - https://github.com/advisories/GHSA-67mh-4wv8-2f99
 fix available via `npm audit fix --force`
-Will install vite@8.3.2, which is a breaking change
+Will install vite@8.3.3, which is a breaking change
 node_modules/esbuild
 node_modules/vite/node_modules/esbuild
   @vanilla-extract/integration  *
