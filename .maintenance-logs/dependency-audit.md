@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-10-08 02:14:35 UTC
+# Dependency Audit Report - 2026-10-09 02:15:41 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-10-08T02:14:33.628Z",
+  "timestamp": "2026-10-09T02:15:40.007Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -219,13 +219,13 @@ node_modules/braces
           Depends on vulnerable versions of @typescript-eslint/typescript-estree
           Depends on vulnerable versions of @typescript-eslint/utils
           node_modules/@typescript-eslint/type-utils
-          @typescript-eslint/utils  6.16.0 - 7.5.0
-          Depends on vulnerable versions of @typescript-eslint/typescript-estree
-          node_modules/@typescript-eslint/utils
             @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
             Depends on vulnerable versions of @typescript-eslint/type-utils
             Depends on vulnerable versions of @typescript-eslint/utils
             node_modules/@typescript-eslint/eslint-plugin
+          @typescript-eslint/utils  6.16.0 - 7.5.0
+          Depends on vulnerable versions of @typescript-eslint/typescript-estree
+          node_modules/@typescript-eslint/utils
 
 browserslist  <=4.28.6
 Severity: high
@@ -269,7 +269,7 @@ esbuild  <=0.24.2
 Severity: moderate
 esbuild enables any website to send any requests to the development server and read the response - https://github.com/advisories/GHSA-67mh-4wv8-2f99
 fix available via `npm audit fix --force`
-Will install vite@8.3.3, which is a breaking change
+Will install vite@8.3.4, which is a breaking change
 node_modules/esbuild
 node_modules/vite/node_modules/esbuild
   @vanilla-extract/integration  *
