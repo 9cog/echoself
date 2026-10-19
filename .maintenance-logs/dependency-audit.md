@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-10-18 02:04:57 UTC
+# Dependency Audit Report - 2026-10-19 02:08:24 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-10-18T02:04:55.021Z",
+  "timestamp": "2026-10-19T02:08:22.407Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -219,13 +219,13 @@ node_modules/braces
           Depends on vulnerable versions of @typescript-eslint/typescript-estree
           Depends on vulnerable versions of @typescript-eslint/utils
           node_modules/@typescript-eslint/type-utils
-          @typescript-eslint/utils  6.16.0 - 7.5.0
-          Depends on vulnerable versions of @typescript-eslint/typescript-estree
-          node_modules/@typescript-eslint/utils
             @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
             Depends on vulnerable versions of @typescript-eslint/type-utils
             Depends on vulnerable versions of @typescript-eslint/utils
             node_modules/@typescript-eslint/eslint-plugin
+          @typescript-eslint/utils  6.16.0 - 7.5.0
+          Depends on vulnerable versions of @typescript-eslint/typescript-estree
+          node_modules/@typescript-eslint/utils
 
 browserslist  <=4.28.6
 Severity: high
