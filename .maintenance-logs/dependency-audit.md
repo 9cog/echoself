@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-10-22 02:06:17 UTC
+# Dependency Audit Report - 2026-10-23 02:07:09 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-10-22T02:06:15.694Z",
+  "timestamp": "2026-10-23T02:07:07.238Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -219,13 +219,13 @@ node_modules/braces
           Depends on vulnerable versions of @typescript-eslint/typescript-estree
           Depends on vulnerable versions of @typescript-eslint/utils
           node_modules/@typescript-eslint/type-utils
-          @typescript-eslint/utils  6.16.0 - 7.5.0
-          Depends on vulnerable versions of @typescript-eslint/typescript-estree
-          node_modules/@typescript-eslint/utils
             @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
             Depends on vulnerable versions of @typescript-eslint/type-utils
             Depends on vulnerable versions of @typescript-eslint/utils
             node_modules/@typescript-eslint/eslint-plugin
+          @typescript-eslint/utils  6.16.0 - 7.5.0
+          Depends on vulnerable versions of @typescript-eslint/typescript-estree
+          node_modules/@typescript-eslint/utils
 
 browserslist  <=4.28.6
 Severity: high
@@ -240,8 +240,8 @@ compression vulnerable to Denial of Service via memory leak on premature respons
 fix available via `npm audit fix`
 node_modules/compression
 
-dompurify  <=3.4.15
-Severity: moderate
+dompurify  <=3.4.16
+Severity: high
 DOMPurify contains a Cross-site Scripting vulnerability - https://github.com/advisories/GHSA-v8jm-5vwx-cfxm
 DOMPurify contains a Cross-site Scripting vulnerability - https://github.com/advisories/GHSA-v2wj-7wpq-c8vv
 DOMPurify: FORBID_TAGS bypassed by function-based ADD_TAGS predicate (asymmetry with FORBID_ATTR fix) - https://github.com/advisories/GHSA-h7mw-gpvr-xq4m
@@ -262,6 +262,8 @@ DOMPurify is vulnerable to mutation-XSS via Re-Contextualization  - https://gith
 DOMPurify: IN_PLACE hook removal leaves a detached subtree executable, causing XSS - https://github.com/advisories/GHSA-55q2-fjhq-7xh7
 DOMPurify: `CUSTOM_ELEMENT_HANDLING` bypasses `afterSanitizeElements` for allowed custom elements. - https://github.com/advisories/GHSA-c2j3-45gr-mqc4
 DOMPurify: IN_PLACE returns a force-removed rawtext root whose text carries attacker markup — pure HTML reparse executes - https://github.com/advisories/GHSA-6688-9rhm-gjv2
+DOMPurify IN_PLACE: hook that removes a parent or sibling leaves the detached subtree's event handlers armed (incomplete fix for GHSA-p98j-92pf-mc4p) - https://github.com/advisories/GHSA-mrv2-3pqr-j5jr
+DOMPurify: SMIL attributeName=href guard is skipped when PARSER_MEDIA_TYPE is application/xhtml+xml - https://github.com/advisories/GHSA-c6gr-qvv4-5v3f
 fix available via `npm audit fix`
 node_modules/dompurify
 
@@ -452,10 +454,13 @@ node_modules/tar
   Depends on vulnerable versions of tar
   node_modules/cacache
 
-toml  <=4.1.2
+toml  <=5.0.0
 Severity: high
 toml-node: Uncontrolled Recursion - https://github.com/advisories/GHSA-82x6-q7mm-w9cf
 toml-node: Prototype Pollution Leads to `Object.prototype` Corruption via `__proto__` Key-Path Desynchronization - https://github.com/advisories/GHSA-v5mp-jgw5-2x6j
+toml-node: Quadratic-complexity DoS via many array-of-tables headers in toml.parse() - https://github.com/advisories/GHSA-4qx8-w7c3-pj3p
+toml-node: Quadratic-complexity DoS via long dotted keys or table paths in toml.parse() - https://github.com/advisories/GHSA-9j65-hcg3-gc64
+toml-node: Uncontrolled resource consumption (CPU DoS) via unbounded-length integer literals in toml.parse() - https://github.com/advisories/GHSA-9qmh-m7c6-f92p
 fix available via `npm audit fix`
 node_modules/toml
 
@@ -512,7 +517,7 @@ yaml is vulnerable to Stack Overflow via deeply nested YAML collections - https:
 fix available via `npm audit fix`
 node_modules/yaml
 
-64 vulnerabilities (5 low, 15 moderate, 42 high, 2 critical)
+64 vulnerabilities (5 low, 14 moderate, 43 high, 2 critical)
 
 To address issues that do not require attention, run:
   npm audit fix
