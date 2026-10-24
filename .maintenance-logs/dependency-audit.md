@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-10-23 02:07:09 UTC
+# Dependency Audit Report - 2026-10-24 02:05:10 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-10-23T02:07:07.238Z",
+  "timestamp": "2026-10-24T02:05:08.886Z",
   "summary": {
     "totalDependencies": 27,
     "totalDevDependencies": 27,
@@ -114,7 +114,6 @@ node_modules/@remix-run/router
   Depends on vulnerable versions of @remix-run/server-runtime
   Depends on vulnerable versions of @vanilla-extract/integration
   Depends on vulnerable versions of cacache
-  Depends on vulnerable versions of chokidar
   Depends on vulnerable versions of esbuild
   Depends on vulnerable versions of remark-mdx-frontmatter
   node_modules/@remix-run/dev
@@ -135,10 +134,9 @@ node_modules/@remix-run/router
       @remix-run/express  2.10.0-pre.0 - 2.17.4
       Depends on vulnerable versions of @remix-run/node
       node_modules/@remix-run/express
-      @remix-run/serve  <=0.0.0-nightly-fef7d16-20240205 || >=2.0.0-pre.0
+      @remix-run/serve  2.10.0-pre.0 - 2.17.4
       Depends on vulnerable versions of @remix-run/express
       Depends on vulnerable versions of @remix-run/node
-      Depends on vulnerable versions of chokidar
       node_modules/@remix-run/serve
   react-router  6.0.0 - 7.17.0
   Depends on vulnerable versions of @remix-run/router
@@ -157,8 +155,10 @@ node_modules/@supabase/auth-js
   Depends on vulnerable versions of @supabase/auth-js
   node_modules/@supabase/supabase-js
 
-body-parser  <1.20.6
+body-parser  <=1.20.8
+Severity: high
 body-parser vulnerable to denial of service when invalid limit value silently disables size enforcement - https://github.com/advisories/GHSA-v422-hmwv-36x6
+body-parser vulnerable to Denial of Service via trailing bytes after a compressed request body - https://github.com/advisories/GHSA-27r3-jxmh-p828
 fix available via `npm audit fix`
 node_modules/body-parser
 
@@ -187,45 +187,6 @@ node_modules/eslint-plugin-jsx-a11y/node_modules/brace-expansion
 node_modules/eslint-plugin-react/node_modules/brace-expansion
 node_modules/eslint/node_modules/brace-expansion
 node_modules/rimraf/node_modules/brace-expansion
-
-braces  *
-Severity: high
-braces vulnerable to stack-exhaustion denial of service through deeply nested patterns - https://github.com/advisories/GHSA-vfj7-8cjw-p6xm
-fix available via `npm audit fix`
-node_modules/braces
-  chokidar  2.0.0 - 3.6.0
-  Depends on vulnerable versions of braces
-  node_modules/chokidar
-  micromatch  >=0.2.0
-  Depends on vulnerable versions of braces
-  node_modules/micromatch
-    @parcel/watcher  2.1.0 - 2.5.1
-    Depends on vulnerable versions of micromatch
-    node_modules/@parcel/watcher
-    fast-glob  *
-    Depends on vulnerable versions of micromatch
-    node_modules/fast-glob
-      globby  >=8.0.0
-      Depends on vulnerable versions of fast-glob
-      node_modules/globby
-        @typescript-eslint/typescript-estree  3.10.2-alpha.0 - 8.2.1-alpha.25
-        Depends on vulnerable versions of globby
-        Depends on vulnerable versions of minimatch
-        node_modules/@typescript-eslint/typescript-estree
-          @typescript-eslint/parser  6.16.0 - 7.5.0
-          Depends on vulnerable versions of @typescript-eslint/typescript-estree
-          node_modules/@typescript-eslint/parser
-          @typescript-eslint/type-utils  6.16.0 - 7.5.0
-          Depends on vulnerable versions of @typescript-eslint/typescript-estree
-          Depends on vulnerable versions of @typescript-eslint/utils
-          node_modules/@typescript-eslint/type-utils
-            @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
-            Depends on vulnerable versions of @typescript-eslint/type-utils
-            Depends on vulnerable versions of @typescript-eslint/utils
-            node_modules/@typescript-eslint/eslint-plugin
-          @typescript-eslint/utils  6.16.0 - 7.5.0
-          Depends on vulnerable versions of @typescript-eslint/typescript-estree
-          node_modules/@typescript-eslint/utils
 
 browserslist  <=4.28.6
 Severity: high
@@ -361,6 +322,23 @@ minimatch has ReDoS: matchOne() combinatorial backtracking via multiple non-adja
 minimatch ReDoS: nested *() extglobs generate catastrophically backtracking regular expressions - https://github.com/advisories/GHSA-23c5-xmqv-rm74
 fix available via `npm audit fix`
 node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
+  @typescript-eslint/typescript-estree  6.16.0 - 7.5.0
+  Depends on vulnerable versions of minimatch
+  node_modules/@typescript-eslint/typescript-estree
+    @typescript-eslint/parser  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/parser
+    @typescript-eslint/type-utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    Depends on vulnerable versions of @typescript-eslint/utils
+    node_modules/@typescript-eslint/type-utils
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
+      @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
+      Depends on vulnerable versions of @typescript-eslint/type-utils
+      Depends on vulnerable versions of @typescript-eslint/utils
+      node_modules/@typescript-eslint/eslint-plugin
 
 morgan  <=1.12.0
 Severity: moderate
@@ -470,7 +448,7 @@ React Router vulnerable to Denial of Service via reflected user input in single-
 fix available via `npm audit fix`
 node_modules/turbo-stream
 
-undici  <=6.28.0
+undici  <=6.29.0
 Severity: high
 Undici: Malicious WebSocket 64-bit length overflows parser and crashes the client - https://github.com/advisories/GHSA-f269-vfmq-vjvj
 Undici has an HTTP Request/Response Smuggling issue - https://github.com/advisories/GHSA-2mjp-6q6p-2qxm
@@ -486,6 +464,8 @@ undici vulnerable to cookie attribute injection via unsanitized domain and unpar
 undici vulnerable to HTTP response queue poisoning via keep-alive socket reuse - https://github.com/advisories/GHSA-35p6-xmwp-9g52
 undici vulnerable to downstream response splitting via retry interceptor - https://github.com/advisories/GHSA-r53p-7pc4-xj5r
 undici vulnerable to Denial of Service via unrequested WebSocket subprotocol - https://github.com/advisories/GHSA-rfgv-xxqx-mfg5
+undici vulnerable to Denial of Service via unbounded memory in the EventSource parser - https://github.com/advisories/GHSA-4qv8-2p9j-2685
+undici vulnerable to Denial of Service via unhandled error on excessive content-encodings - https://github.com/advisories/GHSA-xjj6-f33q-929c
 fix available via `npm audit fix`
 node_modules/undici
 
@@ -517,7 +497,7 @@ yaml is vulnerable to Stack Overflow via deeply nested YAML collections - https:
 fix available via `npm audit fix`
 node_modules/yaml
 
-64 vulnerabilities (5 low, 14 moderate, 43 high, 2 critical)
+58 vulnerabilities (4 low, 14 moderate, 38 high, 2 critical)
 
 To address issues that do not require attention, run:
   npm audit fix
