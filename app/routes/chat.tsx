@@ -37,13 +37,12 @@ function getSessionId(request: Request): { id: string; setCookie?: string } {
 export async function loader({ request }: LoaderFunctionArgs) {
   const engine = getDTEChatEngine();
   const session = getSessionId(request);
-  const status = await engine.getStatus();
 
   return json(
     {
       providerConfigured: engine.hasConfiguredProvider(),
-      providerLive: status.hasLiveProvider,
-      memoryBackend: status.memory.backend,
+      providerLive: engine.hasLiveProvider(),
+      memoryBackend: engine.memory.backend,
       cognitiveState: engine.getCognitiveState(session.id),
       initialMessage: {
         id: "welcome",

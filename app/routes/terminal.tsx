@@ -1,5 +1,5 @@
 import { json, type ActionFunctionArgs } from "@remix-run/node";
-import { useActionData, useLoaderData } from "@remix-run/react";
+import { useFetcher, useLoaderData } from "@remix-run/react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { getFileSystemService } from "~/services/fileSystem.server";
 import { getScriptRunnerService } from "~/services/scriptRunner.server";
@@ -141,65 +141,35 @@ Available commands:
 
 export default function TerminalPage() {
   const { title, description } = useLoaderData<typeof loader>();
-  const actionData = useActionData<typeof action>();
-  const [output, setOutput] = useState<string[]>([]);
+  const fetcher = useFetcher<typeof action>();
+  const [output, setOutput] = useState<string[]>([
+    "Welcome to Deep Tree Echo Terminal",
+    "Type 'help' for available commands",
+    "Use Tab for command completion and Up/Down arrows for history",
+    "",
+  ]);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [isBusy, setIsBusy] = useState(false);
 
-  // Initialize with welcome message
   useEffect(() => {
-    setOutput([
-      "Welcome to Deep Tree Echo Terminal",
-      "Type 'help' for available commands",
-      "Use Tab for command completion and Up/Down arrows for history",
-      "",
-    ]);
-  }, []);
-
-  // Update output when action data changes
-  useEffect(() => {
-    if (actionData && "output" in actionData) {
-      setOutput(prev => [...prev, actionData.output]);
+    if (fetcher.state !== "idle" || !fetcher.data) return;
+    const result = fetcher.data;
+    if ("output" in result && result.output) {
+      setOutput(prev => [...prev, result.output]);
     }
-    if (actionData && "error" in actionData) {
-      setOutput(prev => [...prev, `Error: ${actionData.error}`]);
+    if ("error" in result && result.error) {
+      setOutput(prev => [...prev, `Error: ${result.error}`]);
     }
-  }, [actionData]);
+    setIsBusy(false);
+  }, [fetcher.state, fetcher.data]);
 
   const handleCommand = async (command: string) => {
     // Add command to history
     setCommandHistory(prev => [...prev, command]);
-
-    // Add command to output
-    setOutput(prev => [...prev, `$ ${command}`]);
-
-    // Process the command
-    try {
-      setIsBusy(true);
-
-      const form = new FormData();
-      form.append("command", command);
-
-      const response = await fetch("/terminal", {
-        method: "POST",
-        body: form,
-      });
-
-      const data = await response.json();
-      if (data.output) {
-        setOutput(prev => [...prev, data.output]);
-      }
-      if (data.error) {
-        setOutput(prev => [...prev, `Error: ${data.error}`]);
-      }
-    } catch (error) {
-      setOutput(prev => [
-        ...prev,
-        `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-      ]);
-    } finally {
-      setIsBusy(false);
-    }
+    setIsBusy(true);
+    const form = new FormData();
+    form.append("command", command);
+    fetcher.submit(form, { method: "post" });
   };
 
   return (

@@ -28,7 +28,7 @@ export default defineConfig({
     globalThis: "globalThis",
   },
   optimizeDeps: {
-    exclude: ["monaco-editor", "@monaco-editor/react"],
+    exclude: ["monaco-editor"],
     include: ["@remix-run/react", "react", "react-dom"],
     esbuildOptions: {
       target: "esnext",
