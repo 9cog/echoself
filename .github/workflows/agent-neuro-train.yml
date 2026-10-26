@@ -876,7 +876,7 @@ jobs:
           --server http://localhost:8000 \
           --data-dir data \
           --sample 50 \
-          --output .training-progress/eval_history/eval_${EVAL_TS}.json || true
+          --output .training-progress/eval_history/eval_${EVAL_TS}.json
 
         echo "🛑 Stopping NanEcho server (PID $SERVER_PID)..."
         kill $SERVER_PID 2>/dev/null || true

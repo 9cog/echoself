@@ -64,6 +64,50 @@ def _latest_eval_report(eval_dir: str) -> Optional[Dict[str, Any]]:
     return _load_json(candidates[-1])
 
 
+_TRANSPORT_MARKERS = (
+    "[error:",
+    "connection refused",
+    "connectionerror",
+    "failed to establish a new connection",
+    "max retries exceeded",
+    "timed out",
+    "name or service not known",
+    "nodename nor servname",
+)
+
+
+def _response_is_transport_failure(text: str) -> bool:
+    lowered = str(text).lower()
+    return any(marker in lowered for marker in _TRANSPORT_MARKERS)
+
+
+def eval_report_is_trusted(report: Optional[Dict[str, Any]]) -> bool:
+    """True only when coverage numbers came from model text.
+
+    A refused connection used to be stored as ``dimension_coverage: 0``.
+    That report must not rebalance weights or bump recursion depth.
+    """
+    if not isinstance(report, dict):
+        return False
+    if report.get("evaluation_status") in {"unreachable", "partial", "failed"}:
+        return False
+    results = report.get("results")
+    if isinstance(results, list):
+        if not results:
+            return False
+        if any(_response_is_transport_failure(row.get("response", "")) for row in results if isinstance(row, dict)):
+            return False
+        return True
+    zero_coverage = (
+        report.get("dimension_coverage") == 0
+        and report.get("keyword_coverage") == 0
+        and report.get("avg_echo_score") == 0
+    )
+    if zero_coverage:
+        return False
+    return report.get("evaluation_status", "ok") == "ok"
+
+
 # ---------------------------------------------------------------------------
 # Delta Clamp — Autogenesis safety constraint
 # ---------------------------------------------------------------------------
@@ -645,6 +689,9 @@ def apply_adaptation(
         sys.exit(1)
 
     eval_report = _latest_eval_report(eval_dir) if eval_dir else None
+    if eval_report and not eval_report_is_trusted(eval_report):
+        print("⏭️  Ignoring eval report: transport failure or untrusted scores")
+        eval_report = None
 
     config_before = copy.deepcopy(config)
     changes: List[str] = []
