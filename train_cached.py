@@ -22,6 +22,7 @@ import torch.nn as nn
 import numpy as np
 
 # Import training cache system
+from nanecho_schedule import schedule_at
 from training_cache import TrainingCache, CacheConfig, CheckpointMetadata
 
 # Import existing training components
@@ -136,6 +137,7 @@ class CachedNanEchoTrainer(NanEchoTrainer):
                 self.starting_epoch = metadata.epoch
                 self.best_loss = metadata.val_loss
                 self.resumed_from_checkpoint = True
+                self._log_schedule(self.starting_iteration)
                 
                 # Restore model iteration for progressive features
                 self.model.current_iteration = checkpoint_data.get('current_iteration', metadata.iteration)
@@ -202,6 +204,28 @@ class CachedNanEchoTrainer(NanEchoTrainer):
             from NanEcho.hf_checkpoint_bridge import OBJECTIVE_ID
             result['objective_id'] = OBJECTIVE_ID
         return result
+
+    def _log_schedule(self, iteration: int) -> None:
+        """Print the phase and learning rate the cumulative horizon implies."""
+        snapshot = schedule_at(
+            iteration,
+            learning_rate=self.config.learning_rate,
+            min_lr=self.config.min_lr,
+            max_iters=self.config.max_iters,
+            cumulative_iters=getattr(self.config, "cumulative_iters", 0),
+            warmup_iters=self.config.warmup_iters,
+            lr_decay_iters=self.config.lr_decay_iters,
+            warmup_fraction=getattr(self.config, "warmup_fraction", 0.0),
+            enable_curriculum=self.config.enable_curriculum_learning,
+        )
+        print(
+            "📅 Schedule at iteration "
+            f"{iteration:,}: phase={snapshot['phase']} "
+            f"lr={snapshot['learning_rate']:.8g} "
+            f"warmup_iters={snapshot['warmup_iters']} "
+            f"in_warmup={snapshot['in_warmup']} "
+            f"budget={snapshot['budget']}"
+        )
 
     def _create_checkpoint_tags(self, iteration: int, metrics: Dict[str, float]) -> list:
         """Create tags for checkpoint categorization."""
@@ -437,6 +461,7 @@ class CachedNanEchoTrainer(NanEchoTrainer):
             print(f"   • Previous best loss: {self.best_loss:.4f}")
         
         print()
+        self._log_schedule(self.starting_iteration)
         
         self.model.train()
         running_loss = 0.0
@@ -740,7 +765,19 @@ def main():
     parser.add_argument('--data_dir', type=str, default='data/nanecho', help='Data directory')
     parser.add_argument('--out_dir', type=str, default='out-nanecho-cached', help='Output directory')
     parser.add_argument('--cache_dir', type=str, help='Cache directory (default: out_dir/cache)')
-    parser.add_argument('--max_iters', type=int, default=10000, help='Maximum iterations')
+    parser.add_argument('--max_iters', type=int, default=10000, help='New iterations this session')
+    parser.add_argument(
+        '--cumulative_iters',
+        type=int,
+        default=200000,
+        help='Curriculum and warmup horizon across resumed sessions',
+    )
+    parser.add_argument(
+        '--warmup_fraction',
+        type=float,
+        default=0.02,
+        help='Warmup length as a fraction of the cumulative horizon',
+    )
     parser.add_argument('--batch_size', type=int, default=4, help='Batch size')
     parser.add_argument('--learning_rate', type=float, default=1e-4, help='Learning rate')
     parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu')
@@ -781,6 +818,10 @@ def main():
             for key, value in config_dict.items():
                 if hasattr(config, key):
                     setattr(config, key, value)
+    if not getattr(config, "cumulative_iters", 0):
+        config.cumulative_iters = args.cumulative_iters
+    if not getattr(config, "warmup_fraction", 0):
+        config.warmup_fraction = args.warmup_fraction
     
     # Create cached trainer and start training
     trainer = CachedNanEchoTrainer(

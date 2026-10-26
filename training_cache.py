@@ -28,6 +28,8 @@ from datetime import datetime, timedelta
 import torch
 import numpy as np
 
+from checkpoint_rank import rank_checkpoint_ids, select_best_checkpoint_id
+
 def _checkpoint_tokenizer_provenance(
     model: Optional[torch.nn.Module] = None,
 ) -> Dict[str, Any]:
@@ -381,17 +383,15 @@ class TrainingCache:
         if not candidates:
             return None
         
-        # Find best based on metric
-        if metric == "quality_score":
-            best_id = max(candidates.keys(), key=lambda k: candidates[k].quality_score)
-        elif metric == "val_loss":
-            best_id = min(candidates.keys(), key=lambda k: candidates[k].val_loss)
-        elif metric == "iteration":
-            best_id = max(candidates.keys(), key=lambda k: candidates[k].iteration)
-        else:
-            raise ValueError(f"Unknown metric: {metric}")
-        
-        return best_id
+        rows = {
+            key: {
+                "quality_score": value.quality_score,
+                "val_loss": value.val_loss,
+                "iteration": value.iteration,
+            }
+            for key, value in candidates.items()
+        }
+        return select_best_checkpoint_id(rows, metric)
     
     def get_compatible_checkpoints(
         self,
@@ -519,12 +519,10 @@ class TrainingCache:
         
         print("🧹 Running cache cleanup...")
         
-        # Sort by quality score (keep best ones)
-        sorted_checkpoints = sorted(
-            self.metadata.items(),
-            key=lambda x: x[1].quality_score,
-            reverse=True
-        )
+        # Keep the lowest validation loss. Stored quality_score grows with
+        # tokens_processed and would delete a better checkpoint first.
+        ranked_ids = rank_checkpoint_ids(self._rank_rows(), metric="val_loss")
+        sorted_checkpoints = [(key, self.metadata[key]) for key in ranked_ids]
         
         # Calculate total size
         total_size_gb = sum(m.file_size_mb for _, m in sorted_checkpoints) / 1024
@@ -568,11 +566,20 @@ class TrainingCache:
         except Exception as e:
             print(f"⚠️  Failed to remove checkpoint {checkpoint_id}: {e}")
     
+    def _rank_rows(self) -> Dict[str, Dict[str, Any]]:
+        return {
+            key: {
+                "quality_score": value.quality_score,
+                "val_loss": value.val_loss,
+                "iteration": value.iteration,
+            }
+            for key, value in self.metadata.items()
+        }
+
     def list_checkpoints(self) -> List[CheckpointMetadata]:
-        """List all available checkpoints sorted by quality."""
-        checkpoints = list(self.metadata.values())
-        checkpoints.sort(key=lambda x: x.quality_score, reverse=True)
-        return checkpoints
+        """List checkpoints best-first by validation loss."""
+        ranked_ids = rank_checkpoint_ids(self._rank_rows(), metric="val_loss")
+        return [self.metadata[key] for key in ranked_ids]
     
     def get_cache_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""
@@ -586,12 +593,14 @@ class TrainingCache:
             }
         
         total_size_mb = sum(m.file_size_mb for m in self.metadata.values())
-        best_checkpoint = max(self.metadata.values(), key=lambda x: x.quality_score)
+        best_id = select_best_checkpoint_id(self._rank_rows(), metric="val_loss")
+        best_checkpoint = self.metadata[best_id]
         
         return {
             'total_checkpoints': len(self.metadata),
             'total_size_mb': total_size_mb,
             'total_size_gb': total_size_mb / 1024,
+            'best_checkpoint_id': best_id,
             'best_quality_score': best_checkpoint.quality_score,
             'best_val_loss': best_checkpoint.val_loss,
             'cache_dir': str(self.cache_dir)

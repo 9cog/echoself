@@ -346,6 +346,8 @@ jobs:
           "data_dir": "data/nanecho",
           "out_dir": "${{ steps.params.outputs.output_dir }}",
           "max_iters": ${{ steps.params.outputs.max_iters }},
+          "cumulative_iters": 200000,
+          "warmup_fraction": 0.02,
           "batch_size": ${{ steps.params.outputs.batch_size }},
           "learning_rate": ${{ steps.params.outputs.learning_rate }},
           "device": "cpu",
