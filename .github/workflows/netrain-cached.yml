@@ -368,6 +368,7 @@ jobs:
           --max_iters ${{ steps.params.outputs.max_iters }} \
           --batch_size ${{ steps.params.outputs.batch_size }} \
           --learning_rate ${{ steps.params.outputs.learning_rate }} \
+          --adapted-config adapted_config.json \
           --device cpu \
           --max_checkpoints ${{ steps.params.outputs.max_checkpoints }} \
           --max_cache_size_gb ${{ steps.params.outputs.max_cache_size_gb }} \

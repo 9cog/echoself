@@ -22,6 +22,7 @@ import torch.nn as nn
 import numpy as np
 
 # Import training cache system
+from adapted_learning_rate import apply_adapted_learning_rate
 from nanecho_schedule import schedule_at
 from training_cache import TrainingCache, CacheConfig, CheckpointMetadata
 
@@ -780,6 +781,12 @@ def main():
     )
     parser.add_argument('--batch_size', type=int, default=4, help='Batch size')
     parser.add_argument('--learning_rate', type=float, default=1e-4, help='Learning rate')
+    parser.add_argument(
+        '--adapted-config',
+        type=str,
+        default='adapted_config.json',
+        help='Adaptation delta. When it sets training.learning_rate, that value wins',
+    )
     parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu')
     parser.add_argument('--force_fresh_start', action='store_true', help='Ignore cached checkpoints')
     parser.add_argument('--max_checkpoints', type=int, default=10, help='Maximum cached checkpoints')
@@ -822,6 +829,11 @@ def main():
         config.cumulative_iters = args.cumulative_iters
     if not getattr(config, "warmup_fraction", 0):
         config.warmup_fraction = args.warmup_fraction
+    if apply_adapted_learning_rate(config, Path(args.adapted_config)):
+        print(
+            f"📈 Using adapted learning_rate {config.learning_rate} "
+            f"from {args.adapted_config}"
+        )
     
     # Create cached trainer and start training
     trainer = CachedNanEchoTrainer(
