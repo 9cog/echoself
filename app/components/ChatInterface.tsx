@@ -103,7 +103,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 ))}
               </div>
               <div className="text-xs opacity-70 mt-1">
-                {new Date(message.timestamp).toLocaleTimeString()}
+                {new Date(message.timestamp).toLocaleTimeString("en-US", {
+                  timeZone: "UTC",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                })}
               </div>
             </div>
           </div>
@@ -144,18 +149,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Input */}
       <div className="border-t border-border p-4">
-        <form onSubmit={handleSubmit} className="flex">
+        <div className="flex">
           <input
             ref={inputRef}
             type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
+            onKeyDown={event => {
+              if (event.key === "Enter") handleSubmit(event);
+            }}
             placeholder="Type your message..."
             className="flex-1 bg-input border border-border rounded-l-md px-4 py-2 focus:outline-none focus:ring-1 focus:ring-primary"
             disabled={isProcessing}
           />
           <button
-            type="submit"
+            type="button"
+            onClick={handleSubmit}
             className="bg-primary text-white px-4 py-2 rounded-r-md disabled:opacity-50"
             disabled={!input.trim() || isProcessing}
           >
@@ -165,7 +174,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <FiSend />
             )}
           </button>
-        </form>
+        </div>
       </div>
     </div>
   );

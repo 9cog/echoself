@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Terminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import { WebLinksAddon } from "xterm-addon-web-links";
+import "xterm/css/xterm.css";
 
 interface TerminalComponentProps {
   onCommand?: (command: string) => void;
@@ -20,37 +21,41 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({
   const xtermRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const [isTerminalReady, setIsTerminalReady] = useState<boolean>(false);
-  const [inputBuffer, setInputBuffer] = useState<string>("");
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
 
   // Create stable function references using useCallback
+  const inputBufferRef = useRef("");
+
   const writePrompt = useCallback(() => {
     if (!xtermRef.current) return;
-    xtermRef.current.write("\r\n$ ");
+    xtermRef.current.write("$ ");
   }, []);
 
   const handleEnterKey = useCallback(() => {
-    if (!xtermRef.current) return;
+    const term = xtermRef.current;
+    if (!term) return;
 
-    const command = inputBuffer.trim();
+    term.write("\r\n");
+    const command = inputBufferRef.current.trim();
+    inputBufferRef.current = "";
+    setHistoryIndex(-1);
     if (command && onCommand) {
       onCommand(command);
+      return;
     }
-
-    setInputBuffer("");
-    setHistoryIndex(-1);
-  }, [inputBuffer, onCommand]);
+    writePrompt();
+  }, [onCommand, writePrompt]);
 
   const handleBackspace = useCallback(() => {
-    if (!xtermRef.current || inputBuffer.length === 0) return;
+    if (!xtermRef.current || inputBufferRef.current.length === 0) return;
 
     xtermRef.current.write("\b \b");
-    setInputBuffer(prev => prev.slice(0, -1));
-  }, [inputBuffer]);
+    inputBufferRef.current = inputBufferRef.current.slice(0, -1);
+  }, []);
 
   const handleTab = useCallback(() => {
     // Simple command completion
-    if (!xtermRef.current || !inputBuffer) return;
+    if (!xtermRef.current || !inputBufferRef.current) return;
 
     const commands = [
       "help",
@@ -65,21 +70,29 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({
       "version",
     ];
 
-    const matches = commands.filter(cmd => cmd.startsWith(inputBuffer));
+    const buffer = inputBufferRef.current;
+    const matches = commands.filter(cmd => cmd.startsWith(buffer));
 
     if (matches.length === 1) {
-      // Complete the command
-      const completion = matches[0].slice(inputBuffer.length);
+      const completion = matches[0].slice(buffer.length);
       xtermRef.current.write(completion);
-      setInputBuffer(matches[0]);
+      inputBufferRef.current = matches[0];
     } else if (matches.length > 1) {
-      // Show available completions
       xtermRef.current.write("\r\n");
       xtermRef.current.write(matches.join("  ") + "\r\n");
       writePrompt();
-      xtermRef.current.write(inputBuffer);
+      xtermRef.current.write(buffer);
     }
-  }, [inputBuffer, writePrompt]);
+  }, [writePrompt]);
+
+  const clearBuffer = () => {
+    const term = xtermRef.current;
+    if (!term) return;
+    while (inputBufferRef.current.length > 0) {
+      term.write("\b \b");
+      inputBufferRef.current = inputBufferRef.current.slice(0, -1);
+    }
+  };
 
   const handleArrowUp = useCallback(() => {
     if (!xtermRef.current || commandHistory.length === 0) return;
@@ -89,18 +102,12 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({
         ? commandHistory.length - 1
         : Math.max(0, historyIndex - 1);
 
-    // Clear current input
-    while (inputBuffer.length > 0) {
-      xtermRef.current.write("\b \b");
-      setInputBuffer(prev => prev.slice(0, -1));
-    }
-
-    // Write history item
+    clearBuffer();
     const historyItem = commandHistory[newIndex];
     xtermRef.current.write(historyItem);
-    setInputBuffer(historyItem);
+    inputBufferRef.current = historyItem;
     setHistoryIndex(newIndex);
-  }, [commandHistory, historyIndex, inputBuffer]);
+  }, [commandHistory, historyIndex]);
 
   const handleArrowDown = useCallback(() => {
     if (!xtermRef.current || historyIndex === -1) return;
@@ -108,29 +115,46 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({
     const newIndex =
       historyIndex === commandHistory.length - 1 ? -1 : historyIndex + 1;
 
-    // Clear current input
-    while (inputBuffer.length > 0) {
-      xtermRef.current.write("\b \b");
-      setInputBuffer(prev => prev.slice(0, -1));
-    }
+    clearBuffer();
 
     if (newIndex === -1) {
       setHistoryIndex(-1);
     } else {
       const historyItem = commandHistory[newIndex];
       xtermRef.current.write(historyItem);
-      setInputBuffer(historyItem);
+      inputBufferRef.current = historyItem;
       setHistoryIndex(newIndex);
     }
-  }, [commandHistory, historyIndex, inputBuffer]);
+  }, [commandHistory, historyIndex]);
 
-  // Initialize terminal
+  const handlersRef = useRef({
+    isBusy,
+    writePrompt,
+    handleEnterKey,
+    handleBackspace,
+    handleTab,
+    handleArrowUp,
+    handleArrowDown,
+  });
+  handlersRef.current = {
+    isBusy,
+    writePrompt,
+    handleEnterKey,
+    handleBackspace,
+    handleTab,
+    handleArrowUp,
+    handleArrowDown,
+  };
+  const linesWrittenRef = useRef(0);
+  const wasBusyRef = useRef(false);
+
+  // Create the terminal once. Output and key handlers update through refs.
   useEffect(() => {
-    if (!terminalRef.current) return;
+    if (!terminalRef.current || xtermRef.current) return;
 
     try {
-      // Create terminal instance
       const term = new Terminal({
+        convertEol: true,
         fontFamily: "JetBrains Mono, Menlo, Monaco, Courier New, monospace",
         fontSize: 14,
         cursorBlink: true,
@@ -166,93 +190,105 @@ const TerminalComponent: React.FC<TerminalComponentProps> = ({
 
       // Set up input handling
       term.onKey(({ key, domEvent }) => {
-        if (isBusy) {
-          // Only allow Ctrl+C during busy state
+        const handlers = handlersRef.current;
+        if (handlers.isBusy) {
           if (domEvent.ctrlKey && domEvent.key === "c") {
             term.write("^C\r\n");
-            writePrompt();
+            handlers.writePrompt();
           }
           return;
         }
 
         switch (domEvent.keyCode) {
           case 13: // Enter
-            handleEnterKey();
+            handlers.handleEnterKey();
             break;
           case 8: // Backspace
-            handleBackspace();
+            handlers.handleBackspace();
             break;
           case 9: // Tab
-            handleTab();
+            handlers.handleTab();
             break;
           case 38: // Arrow Up
-            handleArrowUp();
+            handlers.handleArrowUp();
             break;
           case 40: // Arrow Down
-            handleArrowDown();
+            handlers.handleArrowDown();
             break;
           case 67: // 'c' key
             if (domEvent.ctrlKey) {
               term.write("^C\r\n");
-              setInputBuffer("");
-              writePrompt();
+              inputBufferRef.current = "";
+              handlers.writePrompt();
             } else {
               term.write(key);
-              setInputBuffer(prev => prev + key);
+              inputBufferRef.current += key;
             }
             break;
           case 76: // 'l' key
             if (domEvent.ctrlKey) {
               term.clear();
-              writePrompt();
+              handlers.writePrompt();
             } else {
               term.write(key);
-              setInputBuffer(prev => prev + key);
+              inputBufferRef.current += key;
             }
             break;
           default:
-            // Handle regular input
-            if (!domEvent.ctrlKey && !domEvent.altKey) {
+            if (!domEvent.ctrlKey && !domEvent.altKey && key) {
               term.write(key);
-              setInputBuffer(prev => prev + key);
+              inputBufferRef.current += key;
             }
         }
       });
 
-      // Initial setup
-      setTimeout(() => {
-        if (fitAddonRef.current) {
-          fitAddonRef.current.fit();
-          setIsTerminalReady(true);
-
-          // Write initial output
-          initialOutput.forEach(line => {
-            term.write(line + "\r\n");
-          });
-          writePrompt();
+      const fitTimer = globalThis.setTimeout(() => {
+        try {
+          fitAddon.fit();
+        } catch (error) {
+          console.error("Error fitting terminal:", error);
         }
+        setIsTerminalReady(true);
       }, 100);
+      return () => {
+        globalThis.clearTimeout(fitTimer);
+        term.dispose();
+        xtermRef.current = null;
+        fitAddonRef.current = null;
+        linesWrittenRef.current = 0;
+        wasBusyRef.current = false;
+        inputBufferRef.current = "";
+        setIsTerminalReady(false);
+      };
     } catch (error) {
       console.error("Error initializing terminal:", error);
     }
-  }, [
-    handleArrowDown,
-    handleArrowUp,
-    handleBackspace,
-    handleEnterKey,
-    handleTab,
-    initialOutput,
-    isBusy,
-    writePrompt,
-  ]);
+  }, []);
+
+  useEffect(() => {
+    const term = xtermRef.current;
+    if (!term || !isTerminalReady) return;
+    const fresh = initialOutput.slice(linesWrittenRef.current);
+    const isFirst = linesWrittenRef.current === 0;
+    for (const line of fresh) {
+      term.writeln(line);
+    }
+    linesWrittenRef.current = initialOutput.length;
+    if (isFirst || (wasBusyRef.current && !isBusy)) {
+      writePrompt();
+    }
+    wasBusyRef.current = isBusy;
+  }, [initialOutput, isBusy, isTerminalReady, writePrompt]);
 
   // Handle terminal resize
   useEffect(() => {
     if (!isTerminalReady) return;
 
     const handleResize = () => {
-      if (fitAddonRef.current) {
-        fitAddonRef.current.fit();
+      try {
+        fitAddonRef.current?.fit();
+      } catch (error) {
+        console.error("Error fitting terminal:", error);
       }
     };
 

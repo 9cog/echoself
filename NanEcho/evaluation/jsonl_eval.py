@@ -46,6 +46,27 @@ except ImportError:
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 log = logging.getLogger("jsonl_eval")
 
+# Responses that never reached a model. Scoring them yields fake coverage of 0.
+_TRANSPORT_MARKERS = (
+    "[error:",
+    "connection refused",
+    "connectionerror",
+    "failed to establish a new connection",
+    "max retries exceeded",
+    "timed out",
+    "name or service not known",
+    "nodename nor servname",
+)
+
+
+class EvalUnreachable(RuntimeError):
+    """Chat server did not return model text. Do not write coverage scores."""
+
+
+def response_is_transport_failure(text: str) -> bool:
+    lowered = str(text).lower()
+    return any(marker in lowered for marker in _TRANSPORT_MARKERS)
+
 # ---------------------------------------------------------------------------
 # EchoSelf persona keywords for fidelity scoring
 # ---------------------------------------------------------------------------
@@ -115,6 +136,7 @@ class EvalReport:
     results: List[EvalResult]
     adaptation_proposals: List[str]
     per_file_summary: Dict[str, Any]
+    evaluation_status: str = "ok"
 
 
 # ---------------------------------------------------------------------------
@@ -292,11 +314,13 @@ def query_server(
         )
         resp.raise_for_status()
         data = resp.json()
-        latency_ms = round((time.monotonic() - start) * 1000, 2)
-        return data.get("text", ""), data.get("tokens_generated", 0), latency_ms
     except Exception as exc:
-        latency_ms = round((time.monotonic() - start) * 1000, 2)
-        return f"[Error: {exc}]", 0, latency_ms
+        raise EvalUnreachable(str(exc)) from exc
+    text = data.get("text", "")
+    if not isinstance(text, str) or response_is_transport_failure(text):
+        raise EvalUnreachable(text or "empty or non-model response")
+    latency_ms = round((time.monotonic() - start) * 1000, 2)
+    return text, data.get("tokens_generated", 0), latency_ms
 
 
 def get_model_name(server: str) -> str:
@@ -509,12 +533,18 @@ def run_evaluation(
     model_name = get_model_name(server)
     log.info(f"Model: {model_name}")
 
+    failures: List[str] = []
     for idx, item in enumerate(items, 1):
         log.info(f"[{idx}/{total}] {item.source_file} | {item.query[:60]!r}")
 
-        response_text, tokens, latency_ms = query_server(
-            server, item, max_tokens, temperature, top_k, timeout
-        )
+        try:
+            response_text, tokens, latency_ms = query_server(
+                server, item, max_tokens, temperature, top_k, timeout
+            )
+        except EvalUnreachable as exc:
+            failures.append(str(exc))
+            log.error("Chat server unreachable: %s", exc)
+            continue
         echo_score, kw_hits, dim_hits, length_ok, persona_ok = compute_echo_score(response_text)
 
         results.append(EvalResult(
@@ -531,6 +561,12 @@ def run_evaluation(
             persona_consistent=persona_ok,
         ))
 
+    if failures or not results:
+        sample = failures[0] if failures else "no model responses"
+        raise EvalUnreachable(
+            f"{len(failures)} of {total} queries failed before a trusted score "
+            f"could be written: {sample}"
+        )
     return results
 
 
@@ -539,21 +575,9 @@ def build_report(
     server: str,
     model: str,
 ) -> EvalReport:
-    if not results:
-        return EvalReport(
-            timestamp=datetime.now(timezone.utc).isoformat(),
-            server=server,
-            model=model,
-            total_items=0,
-            avg_echo_score=0.0,
-            avg_latency_ms=0.0,
-            keyword_coverage=0.0,
-            dimension_coverage=0.0,
-            adequate_length_pct=0.0,
-            persona_consistent_pct=0.0,
-            results=[],
-            adaptation_proposals=[],
-            per_file_summary={},
+    if not results or any(response_is_transport_failure(r.response) for r in results):
+        raise EvalUnreachable(
+            "refusing to score responses that never reached the chat model"
         )
 
     avg_score = round(sum(r.echo_score for r in results) / len(results), 3)
@@ -608,6 +632,7 @@ def build_report(
         results=results,
         adaptation_proposals=proposals,
         per_file_summary=per_file_summary,
+        evaluation_status="ok",
     )
 
 
@@ -691,9 +716,14 @@ def main() -> None:
 
     # Run evaluation
     log.info(f"Running evaluation against {args.server} …")
-    results = run_evaluation(
-        items, args.server, args.max_tokens, args.temperature, args.top_k, args.timeout
-    )
+    try:
+        results = run_evaluation(
+            items, args.server, args.max_tokens, args.temperature, args.top_k, args.timeout
+        )
+    except EvalUnreachable as exc:
+        log.error("Evaluation unreachable: %s", exc)
+        log.error("Refusing to write coverage scores from a failed chat server.")
+        sys.exit(2)
 
     # Verbose output
     if args.verbose:

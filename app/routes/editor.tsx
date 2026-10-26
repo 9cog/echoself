@@ -33,7 +33,7 @@ export default function EditorPage() {
   const theme = "vs-dark"; // Default theme
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-screen flex flex-col">
       <header className="bg-card text-card-foreground px-6 py-3 border-b border-border flex justify-between items-center">
         <div className="flex items-center">
           <FiCode className="mr-2" />
@@ -77,7 +77,7 @@ export default function EditorPage() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden">
         <ClientOnly
           fallback={
             <div className="h-full w-full flex items-center justify-center text-sm opacity-50">

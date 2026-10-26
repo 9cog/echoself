@@ -13,7 +13,6 @@ Complete training pipeline for the NanEcho model with:
 import os
 import sys
 import time
-import math
 import json
 import pickle
 from pathlib import Path
@@ -27,6 +26,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
+
+from nanecho_schedule import curriculum_budget, learning_rate_at, phase_at
 try:
     from torch.utils.tensorboard import SummaryWriter
     TENSORBOARD_AVAILABLE = True
@@ -134,6 +135,10 @@ class TrainingConfig:
     learning_rate: float = 1e-4
     max_iters: int = 50000
     warmup_iters: int = 5000
+    # 0 keeps phase/warmup on this process's max_iters. Cached CI sets a
+    # cumulative horizon so a 500-step session does not look like mastery.
+    cumulative_iters: int = 0
+    warmup_fraction: float = 0.0
     lr_decay_iters: int = 50000
     min_lr: float = 1e-5
     weight_decay: float = 0.1
@@ -223,15 +228,13 @@ class EchoSelfLearningPhase:
         }
     
     def get_current_phase(self, iteration: int) -> Tuple[str, Dict[str, Any]]:
-        """Get the current learning phase based on iteration."""
-        progress = iteration / self.config.max_iters
-        
-        for phase_name, phase_config in self.phases.items():
-            if phase_config['start'] <= progress <= phase_config['end']:
-                return phase_name, phase_config
-        
-        # Default to last phase
-        return 'adaptive_mastery', self.phases['adaptive_mastery']
+        """Get the current learning phase based on cumulative progress."""
+        phase_name = phase_at(
+            iteration,
+            self.config.max_iters,
+            getattr(self.config, "cumulative_iters", 0),
+        )
+        return phase_name, self.phases[phase_name]
     
     def get_phase_lr_multiplier(self, iteration: int) -> float:
         """Get learning rate multiplier for current phase."""
@@ -380,8 +383,11 @@ class Introspection:
             # Connection ratio
             metrics['connection_ratio'] = self.model.connection_ratio
             
-            # Training progress
-            metrics['training_progress'] = iteration / self.config.max_iters
+            # Training progress against the curriculum horizon, not the session slice.
+            metrics['training_progress'] = iteration / curriculum_budget(
+                self.config.max_iters,
+                getattr(self.config, "cumulative_iters", 0),
+            )
         
         self.metrics_history.append({
             'iteration': iteration,
@@ -520,23 +526,19 @@ class NanEchoTrainer:
         )
     
     def get_lr(self, iteration: int) -> float:
-        """Calculate learning rate with warmup and decay."""
-        # Warmup
-        if iteration < self.config.warmup_iters:
-            lr = self.config.learning_rate * iteration / self.config.warmup_iters
-        # Cosine decay
-        elif iteration < self.config.lr_decay_iters:
-            decay_ratio = (iteration - self.config.warmup_iters) / (self.config.lr_decay_iters - self.config.warmup_iters)
-            coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio))
-            lr = self.config.min_lr + coeff * (self.config.learning_rate - self.config.min_lr)
-        else:
-            lr = self.config.min_lr
-        
-        # Apply phase multiplier
-        if self.config.enable_curriculum_learning:
-            lr *= self.phase_manager.get_phase_lr_multiplier(iteration)
-        
-        return lr
+        """Calculate learning rate with warmup and decay on the cumulative horizon."""
+        scheduled = learning_rate_at(
+            iteration,
+            learning_rate=self.config.learning_rate,
+            min_lr=self.config.min_lr,
+            max_iters=self.config.max_iters,
+            cumulative_iters=getattr(self.config, "cumulative_iters", 0),
+            warmup_iters=self.config.warmup_iters,
+            lr_decay_iters=self.config.lr_decay_iters,
+            warmup_fraction=getattr(self.config, "warmup_fraction", 0.0),
+            enable_curriculum=self.config.enable_curriculum_learning,
+        )
+        return scheduled["learning_rate"]
     
     @torch.no_grad()
     def evaluate(self) -> Dict[str, float]:
