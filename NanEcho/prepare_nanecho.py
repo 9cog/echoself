@@ -14,7 +14,6 @@ import json
 import argparse
 import glob
 import tiktoken
-import numpy as np
 from pathlib import Path
 import random
 import re
@@ -418,7 +417,10 @@ def prepare_echo_self_dataset(echo_depth: int = 3, persona_weight: float = 0.7, 
                               relentless_persona_mode: bool = False,
                               source_root: str | None = None,
                               min_total_tokens: int = 4096,
-                              min_split_tokens: int = 256):
+                              min_split_tokens: int = 256,
+                              curated_only: bool = False,
+                              reviewed_by: str = "",
+                              source_revision: str = ""):
     """Prepare the complete Echo Self training dataset."""
     print(f"🌟 Preparing NanEcho dataset with echo_depth={echo_depth}, persona_weight={persona_weight}")
     print(f"    Deep Tree Echo Mode: {deep_tree_echo_mode}")
@@ -430,7 +432,18 @@ def prepare_echo_self_dataset(echo_depth: int = 3, persona_weight: float = 0.7, 
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     
-    all_text_content = []
+    documents: List[Tuple[str, str]] = []
+
+    def _add(group: str, text: str) -> None:
+        if text and str(text).strip():
+            documents.append((group, text))
+
+    def _group_for(path: Path) -> str:
+        resolved = path.resolve()
+        try:
+            return resolved.relative_to(root).as_posix()
+        except ValueError:
+            return resolved.name
     
     # 1. Extract Echo Self content from repository files
     print("📄 Extracting Echo Self content from repository...")
@@ -440,7 +453,7 @@ def prepare_echo_self_dataset(echo_depth: int = 3, persona_weight: float = 0.7, 
     for path in authored_sources:
         echo_content = extract_echo_self_content(str(path))
         for content in echo_content:
-            all_text_content.append(content)
+            _add(_group_for(path), content)
             print(f"  Added Echo Self content from {path}: {len(content)} characters")
     
     # Process other relevant files (legacy globs, still excluding tests/eval/artifacts)
@@ -468,30 +481,37 @@ def prepare_echo_self_dataset(echo_depth: int = 3, persona_weight: float = 0.7, 
             echo_content = extract_echo_self_content(file_path)
             for content in echo_content:
                 if content and any(p.lower() in content.lower() for p in ECHO_SELF_PATTERNS):
-                    all_text_content.append(content)
+                    _add(_group_for(Path(file_path)), content)
                     print(f"  Added Echo Self patterns from {file_path}: {len(content)} characters")
     
-    # 2. Generate synthetic Echo Self training samples
-    print("🧠 Generating synthetic Echo Self training samples...")
-    synthetic_samples = generate_echo_self_training_samples(echo_depth, persona_weight)
-    
-    for sample_type, sample_content in synthetic_samples:
-        all_text_content.append(sample_content)
-    print(f"  Generated {len(synthetic_samples)} synthetic Echo Self samples")
-    
-    character_samples = _character_samples(echo_depth, persona_weight)
-    all_text_content.extend(character_samples)
-    print(f"  Added {len(character_samples)} deterministic character-first samples")
-    
-    # 3. Add Echo Self conversations
-    print("💬 Adding Echo Self conversation samples...")
-    conversations = create_echo_conversation_samples()
-    for conv in conversations:
-        all_text_content.append(conv)
-    print(f"  Added {len(conversations)} Echo Self conversations")
-    
+    synthetic_samples: List[Tuple[str, str]] = []
+    character_samples: List[str] = []
+    conversations: List[str] = []
+    relentless_samples: List[str] = []
+    if curated_only:
+        print("🧠 Curated source-group mode: skipping synthetic, character, and conversation templates")
+    else:
+        # 2. Generate synthetic Echo Self training samples
+        print("🧠 Generating synthetic Echo Self training samples...")
+        synthetic_samples = generate_echo_self_training_samples(echo_depth, persona_weight)
+        for sample_type, sample_content in synthetic_samples:
+            _add(f"synthetic/{sample_type}", sample_content)
+        print(f"  Generated {len(synthetic_samples)} synthetic Echo Self samples")
+
+        character_samples = _character_samples(echo_depth, persona_weight)
+        for sample in character_samples:
+            _add("synthetic/character", sample)
+        print(f"  Added {len(character_samples)} deterministic character-first samples")
+
+        # 3. Add Echo Self conversations
+        print("💬 Adding Echo Self conversation samples...")
+        conversations = create_echo_conversation_samples()
+        for index, conv in enumerate(conversations):
+            _add(f"synthetic/conversation-{index}", conv)
+        print(f"  Added {len(conversations)} Echo Self conversations")
+
     # 3.5. Add relentless persona mode training data (no system prompts needed)
-    if relentless_persona_mode or no_system_prompt:
+    if not curated_only and (relentless_persona_mode or no_system_prompt):
         print("🔥 Adding relentless persona mode training data...")
         if no_system_prompt and not relentless_persona_mode:
             print("   (Triggered by no_system_prompt flag)")
@@ -501,37 +521,36 @@ def prepare_echo_self_dataset(echo_depth: int = 3, persona_weight: float = 0.7, 
             print("   (Triggered by both no_system_prompt and relentless_persona_mode flags)")
         
         relentless_samples = create_relentless_persona_samples()
-        for sample in relentless_samples:
-            all_text_content.append(sample)
+        for index, sample in enumerate(relentless_samples):
+            _add(f"synthetic/relentless-{index}", sample)
         print(f"  Added {len(relentless_samples)} relentless persona samples")
     
-    # 4. Weight content based on Echo Self relevance
-    print("⚖️ Applying Echo Self persona weighting...")
-    weighted_content = []
-    
-    for content in all_text_content:
+    # 4. Weight inside each source group. Repetition never crosses a group boundary.
+    print("⚖️ Applying Echo Self persona weighting inside source groups...")
+    grouped_text: Dict[str, List[str]] = {}
+    weighted_count = 0
+    for group, content in documents:
         echo_score = sum(1 for pattern in ECHO_SELF_PATTERNS if pattern.lower() in content.lower())
         persona_score = sum(1 for dim in PERSONA_DIMENSIONS if dim.lower() in content.lower())
-        
-        # Calculate repetition weight based on Echo Self relevance
         relevance_weight = (echo_score + persona_score * persona_weight) / len(ECHO_SELF_PATTERNS)
-        repetitions = max(1, int(relevance_weight * 3))  # Repeat high-relevance content
-        
+        repetitions = 1 if curated_only else max(1, int(relevance_weight * 3))
+        bucket = grouped_text.setdefault(group, [])
         for _ in range(repetitions):
-            weighted_content.append(content)
-    
-    print(f"  Applied persona weighting: {len(weighted_content)} total samples")
-    
-    # 5. Shuffle and combine all content
-    random.shuffle(weighted_content)
-    combined_text = "\n\n---\n\n".join(weighted_content)
-    
-    # 6. Encode with tiktoken and validate size
-    print("🔤 Encoding with tiktoken...")
+            bucket.append(content)
+            weighted_count += 1
+    print(f"  Applied persona weighting: {weighted_count} samples across {len(grouped_text)} groups")
+
+    # 5. Encode each group, then split whole groups. Do not cut a token stream 90/10.
+    print("🔤 Encoding source groups with tiktoken...")
     try:
         enc = tiktoken.get_encoding("gpt2")
-        token_ids = enc.encode(combined_text)
-        print(f"  Encoded {len(token_ids)} tokens")
+        group_tokens = {
+            group: enc.encode("\n\n---\n\n".join(texts))
+            for group, texts in grouped_text.items()
+            if texts
+        }
+        token_ids = [token for tokens in group_tokens.values() for token in tokens]
+        print(f"  Encoded {len(token_ids)} tokens in {len(group_tokens)} groups")
     except Exception as e:
         print(f"❌ Failed to get tiktoken encoding: {e}")
         print(f"💡 This is likely due to network connectivity issues accessing GPT-2 vocabulary files")
@@ -560,78 +579,60 @@ def prepare_echo_self_dataset(echo_depth: int = 3, persona_weight: float = 0.7, 
             print(f"   Data preparation failed closed; no fallback corpus was written.")
             return 0, 0  # Return empty counts to indicate failure
     
-    # 7. Save training data with additional validation
-    train_path = os.path.join(output_dir, "train.bin")
-    val_path = os.path.join(output_dir, "val.bin")
-    
-    # Split into train/val (90/10)
-    split_idx = int(len(token_ids) * 0.9)
-    train_ids = token_ids[:split_idx]
-    val_ids = token_ids[split_idx:]
-    
-    # Validate split sizes
-    if len(train_ids) <= MAX_BLOCK_SIZE:
-        print(f"⚠️  Warning: Training split ({len(train_ids):,} tokens) smaller than block_size ({MAX_BLOCK_SIZE})")
-    if len(val_ids) <= MAX_BLOCK_SIZE:
-        print(f"⚠️  Warning: Validation split ({len(val_ids):,} tokens) smaller than block_size ({MAX_BLOCK_SIZE})")
-    
-    # Minimum viable dataset check
-    if (len(train_ids) <= MIN_BLOCK_SIZE or len(val_ids) <= MIN_BLOCK_SIZE
-            or len(train_ids) < min_split_tokens or len(val_ids) < min_split_tokens):
-        print(f"❌ Error: Split datasets too small for training")
-        print(f"   Train: {len(train_ids):,} tokens, Val: {len(val_ids):,} tokens")
-        print(f"   Both splits must be > {max(MIN_BLOCK_SIZE, min_split_tokens)} tokens")
-        print(f"   Data preparation failed closed; no fallback corpus was written.")
-        return 0, 0  # Return empty counts to indicate failure
-    
-    # Save as numpy arrays
-    train_ids = np.array(train_ids, dtype=np.uint16)
-    val_ids = np.array(val_ids, dtype=np.uint16)
-    
-    train_ids.tofile(train_path)
-    val_ids.tofile(val_path)
-    
-    print(f"✅ Saved training data:")
-    print(f"  Train: {len(train_ids)} tokens -> {train_path}")
-    print(f"  Val: {len(val_ids)} tokens -> {val_path}")
-    
-    # 8. Save metadata
-    metadata = {
-        "echo_depth": echo_depth,
-        "persona_weight": persona_weight,
-        "deep_tree_echo_mode": deep_tree_echo_mode,
-        "persona_reinforcement": persona_reinforcement,
-        "no_system_prompt": no_system_prompt,
-        "deep_tree_echo_weight": deep_tree_echo_weight,
-        "relentless_persona_mode": relentless_persona_mode,
-        "total_samples": len(weighted_content),
-        "synthetic_samples": len(synthetic_samples),
-        "conversations": len(conversations),
-        "persona_dimensions": PERSONA_DIMENSIONS,
-        "echo_patterns": ECHO_SELF_PATTERNS,
-        "train_tokens": len(train_ids),
-        "val_tokens": len(val_ids),
-        "vocab_size": enc.n_vocab,
-        "tokenizer": {
+    repo_root = Path(__file__).resolve().parents[1]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    from nanecho_corpus import write_source_group_split
+
+    synthetic_count = 0 if curated_only else (
+        len(synthetic_samples) + len(character_samples) + len(conversations) + len(relentless_samples)
+    )
+    train_count, val_count = write_source_group_split(
+        Path(output_dir),
+        group_tokens,
+        tokenizer={
             "name": "gpt2",
             "vocab_size": enc.n_vocab,
             "eos_token": "<|endoftext|>",
             "eos_token_id": enc.eot_token,
         },
-        "excluded_source_policy": "tests, evaluation, generated artifacts, caches, and outputs",
-        "source_root": str(root),
-        "character_first_samples": len(character_samples),
-        "deterministic": False,
-    }
-    
-    metadata_path = os.path.join(output_dir, "metadata.json")
-    with open(metadata_path, 'w') as f:
-        json.dump(metadata, f, indent=2)
-    
-    print(f"📊 Saved metadata to {metadata_path}")
-    print(f"🌟 NanEcho dataset preparation complete!")
-    
-    return len(train_ids), len(val_ids)
+        reviewed_by=reviewed_by,
+        source_revision=source_revision,
+        synthetic_samples=synthetic_count,
+        min_split_tokens=max(MIN_BLOCK_SIZE, min_split_tokens),
+        extra_metadata={
+            "echo_depth": echo_depth,
+            "persona_weight": persona_weight,
+            "deep_tree_echo_mode": deep_tree_echo_mode,
+            "persona_reinforcement": persona_reinforcement,
+            "no_system_prompt": no_system_prompt,
+            "deep_tree_echo_weight": deep_tree_echo_weight,
+            "relentless_persona_mode": relentless_persona_mode,
+            "total_samples": weighted_count,
+            "conversations": len(conversations),
+            "persona_dimensions": PERSONA_DIMENSIONS,
+            "echo_patterns": ECHO_SELF_PATTERNS,
+            "excluded_source_policy": "tests, evaluation, generated artifacts, caches, and outputs",
+            "source_root": str(root),
+            "character_first_samples": len(character_samples),
+            "curated_only": curated_only,
+        },
+    )
+    if train_count == 0 or val_count == 0:
+        print("❌ Error: source-group split could not produce two disjoint nonempty splits")
+        print("   Data preparation failed closed; no fallback corpus was written.")
+        return 0, 0
+    if train_count <= MAX_BLOCK_SIZE or val_count <= MAX_BLOCK_SIZE:
+        print(
+            f"⚠️  Warning: split is near block_size "
+            f"(train={train_count:,}, val={val_count:,}, block_size={MAX_BLOCK_SIZE})"
+        )
+    print("✅ Saved source-group split:")
+    print(f"  Train: {train_count} tokens")
+    print(f"  Val: {val_count} tokens")
+    print(f"📊 Saved metadata and source_manifest.json to {output_dir}")
+    print("🌟 NanEcho dataset preparation complete!")
+    return train_count, val_count
 
 def main():
     parser = argparse.ArgumentParser(description="Prepare NanEcho training dataset")
@@ -647,6 +648,12 @@ def main():
                        help="Fail closed if the encoded corpus is smaller than this")
     parser.add_argument("--min_split_tokens", type=int, default=256,
                        help="Fail closed if a train/val split is smaller than this")
+    parser.add_argument("--curated-only", action="store_true",
+                       help="Use authored source groups only; do not add synthetic templates")
+    parser.add_argument("--reviewed-by", default="",
+                       help="Reviewer recorded on the manifest. Empty fails the identity audit")
+    parser.add_argument("--source-revision", default="",
+                       help="Immutable source revision recorded on the manifest")
     parser.add_argument("--deep_tree_echo_mode", type=_as_bool, default=False,
                        help="Enable Deep Tree Echo persona training mode")
     parser.add_argument("--persona_reinforcement", type=float, default=0.0,
@@ -696,6 +703,9 @@ def main():
         source_root=args.source_root,
         min_total_tokens=args.min_total_tokens,
         min_split_tokens=args.min_split_tokens,
+        curated_only=args.curated_only,
+        reviewed_by=args.reviewed_by,
+        source_revision=args.source_revision,
     )
     
     # Check for data preparation failure
