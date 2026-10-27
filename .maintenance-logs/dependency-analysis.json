@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-10-26T02:09:58.576Z",
+  "timestamp": "2026-10-27T02:09:21.926Z",
   "summary": {
-    "totalDependencies": 27,
+    "totalDependencies": 29,
     "totalDevDependencies": 27,
     "unusedDependencies": 20,
     "securityVulnerabilities": 0
@@ -31,6 +31,8 @@
     ],
     "dependencyUsage": {
       "@huggingface/inference": 1,
+      "@monaco-editor/react": 1,
+      "@remix-run/css-bundle": 1,
       "@remix-run/node": 13,
       "@remix-run/react": 14,
       "@remix-run/serve": 0,

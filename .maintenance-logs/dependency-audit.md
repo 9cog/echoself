@@ -1,11 +1,11 @@
-# Dependency Audit Report - 2026-10-26 02:10:00 UTC
+# Dependency Audit Report - 2026-10-27 02:09:23 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-10-26T02:09:58.576Z",
+  "timestamp": "2026-10-27T02:09:21.926Z",
   "summary": {
-    "totalDependencies": 27,
+    "totalDependencies": 29,
     "totalDevDependencies": 27,
     "unusedDependencies": 20,
     "securityVulnerabilities": 0
@@ -35,6 +35,8 @@
     ],
     "dependencyUsage": {
       "@huggingface/inference": 1,
+      "@monaco-editor/react": 1,
+      "@remix-run/css-bundle": 1,
       "@remix-run/node": 13,
       "@remix-run/react": 14,
       "@remix-run/serve": 0,
@@ -332,13 +334,13 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
 
 morgan  <=1.12.0
 Severity: moderate
@@ -381,7 +383,7 @@ PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) l
 fix available via `npm audit fix`
 node_modules/postcss
 
-postcss-selector-parser  <=7.1.5
+postcss-selector-parser  7.0.0 - 7.1.5
 Severity: moderate
 postcss-selector-parser allows denial of service through uncontrolled AST recursion - https://github.com/advisories/GHSA-w9m9-85wc-3x92
 PostCSS: Quadratic complexity in flat selector parsing allows CPU exhaustion - https://github.com/advisories/GHSA-rj75-hqrm-r3gf
