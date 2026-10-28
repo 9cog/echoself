@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-10-27 02:09:23 UTC
+# Dependency Audit Report - 2026-10-28 02:03:41 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-10-27T02:09:21.926Z",
+  "timestamp": "2026-10-28T02:03:40.646Z",
   "summary": {
     "totalDependencies": 29,
     "totalDevDependencies": 27,
@@ -203,6 +203,14 @@ compression vulnerable to Denial of Service via memory leak on premature respons
 fix available via `npm audit fix`
 node_modules/compression
 
+deepmerge  >=4.2.0
+deepmerge mergeObject() allows prototype poisoning of returned objects - https://github.com/advisories/GHSA-gcqx-w48m-w2h4
+fix available via `npm audit fix`
+node_modules/deepmerge
+  @vanilla-extract/css  <=0.0.0-vite-plugin-new-20240116010153 || 1.4.0 - 1.21.2
+  Depends on vulnerable versions of deepmerge
+  node_modules/@vanilla-extract/css
+
 dompurify  <=3.4.16
 Severity: high
 DOMPurify contains a Cross-site Scripting vulnerability - https://github.com/advisories/GHSA-v8jm-5vwx-cfxm
@@ -334,13 +342,13 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
 
 morgan  <=1.12.0
 Severity: moderate
@@ -396,11 +404,12 @@ proxy-addr vulnerable to IP spoofing via IPv4-mapped IPv6 trust subnet - https:/
 fix available via `npm audit fix`
 node_modules/proxy-addr
 
-qs  2.2.5 - 6.15.3
+qs  2.2.5 - 6.16.0
 Severity: moderate
 qs has a remotely triggerable DoS: qs.stringify crashes with TypeError on null/undefined entries in comma-format arrays when encodeValuesOnly is set - https://github.com/advisories/GHSA-q8mj-m7cp-5q26
 qs array-limit bypass via bracket-key comma parsing - https://github.com/advisories/GHSA-x5fp-wj9c-mxmx
 qs: Denial of Service via Attacker Controlled isBuffer - https://github.com/advisories/GHSA-4mjr-xmp4-gh2g
+qs : qs.stringify with arrayFormat 'comma' throws an uncaught TypeError on array elements carrying a non-callable own toString (DoS) - https://github.com/advisories/GHSA-6pq8-jhm2-2vcw
 fix available via `npm audit fix`
 node_modules/qs
 
@@ -468,6 +477,9 @@ undici vulnerable to downstream response splitting via retry interceptor - https
 undici vulnerable to Denial of Service via unrequested WebSocket subprotocol - https://github.com/advisories/GHSA-rfgv-xxqx-mfg5
 undici vulnerable to Denial of Service via unbounded memory in the EventSource parser - https://github.com/advisories/GHSA-4qv8-2p9j-2685
 undici vulnerable to Denial of Service via unhandled error on excessive content-encodings - https://github.com/advisories/GHSA-xjj6-f33q-929c
+undici vulnerable to TLS certificate validation bypass via dropped tls options in Agent - https://github.com/advisories/GHSA-2m5v-pch6-74hx
+undici vulnerable to Denial of Service via TLS 1.2 certificate-changing renegotiation - https://github.com/advisories/GHSA-qrxm-fqhp-jwvm
+undici WebSocket client vulnerable to Denial of Service via unbounded automatic PONG buffering - https://github.com/advisories/GHSA-9fm3-97px-rjf6
 fix available via `npm audit fix`
 node_modules/undici
 
@@ -499,7 +511,7 @@ yaml is vulnerable to Stack Overflow via deeply nested YAML collections - https:
 fix available via `npm audit fix`
 node_modules/yaml
 
-58 vulnerabilities (4 low, 14 moderate, 38 high, 2 critical)
+60 vulnerabilities (6 low, 14 moderate, 38 high, 2 critical)
 
 To address issues that do not require attention, run:
   npm audit fix
