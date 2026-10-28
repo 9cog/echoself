@@ -121,16 +121,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 Welcome to Deep Tree Echo
               </h2>
               <p className="opacity-70 mb-4">
-                I&apos;m your AI architect and polymath assistant. Ask me
-                anything about programming, mathematics, cognitive science, or
-                philosophical exploration.
+                A conversation with an AI architect and polymath — programming,
+                mathematics, cognitive science, philosophical exploration.
               </p>
               {!apiKeyConfigured && (
                 <div className="bg-yellow-500/20 text-yellow-400 p-3 rounded-md text-sm">
                   <p>
-                    For full capabilities, please configure your OpenAI API key
-                    in settings. Without an API key, I&apos;ll provide simulated
-                    responses.
+                    No language model is configured, so Deep Tree Echo cannot
+                    reply yet. Connect Ollama, OpenAI or Anthropic on the server
+                    to start the conversation.
                   </p>
                   <button
                     onClick={onConfigureApiKey}

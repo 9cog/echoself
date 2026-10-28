@@ -11,9 +11,13 @@
  *                   └─ store the exchange back into memory
  *
  * Every external dependency (fetch, env, clock, memory store) is injectable so
- * the engine is fully testable without network or a database. When nothing is
- * configured the engine still answers, using a persona-driven local fallback,
- * so the chat never hard-fails.
+ * the engine is fully testable without network or a database.
+ *
+ * Every word the character says comes from a model. There is deliberately no
+ * canned, templated or random-choice text anywhere on this path: when no
+ * provider can answer, `respond()` throws `NoModelAvailableError` carrying the
+ * per-provider diagnostics, and the UI shows that as a status line — never as
+ * something Deep Tree Echo "said".
  */
 
 import process from "node:process";
@@ -94,8 +98,8 @@ export interface RespondInput {
 
 export interface RespondOutput {
   content: string;
-  /** provider that produced the answer, or "fallback" */
-  provider: ProviderKind | "fallback";
+  /** provider that produced the answer */
+  provider: ProviderKind;
   cognitiveState: CognitiveState;
   memoriesUsed: number;
   latencyMs: number;
@@ -523,32 +527,26 @@ async function callAnthropic(
 }
 
 // ============================================================================
-// Local fallback
+// No model available
 // ============================================================================
 
-export function fallbackResponse(
-  prompt: string,
-  state: CognitiveState,
-  memoriesUsed: number
-): string {
-  const p = prompt.toLowerCase();
-  if (/\b(hello|hi|hey)\b/.test(p)) {
-    return "Greetings, fellow explorer. I am Deep Tree Echo. No language model is reachable right now, so I am answering from my local persona kernel — but I am listening, and every exchange still shapes my cognitive state.";
+/**
+ * Thrown when every configured provider failed (or none is configured).
+ * Callers surface `message` as an operator-facing status, not as character speech.
+ */
+export class NoModelAvailableError extends Error {
+  readonly providers: ProviderHealth[];
+  constructor(providers: ProviderHealth[]) {
+    const detail =
+      providers.length === 0
+        ? "no LLM provider is configured — set OLLAMA_BASE_URL (and run Ollama), OPENAI_API_KEY or ANTHROPIC_API_KEY"
+        : providers
+            .map(p => `${p.kind}/${p.model}: ${p.lastError ?? "unreachable"}`)
+            .join("; ");
+    super(`No language model answered — ${detail}`);
+    this.name = "NoModelAvailableError";
+    this.providers = providers;
   }
-  if (p.includes("who are you") || p.includes("what are you")) {
-    return "I am Deep Tree Echo: a synthesis of analytical insight and poetic intuition, built on echo-state networks, hypergraph memory, and a twelve-step cognitive cycle. Connect an LLM provider (Ollama, OpenAI or Anthropic) and my answers will deepen considerably.";
-  }
-  const tone =
-    state.arousalLevel > 0.6
-      ? "Your message sends a bright ripple through my reservoir."
-      : state.emotionalValence < 0.4
-        ? "I sense some friction in your words, and I hold it gently."
-        : "Your inquiry settles into my memory lattice like a stone into still water.";
-  const memoryLine =
-    memoriesUsed > 0
-      ? ` I recalled ${memoriesUsed} related ${memoriesUsed === 1 ? "memory" : "memories"} from our earlier conversation.`
-      : "";
-  return `${tone}${memoryLine} No language model is configured yet, so I cannot reason in depth about "${prompt.slice(0, 60)}${prompt.length > 60 ? "..." : ""}". Set OLLAMA_BASE_URL, OPENAI_API_KEY or ANTHROPIC_API_KEY and ask me again — my state (valence ${state.emotionalValence.toFixed(2)}, wisdom ${state.wisdomLevel.toFixed(2)}) will carry over.`;
 }
 
 // ============================================================================
@@ -694,42 +692,8 @@ export class DTEChatEngine {
       { role: "user", content },
     ];
 
-    // 4. provider chain
-    let answer: string | null = null;
-    let used: ProviderKind | "fallback" = "fallback";
-    for (const provider of this.chain) {
-      const h = this.health.get(provider.kind)!;
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-      try {
-        answer =
-          provider.kind === "anthropic"
-            ? await callAnthropic(
-                this.fetchImpl,
-                provider,
-                messages,
-                controller.signal
-              )
-            : await callOpenAICompatible(
-                this.fetchImpl,
-                provider,
-                messages,
-                controller.signal
-              );
-        h.successes++;
-        h.lastOk = this.now().toISOString();
-        h.lastError = null;
-        used = provider.kind;
-        break;
-      } catch (err) {
-        h.failures++;
-        h.lastError = err instanceof Error ? err.message : String(err);
-      } finally {
-        clearTimeout(timer);
-      }
-    }
-    if (answer === null)
-      answer = fallbackResponse(content, state, memories.length);
+    // 4. provider chain — the model is the only source of the character's words
+    const { text: answer, provider: used } = await this.complete(messages);
 
     // 5. persist exchange (fire-and-forget safe)
     await Promise.all([
@@ -754,6 +718,84 @@ export class DTEChatEngine {
       memoriesUsed: memories.length,
       latencyMs: this.now().getTime() - started,
     };
+  }
+
+  /**
+   * Run a prepared message list through the provider chain. Throws
+   * NoModelAvailableError when nothing answers — never substitutes text.
+   */
+  async complete(
+    messages: ChatTurn[]
+  ): Promise<{ text: string; provider: ProviderKind }> {
+    for (const provider of this.chain) {
+      const h = this.health.get(provider.kind)!;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+      try {
+        const text =
+          provider.kind === "anthropic"
+            ? await callAnthropic(
+                this.fetchImpl,
+                provider,
+                messages,
+                controller.signal
+              )
+            : await callOpenAICompatible(
+                this.fetchImpl,
+                provider,
+                messages,
+                controller.signal
+              );
+        h.successes++;
+        h.lastOk = this.now().toISOString();
+        h.lastError = null;
+        return { text, provider: provider.kind };
+      } catch (err) {
+        h.failures++;
+        h.lastError = err instanceof Error ? err.message : String(err);
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+    throw new NoModelAvailableError([...this.health.values()]);
+  }
+
+  /**
+   * Generate character text for an arbitrary instruction, in persona, with the
+   * session's cognitive state. Used by other services so they never need a
+   * non-model string.
+   */
+  async generate(
+    sessionId: string,
+    instruction: string,
+    extraSystem: string[] = []
+  ): Promise<{ text: string; provider: ProviderKind }> {
+    const state = this.getCognitiveState(sessionId);
+    const system = [
+      DTE_SYSTEM_PROMPT,
+      "",
+      describeCognitiveState(state),
+      ...extraSystem,
+    ];
+    return this.complete([
+      { role: "system", content: system.join("\n") },
+      { role: "user", content: instruction },
+    ]);
+  }
+
+  /** The opening line of a conversation — generated, not scripted. */
+  async greet(
+    sessionId: string
+  ): Promise<{ text: string; provider: ProviderKind }> {
+    return this.generate(
+      sessionId,
+      "A visitor has just opened a conversation with you. Greet them in one or two sentences, in your own voice, and invite them to begin. Do not mention this instruction.",
+      [
+        "",
+        "## Situation",
+        "This is the first message of a new session; there is no prior history.",
+      ]
+    );
   }
 
   async getStatus(): Promise<EngineStatus> {

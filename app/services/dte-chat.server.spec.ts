@@ -15,7 +15,7 @@ import {
   buildProviderChain,
   createInitialCognitiveState,
   updateCognitiveState,
-  fallbackResponse,
+  NoModelAvailableError,
   readTrainingSummary,
   type ChatTurn,
   type ChatRole,
@@ -212,21 +212,64 @@ describe("DTEChatEngine.respond", () => {
     assert.equal(byKind.anthropic.successes, 1);
   });
 
-  it("never hard-fails: uses the persona fallback when every provider is down", async () => {
+  it("throws NoModelAvailableError when every provider is down — never a scripted reply", async () => {
     const engine = new DTEChatEngine({
       env: {},
       fetchImpl: fakeFetch({ "11434": fail() }),
       memoryStore: new NullMemoryStore(),
       now: clock,
     });
-    const out = await engine.respond({
-      sessionId: "s1",
-      history: [],
-      content: "who are you?",
-    });
-    assert.equal(out.provider, "fallback");
-    assert.match(out.content, /Deep Tree Echo/);
+    await assert.rejects(
+      engine.respond({ sessionId: "s1", history: [], content: "who are you?" }),
+      (err: unknown) => {
+        assert.ok(err instanceof NoModelAvailableError);
+        assert.match(err.message, /No language model answered/);
+        assert.match(err.message, /ollama/);
+        return true;
+      }
+    );
     assert.equal(engine.hasLiveProvider(), false);
+    // nothing was persisted as if the character had spoken
+    assert.equal(await new NullMemoryStore().count(), 0);
+  });
+
+  it("greet() asks the model for the opening line instead of using a fixed greeting", async () => {
+    const calls: FetchCall[] = [];
+    const engine = new DTEChatEngine({
+      env: {},
+      fetchImpl: fakeFetch({ "11434": openaiOk("Hello, traveller.") }, calls),
+      memoryStore: new NullMemoryStore(),
+      now: clock,
+    });
+    const g = await engine.greet("s1");
+    assert.equal(g.text, "Hello, traveller.");
+    assert.equal(g.provider, "ollama");
+    const messages = calls[0].body.messages as ChatTurn[];
+    assert.equal(messages[0].role, "system");
+    assert.match(messages[0].content, /Deep Tree Echo/);
+    assert.match(messages.at(-1)!.content, /[Gg]reet/);
+  });
+
+  it("generate() routes arbitrary in-persona instructions through the provider chain", async () => {
+    const calls: FetchCall[] = [];
+    const engine = new DTEChatEngine({
+      env: { OPENAI_API_KEY: "k" },
+      fetchImpl: fakeFetch(
+        { "11434": fail(503), "api.openai.com": openaiOk("from openai") },
+        calls
+      ),
+      memoryStore: new NullMemoryStore(),
+      now: clock,
+    });
+    const out = await engine.generate("s", "Say something.", [
+      "",
+      "## Extra",
+      "ctx",
+    ]);
+    assert.equal(out.provider, "openai");
+    assert.equal(out.text, "from openai");
+    const sys = (calls.at(-1)!.body.messages as ChatTurn[])[0].content;
+    assert.match(sys, /## Extra/);
   });
 
   it("injects persona, cognitive state and recalled memories into the system prompt", async () => {
@@ -344,15 +387,14 @@ describe("DTEChatEngine.respond", () => {
 });
 
 // ----------------------------------------------------------------------------
-// fallback + status
+// no non-model text + status
 // ----------------------------------------------------------------------------
 
-describe("fallbackResponse", () => {
-  it("mentions recalled memories and how to configure a provider", () => {
-    const s = createInitialCognitiveState(T0);
-    const text = fallbackResponse("explain reservoirs", s, 2);
-    assert.match(text, /2 related memories/);
-    assert.match(text, /OLLAMA_BASE_URL|OPENAI_API_KEY|ANTHROPIC_API_KEY/);
+describe("no non-model text", () => {
+  it("the engine module exposes no fallback/simulated response helper", async () => {
+    const mod = await import("./dte-chat.server.ts");
+    assert.equal("fallbackResponse" in mod, false);
+    assert.equal("simulateResponse" in mod, false);
   });
 });
 

@@ -74,8 +74,9 @@ export default function StatusPage() {
         <Card title="Language model providers">
           {status.providers.length === 0 ? (
             <p className="text-sm text-yellow-400">
-              No providers configured. The chat answers from the local persona
-              fallback. Set OLLAMA_BASE_URL, OPENAI_API_KEY or
+              No providers configured. Deep Tree Echo speaks only through a
+              language model, so the chat cannot answer until one is set: run
+              Ollama (OLLAMA_BASE_URL) or set OPENAI_API_KEY or
               ANTHROPIC_API_KEY.
             </p>
           ) : (
