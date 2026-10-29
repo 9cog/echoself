@@ -48,7 +48,7 @@ python server.py
 - **EchoSelf Chatbot**: Standalone web chatbot with SillyTavern-compatible character cards ([Try it online](https://9cog.github.io/echoself/chatbot/))
 - **Echo Home Map**: Navigate through different specialized rooms, each with unique functionality
 - **Memory System**: Store and retrieve information using advanced vector embeddings and semantic search
-- **AI Chat**: Talk to Deep Tree Echo through the `/chat` route, which runs the full cognitive pipeline — memory recall, per-session cognitive state (valence, arousal, wisdom, introspection), a persona/state/memory-enriched prompt, and an Ollama → OpenAI → Anthropic provider chain with a persona fallback so the chat never hard-fails
+- **AI Chat**: Talk to Deep Tree Echo through the `/chat` route, which runs the full cognitive pipeline — memory recall, per-session cognitive state (valence, arousal, wisdom, introspection), a persona/state/memory-enriched prompt, and an Ollama → OpenAI → Anthropic provider chain; every reply comes from a model, and when none can answer the UI shows a status line instead of a scripted stand-in
 - **Status Dashboard**: `/status` shows live provider health, memory backend and count, active cognitive sessions, and the latest NanEcho training summary (val loss, checkpoints)
 - **Workshop**: Access development tools and creative coding environments (Arena as Workspace)
 - **Visualization Studio**: Transform abstract data into insightful visual representations
@@ -414,7 +414,7 @@ cp .env.example .env
 - `SUPABASE_URL` and `SUPABASE_ANON_KEY` are required
 - `OPENAI_API_KEY` is optional (enables embeddings and the OpenAI chat provider)
 
-The chat engine (`app/services/dte-chat.server.ts`) tries language-model providers in order and falls back to a local persona kernel when none respond. Configure any of:
+The chat engine (`app/services/dte-chat.server.ts`) tries language-model providers in order. There is deliberately no local fallback text: if no provider answers, the chat shows an operator-facing status rather than putting words in the character's mouth. Configure any of:
 
 - `DTE_LLM_PROVIDERS` — comma-separated order, default `ollama,openai,anthropic`
 - `OLLAMA_BASE_URL` (default `http://localhost:11434`) and `OLLAMA_MODEL` (default `llama3.2`)

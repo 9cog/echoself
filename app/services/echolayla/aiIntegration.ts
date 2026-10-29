@@ -277,26 +277,36 @@ export class HuggingFaceAdapter implements AIAdapter {
 }
 
 /**
- * Mock Adapter for development/testing
+ * Deep Tree Echo engine adapter — routes generation through the app's
+ * provider chain (Ollama → OpenAI → Anthropic). Used when no provider-specific
+ * key is set so the character still answers from a real model (e.g. a local
+ * Ollama), and never from a stub.
  */
-export class MockAdapter implements AIAdapter {
+export class DTEEngineAdapter implements AIAdapter {
   async generate(
     messages: Array<{ role: string; content: string }>,
     config: InferenceConfig
   ): Promise<AIResponse> {
-    const lastMessage = messages[messages.length - 1];
-    const characterName =
-      config.systemPrompt?.match(/You are (\w+),/)?.[1] || "AI";
-
-    return {
-      content: `[${characterName}] This is a mock response to: "${lastMessage.content}"`,
-      finishReason: "stop",
-      usage: {
-        promptTokens: 50,
-        completionTokens: 20,
-        totalTokens: 70,
-      },
-    };
+    const { getDTEChatEngine } = await import("../dte-chat.server");
+    const engine = getDTEChatEngine();
+    const system = messages
+      .filter(m => m.role === "system")
+      .map(m => m.content);
+    if (config.systemPrompt && !system.includes(config.systemPrompt))
+      system.unshift(config.systemPrompt);
+    const rest = messages
+      .filter(m => m.role !== "system")
+      .map(m => ({
+        role: (m.role === "assistant" ? "assistant" : "user") as
+          | "assistant"
+          | "user",
+        content: m.content,
+      }));
+    const { text } = await engine.complete([
+      { role: "system", content: system.join("\n\n") },
+      ...rest,
+    ]);
+    return { content: text, finishReason: "stop" };
   }
 
   async generateStream(
@@ -304,15 +314,10 @@ export class MockAdapter implements AIAdapter {
     config: InferenceConfig,
     onChunk: StreamCallback
   ): Promise<AIResponse> {
+    // The engine's providers are called non-streaming; deliver the model's
+    // text as a single chunk rather than fake word-by-word pacing.
     const response = await this.generate(messages, config);
-
-    // Simulate streaming by chunking
-    const words = response.content.split(" ");
-    for (const word of words) {
-      await new Promise(resolve => setTimeout(resolve, 50));
-      onChunk(word + " ");
-    }
-
+    onChunk(response.content);
     return response;
   }
 }
@@ -331,10 +336,10 @@ export class AIServiceFactory {
       case "huggingface":
         return new HuggingFaceAdapter(options?.apiKey, options?.model);
       case "local":
-        // TODO: Implement local inference adapter (LLaMA.cpp, etc.)
-        return new MockAdapter();
+        // Local models are served through the engine's Ollama provider.
+        return new DTEEngineAdapter();
       default:
-        return new MockAdapter();
+        return new DTEEngineAdapter();
     }
   }
 }
@@ -352,6 +357,6 @@ export function getDefaultAdapter(): AIAdapter {
     return AIServiceFactory.createAdapter("huggingface");
   }
 
-  // Fall back to mock for development
+  // No provider-specific key: use the engine's chain (a local Ollama counts).
   return AIServiceFactory.createAdapter("local");
 }

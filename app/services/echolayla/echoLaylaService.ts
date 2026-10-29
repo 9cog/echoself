@@ -182,8 +182,6 @@ export class EchoLaylaService {
     // Add user message
     this.addMessage("user", userMessage);
 
-    // TODO: Integrate with actual AI inference service
-    // For now, return a placeholder response
     const response = await this.generateResponse(userMessage);
 
     return this.addMessage("assistant", response);
@@ -225,8 +223,9 @@ export class EchoLaylaService {
 
       return response.content;
     } catch (error) {
+      // Surface to the caller as a status; do not put words in the character's mouth.
       console.error("[EchoLayla] Error generating response:", error);
-      return `[${character.name}] I apologize, but I encountered an error processing your request. Please try again.`;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
