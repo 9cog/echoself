@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-29T02:04:02.594Z",
+  "timestamp": "2026-10-30T02:03:59.334Z",
   "summary": {
     "totalDependencies": 29,
     "totalDevDependencies": 27,
@@ -37,7 +37,7 @@
       "@remix-run/react": 14,
       "@remix-run/serve": 0,
       "@stackblitz/sdk": 2,
-      "@supabase/supabase-js": 8,
+      "@supabase/supabase-js": 7,
       "@types/node": 0,
       "autoprefixer": 0,
       "framer-motion": 5,
@@ -47,7 +47,7 @@
       "ml-distance": 1,
       "ml-matrix": 2,
       "monaco-editor": 6,
-      "openai": 20,
+      "openai": 18,
       "prettier": 0,
       "python-shell": 1,
       "react": 50,
@@ -84,7 +84,7 @@
       "eslint-plugin-react": 0,
       "eslint-plugin-react-hooks": 0,
       "typescript": 9,
-      "vite": 3,
+      "vite": 4,
       "vite-tsconfig-paths": 0
     },
     "securityVulnerabilities": {},

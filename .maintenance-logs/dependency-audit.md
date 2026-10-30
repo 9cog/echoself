@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-10-29 02:04:04 UTC
+# Dependency Audit Report - 2026-10-30 02:04:00 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-10-29T02:04:02.594Z",
+  "timestamp": "2026-10-30T02:03:59.334Z",
   "summary": {
     "totalDependencies": 29,
     "totalDevDependencies": 27,
@@ -41,7 +41,7 @@
       "@remix-run/react": 14,
       "@remix-run/serve": 0,
       "@stackblitz/sdk": 2,
-      "@supabase/supabase-js": 8,
+      "@supabase/supabase-js": 7,
       "@types/node": 0,
       "autoprefixer": 0,
       "framer-motion": 5,
@@ -51,7 +51,7 @@
       "ml-distance": 1,
       "ml-matrix": 2,
       "monaco-editor": 6,
-      "openai": 20,
+      "openai": 18,
       "prettier": 0,
       "python-shell": 1,
       "react": 50,
@@ -88,7 +88,7 @@
       "eslint-plugin-react": 0,
       "eslint-plugin-react-hooks": 0,
       "typescript": 9,
-      "vite": 3,
+      "vite": 4,
       "vite-tsconfig-paths": 0
     },
     "securityVulnerabilities": {},
@@ -342,13 +342,13 @@ node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
 
 morgan  <=1.12.0
 Severity: moderate
