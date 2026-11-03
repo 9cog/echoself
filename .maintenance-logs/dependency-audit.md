@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-11-02 02:04:08 UTC
+# Dependency Audit Report - 2026-11-03 02:02:39 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-11-02T02:04:06.475Z",
+  "timestamp": "2026-11-03T02:02:38.110Z",
   "summary": {
     "totalDependencies": 29,
     "totalDevDependencies": 27,
@@ -245,7 +245,7 @@ esbuild  <=0.24.2
 Severity: moderate
 esbuild enables any website to send any requests to the development server and read the response - https://github.com/advisories/GHSA-67mh-4wv8-2f99
 fix available via `npm audit fix --force`
-Will install @remix-run/dev@1.0.6, which is a breaking change
+Will install vite@8.3.5, which is a breaking change
 node_modules/esbuild
 node_modules/vite/node_modules/esbuild
   @vanilla-extract/integration  *
@@ -315,11 +315,11 @@ node_modules/rimraf/node_modules/glob
             Depends on vulnerable versions of @typescript-eslint/typescript-estree
             Depends on vulnerable versions of eslint
             node_modules/@typescript-eslint/utils
-          @typescript-eslint/eslint-plugin  *
-          Depends on vulnerable versions of @typescript-eslint/type-utils
-          Depends on vulnerable versions of @typescript-eslint/utils
-          Depends on vulnerable versions of eslint
-          node_modules/@typescript-eslint/eslint-plugin
+              @typescript-eslint/eslint-plugin  *
+              Depends on vulnerable versions of @typescript-eslint/type-utils
+              Depends on vulnerable versions of @typescript-eslint/utils
+              Depends on vulnerable versions of eslint
+              node_modules/@typescript-eslint/eslint-plugin
           @typescript-eslint/parser  *
           Depends on vulnerable versions of @typescript-eslint/typescript-estree
           Depends on vulnerable versions of eslint
