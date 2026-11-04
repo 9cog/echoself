@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-11-03 02:02:39 UTC
+# Dependency Audit Report - 2026-11-04 02:02:24 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-11-03T02:02:38.110Z",
+  "timestamp": "2026-11-04T02:02:23.459Z",
   "summary": {
     "totalDependencies": 29,
     "totalDevDependencies": 27,
@@ -245,7 +245,7 @@ esbuild  <=0.24.2
 Severity: moderate
 esbuild enables any website to send any requests to the development server and read the response - https://github.com/advisories/GHSA-67mh-4wv8-2f99
 fix available via `npm audit fix --force`
-Will install vite@8.3.5, which is a breaking change
+Will install @remix-run/dev@1.0.6, which is a breaking change
 node_modules/esbuild
 node_modules/vite/node_modules/esbuild
   @vanilla-extract/integration  *
@@ -291,7 +291,7 @@ node_modules/rimraf/node_modules/glob
   Depends on vulnerable versions of glob
   Depends on vulnerable versions of tar
   node_modules/cacache
-  rimraf  2.3.0 - 3.0.2 || >=4.2.0
+  rimraf  2.3.0 - 3.0.2 || 4.2.0 - 6.1.3
   Depends on vulnerable versions of glob
   node_modules/rimraf
     flat-cache  1.3.4 - 4.0.0
@@ -315,11 +315,11 @@ node_modules/rimraf/node_modules/glob
             Depends on vulnerable versions of @typescript-eslint/typescript-estree
             Depends on vulnerable versions of eslint
             node_modules/@typescript-eslint/utils
-              @typescript-eslint/eslint-plugin  *
-              Depends on vulnerable versions of @typescript-eslint/type-utils
-              Depends on vulnerable versions of @typescript-eslint/utils
-              Depends on vulnerable versions of eslint
-              node_modules/@typescript-eslint/eslint-plugin
+          @typescript-eslint/eslint-plugin  *
+          Depends on vulnerable versions of @typescript-eslint/type-utils
+          Depends on vulnerable versions of @typescript-eslint/utils
+          Depends on vulnerable versions of eslint
+          node_modules/@typescript-eslint/eslint-plugin
           @typescript-eslint/parser  *
           Depends on vulnerable versions of @typescript-eslint/typescript-estree
           Depends on vulnerable versions of eslint
@@ -347,17 +347,17 @@ node_modules/katex
   Depends on vulnerable versions of katex
   node_modules/mermaid
 
-lodash  <=4.17.23
+lodash  4.0.0 - 4.17.23
 Severity: high
 lodash vulnerable to Code Injection via `_.template` imports key names - https://github.com/advisories/GHSA-r5fr-rjxr-66jc
-lodash vulnerable to Prototype Pollution via array path bypass in `_.unset` and `_.omit` - https://github.com/advisories/GHSA-f23m-r3pf-42rh
+lodash vulnerable to prototype pollution via array-path bypass in `_.unset`, `_.omit`, and `_.pullAt - https://github.com/advisories/GHSA-f23m-r3pf-42rh
 fix available via `npm audit fix`
 node_modules/lodash
 
-lodash-es  <=4.17.23
+lodash-es  4.0.0 - 4.17.23
 Severity: high
 lodash vulnerable to Code Injection via `_.template` imports key names - https://github.com/advisories/GHSA-r5fr-rjxr-66jc
-lodash vulnerable to Prototype Pollution via array path bypass in `_.unset` and `_.omit` - https://github.com/advisories/GHSA-f23m-r3pf-42rh
+lodash vulnerable to prototype pollution via array-path bypass in `_.unset`, `_.omit`, and `_.pullAt - https://github.com/advisories/GHSA-f23m-r3pf-42rh
 fix available via `npm audit fix`
 node_modules/lodash-es
   @chevrotain/cst-dts-gen  11.0.0 - 11.2.0
