@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-11-04 02:02:24 UTC
+# Dependency Audit Report - 2026-11-05 02:03:18 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-11-04T02:02:23.459Z",
+  "timestamp": "2026-11-05T02:03:16.911Z",
   "summary": {
     "totalDependencies": 29,
     "totalDevDependencies": 27,
@@ -109,7 +109,7 @@ node_modules/@babel/core
 Severity: moderate
 React Router's same-origin redirect with path starting // causes open redirect via protocol-relative URL reinterpretation - https://github.com/advisories/GHSA-2j2x-hqr9-3h42
 fix available via `npm audit fix --force`
-Will install @remix-run/dev@1.0.6, which is a breaking change
+Will install @remix-run/dev@1.15.0, which is a breaking change
 node_modules/@remix-run/router
   @remix-run/dev  *
   Depends on vulnerable versions of @npmcli/package-json
@@ -245,7 +245,7 @@ esbuild  <=0.24.2
 Severity: moderate
 esbuild enables any website to send any requests to the development server and read the response - https://github.com/advisories/GHSA-67mh-4wv8-2f99
 fix available via `npm audit fix --force`
-Will install @remix-run/dev@1.0.6, which is a breaking change
+Will install @remix-run/dev@1.15.0, which is a breaking change
 node_modules/esbuild
 node_modules/vite/node_modules/esbuild
   @vanilla-extract/integration  *
@@ -277,13 +277,13 @@ Prototype Pollution via parse() in NodeJS flatted - https://github.com/advisorie
 fix available via `npm audit fix`
 node_modules/flatted
 
-glob  3.0.0 - 14.0.1
+glob  9.0.0 - 14.0.1
 Severity: moderate
 Glob: AbortSignal cancellation bypass allows post-timeout filesystem traversal - https://github.com/advisories/GHSA-3g3m-2fjr-6pw4
 Depends on vulnerable versions of minimatch
-No fix available
+fix available via `npm audit fix --force`
+Will install @remix-run/dev@1.15.0, which is a breaking change
 node_modules/glob
-node_modules/rimraf/node_modules/glob
   @npmcli/package-json  >=3.1.0
   Depends on vulnerable versions of glob
   node_modules/@npmcli/package-json
@@ -291,44 +291,6 @@ node_modules/rimraf/node_modules/glob
   Depends on vulnerable versions of glob
   Depends on vulnerable versions of tar
   node_modules/cacache
-  rimraf  2.3.0 - 3.0.2 || 4.2.0 - 6.1.3
-  Depends on vulnerable versions of glob
-  node_modules/rimraf
-    flat-cache  1.3.4 - 4.0.0
-    Depends on vulnerable versions of rimraf
-    node_modules/flat-cache
-      file-entry-cache  4.0.0 - 7.0.2
-      Depends on vulnerable versions of flat-cache
-      node_modules/file-entry-cache
-        eslint  0.7.1 - 2.0.0-rc.1 || >=4.1.0
-        Depends on vulnerable versions of @eslint-community/eslint-utils
-        Depends on vulnerable versions of @eslint/eslintrc
-        Depends on vulnerable versions of @humanwhocodes/config-array
-        Depends on vulnerable versions of file-entry-cache
-        Depends on vulnerable versions of minimatch
-        node_modules/eslint
-          @eslint-community/eslint-utils  *
-          Depends on vulnerable versions of eslint
-          node_modules/@eslint-community/eslint-utils
-            @typescript-eslint/utils  *
-            Depends on vulnerable versions of @eslint-community/eslint-utils
-            Depends on vulnerable versions of @typescript-eslint/typescript-estree
-            Depends on vulnerable versions of eslint
-            node_modules/@typescript-eslint/utils
-          @typescript-eslint/eslint-plugin  *
-          Depends on vulnerable versions of @typescript-eslint/type-utils
-          Depends on vulnerable versions of @typescript-eslint/utils
-          Depends on vulnerable versions of eslint
-          node_modules/@typescript-eslint/eslint-plugin
-          @typescript-eslint/parser  *
-          Depends on vulnerable versions of @typescript-eslint/typescript-estree
-          Depends on vulnerable versions of eslint
-          node_modules/@typescript-eslint/parser
-          @typescript-eslint/type-utils  5.62.1-alpha.0 - 8.0.0-alpha.62 || >=8.14.1-alpha.0
-          Depends on vulnerable versions of @typescript-eslint/typescript-estree
-          Depends on vulnerable versions of @typescript-eslint/utils
-          Depends on vulnerable versions of eslint
-          node_modules/@typescript-eslint/type-utils
 
 js-yaml  4.0.0 - 4.3.1
 Severity: high
@@ -381,40 +343,33 @@ node_modules/lodash-es
     node_modules/langium
 
 
-minimatch  <=11.0.0
+minimatch  7.0.0 - 11.0.0
 Severity: high
 minimatch has a ReDoS via repeated wildcards with non-matching literal in pattern - https://github.com/advisories/GHSA-3ppc-4f35-3m26
 minimatch has ReDoS: matchOne() combinatorial backtracking via multiple non-adjacent GLOBSTAR segments - https://github.com/advisories/GHSA-7r86-cg39-jmmj
 minimatch ReDoS: nested *() extglobs generate catastrophically backtracking regular expressions - https://github.com/advisories/GHSA-23c5-xmqv-rm74
 minimatch has potential denial of service via globparts amplification - https://github.com/advisories/GHSA-g3hv-75wg-m249
-No fix available
-node_modules/@eslint/eslintrc/node_modules/minimatch
-node_modules/@humanwhocodes/config-array/node_modules/minimatch
+fix available via `npm audit fix --force`
+Will install @remix-run/dev@1.15.0, which is a breaking change
 node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch
-node_modules/eslint-plugin-import/node_modules/minimatch
-node_modules/eslint-plugin-jsx-a11y/node_modules/minimatch
-node_modules/eslint-plugin-react/node_modules/minimatch
-node_modules/eslint/node_modules/minimatch
 node_modules/minimatch
-node_modules/rimraf/node_modules/minimatch
-  @eslint/eslintrc  0.0.1 || >=0.1.1
-  Depends on vulnerable versions of minimatch
-  node_modules/@eslint/eslintrc
-  @humanwhocodes/config-array  *
-  Depends on vulnerable versions of minimatch
-  node_modules/@humanwhocodes/config-array
   @typescript-eslint/typescript-estree  6.16.0 - 7.5.0
   Depends on vulnerable versions of minimatch
   node_modules/@typescript-eslint/typescript-estree
-  eslint-plugin-import  >=1.15.0
-  Depends on vulnerable versions of minimatch
-  node_modules/eslint-plugin-import
-  eslint-plugin-jsx-a11y  >=6.5.0
-  Depends on vulnerable versions of minimatch
-  node_modules/eslint-plugin-jsx-a11y
-  eslint-plugin-react  >=7.23.0
-  Depends on vulnerable versions of minimatch
-  node_modules/eslint-plugin-react
+    @typescript-eslint/parser  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/parser
+    @typescript-eslint/type-utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    Depends on vulnerable versions of @typescript-eslint/utils
+    node_modules/@typescript-eslint/type-utils
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
+      @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
+      Depends on vulnerable versions of @typescript-eslint/type-utils
+      Depends on vulnerable versions of @typescript-eslint/utils
+      node_modules/@typescript-eslint/eslint-plugin
 
 morgan  <=1.12.0
 Severity: moderate
@@ -520,7 +475,7 @@ turbo-stream  <3.0.0
 Severity: high
 React Router vulnerable to Denial of Service via reflected user input in single-fetch - https://github.com/advisories/GHSA-rxv8-25v2-qmq8
 fix available via `npm audit fix --force`
-Will install @remix-run/dev@1.0.6, which is a breaking change
+Will install @remix-run/dev@1.15.0, which is a breaking change
 node_modules/turbo-stream
 
 undici  <=6.29.0
@@ -531,7 +486,6 @@ Undici has Unbounded Memory Consumption in WebSocket permessage-deflate Decompre
 Undici has Unhandled Exception in WebSocket Client Due to Invalid server_max_window_bits Validation - https://github.com/advisories/GHSA-v9p9-hfj2-hcw8
 Undici has CRLF Injection in undici via `upgrade` option - https://github.com/advisories/GHSA-4992-7rv2-5pvq
 undici vulnerable to HTTP header injection via Set-Cookie percent-decoding - https://github.com/advisories/GHSA-p88m-4jfj-68fv
-undici WebSocket client vulnerable to denial of service via fragment count bypass - https://github.com/advisories/GHSA-vxpw-j846-p89q
 undici vulnerable to Set-Cookie SameSite attribute downgrade via permissive substring matching - https://github.com/advisories/GHSA-g8m3-5g58-fq7m
 undici vulnerable to downstream response desynchronization via retry interceptor - https://github.com/advisories/GHSA-8xcm-r25x-g524
 undici vulnerable to CRLF Injection via blob-like body 'type' property - https://github.com/advisories/GHSA-m8rv-5g2x-5cg5
@@ -544,6 +498,7 @@ undici vulnerable to Denial of Service via unhandled error on excessive content-
 undici vulnerable to TLS certificate validation bypass via dropped tls options in Agent - https://github.com/advisories/GHSA-2m5v-pch6-74hx
 undici vulnerable to Denial of Service via TLS 1.2 certificate-changing renegotiation - https://github.com/advisories/GHSA-qrxm-fqhp-jwvm
 undici WebSocket client vulnerable to Denial of Service via unbounded automatic PONG buffering - https://github.com/advisories/GHSA-9fm3-97px-rjf6
+undici WebSocket client vulnerable to denial of service via fragment count bypass - https://github.com/advisories/GHSA-vxpw-j846-p89q
 fix available via `npm audit fix`
 node_modules/undici
 
@@ -575,15 +530,12 @@ yaml is vulnerable to Stack Overflow via deeply nested YAML collections - https:
 fix available via `npm audit fix`
 node_modules/yaml
 
-72 vulnerabilities (6 low, 26 moderate, 38 high, 2 critical)
+62 vulnerabilities (6 low, 16 moderate, 38 high, 2 critical)
 
 To address issues that do not require attention, run:
   npm audit fix
 
-To address all issues possible (including breaking changes), run:
+To address all issues (including breaking changes), run:
   npm audit fix --force
-
-Some issues need review, and may require choosing
-a different dependency.
 No security issues found
 ```
