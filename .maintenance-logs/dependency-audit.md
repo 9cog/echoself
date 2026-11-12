@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-11-11 02:02:53 UTC
+# Dependency Audit Report - 2026-11-12 02:02:56 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-11-11T02:02:52.180Z",
+  "timestamp": "2026-11-12T02:02:54.663Z",
   "summary": {
     "totalDependencies": 29,
     "totalDevDependencies": 27,
@@ -245,7 +245,7 @@ esbuild  <=0.24.2
 Severity: moderate
 esbuild enables any website to send any requests to the development server and read the response - https://github.com/advisories/GHSA-67mh-4wv8-2f99
 fix available via `npm audit fix --force`
-Will install vite@8.3.7, which is a breaking change
+Will install @remix-run/dev@1.15.0, which is a breaking change
 node_modules/esbuild
 node_modules/vite/node_modules/esbuild
   @vanilla-extract/integration  *
@@ -284,10 +284,10 @@ Depends on vulnerable versions of minimatch
 fix available via `npm audit fix --force`
 Will install @remix-run/dev@1.15.0, which is a breaking change
 node_modules/glob
-  @npmcli/package-json  >=3.1.0
+  @npmcli/package-json  3.1.0 - 8.0.0
   Depends on vulnerable versions of glob
   node_modules/@npmcli/package-json
-  cacache  >=14.0.0
+  cacache  14.0.0 - 21.0.1
   Depends on vulnerable versions of glob
   Depends on vulnerable versions of tar
   node_modules/cacache
@@ -363,13 +363,13 @@ node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
 
 morgan  <=1.12.0
 Severity: moderate
@@ -468,6 +468,7 @@ toml-node: Prototype Pollution Leads to `Object.prototype` Corruption via `__pro
 toml-node: Quadratic-complexity DoS via many array-of-tables headers in toml.parse() - https://github.com/advisories/GHSA-4qx8-w7c3-pj3p
 toml-node: Quadratic-complexity DoS via long dotted keys or table paths in toml.parse() - https://github.com/advisories/GHSA-9j65-hcg3-gc64
 toml-node: Uncontrolled resource consumption (CPU DoS) via unbounded-length integer literals in toml.parse() - https://github.com/advisories/GHSA-9qmh-m7c6-f92p
+toml-node: Prototype pollution: parsing a TOML document can write to Object.prototype - https://github.com/advisories/GHSA-h895-cgqg-jf52
 fix available via `npm audit fix`
 node_modules/toml
 
