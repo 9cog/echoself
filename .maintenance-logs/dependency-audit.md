@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-11-16 02:03:33 UTC
+# Dependency Audit Report - 2026-11-17 02:03:09 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-11-16T02:03:32.075Z",
+  "timestamp": "2026-11-17T02:03:07.623Z",
   "summary": {
     "totalDependencies": 29,
     "totalDevDependencies": 27,
@@ -206,14 +206,6 @@ compression vulnerable to Denial of Service via memory leak on premature respons
 fix available via `npm audit fix`
 node_modules/compression
 
-deepmerge  >=4.2.0
-deepmerge mergeObject() allows prototype poisoning of returned objects - https://github.com/advisories/GHSA-gcqx-w48m-w2h4
-fix available via `npm audit fix`
-node_modules/deepmerge
-  @vanilla-extract/css  <=0.0.0-vite-plugin-new-20240116010153 || 1.4.0 - 1.21.2
-  Depends on vulnerable versions of deepmerge
-  node_modules/@vanilla-extract/css
-
 dompurify  <=3.4.16
 Severity: high
 DOMPurify contains a Cross-site Scripting vulnerability - https://github.com/advisories/GHSA-v8jm-5vwx-cfxm
@@ -363,13 +355,13 @@ node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
 
 morgan  <=1.12.0
 Severity: moderate
@@ -531,7 +523,7 @@ yaml is vulnerable to Stack Overflow via deeply nested YAML collections - https:
 fix available via `npm audit fix`
 node_modules/yaml
 
-62 vulnerabilities (6 low, 16 moderate, 38 high, 2 critical)
+60 vulnerabilities (4 low, 16 moderate, 38 high, 2 critical)
 
 To address issues that do not require attention, run:
   npm audit fix
