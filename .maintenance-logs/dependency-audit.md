@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-11-17 02:03:09 UTC
+# Dependency Audit Report - 2026-11-18 02:03:28 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-11-17T02:03:07.623Z",
+  "timestamp": "2026-11-18T02:03:27.424Z",
   "summary": {
     "totalDependencies": 29,
     "totalDevDependencies": 27,
@@ -355,13 +355,13 @@ node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
 
 morgan  <=1.12.0
 Severity: moderate
@@ -385,12 +385,13 @@ path-to-regexp vulnerable to Regular Expression Denial of Service via multiple r
 fix available via `npm audit fix`
 node_modules/path-to-regexp
 
-picomatch  <=2.3.1 || 4.0.0 - 4.0.3
+picomatch  *
 Severity: high
 Picomatch: Method Injection in POSIX Character Classes causes incorrect Glob Matching - https://github.com/advisories/GHSA-3v7f-55p6-f55p
 Picomatch: Method Injection in POSIX Character Classes causes incorrect Glob Matching - https://github.com/advisories/GHSA-3v7f-55p6-f55p
 Picomatch has a ReDoS vulnerability via extglob quantifiers - https://github.com/advisories/GHSA-c2c7-rcm5-vvqj
 Picomatch has a ReDoS vulnerability via extglob quantifiers - https://github.com/advisories/GHSA-c2c7-rcm5-vvqj
+picomatch vulnerable to ReDoS through single-branch repeated extglobs - https://github.com/advisories/GHSA-fc5q-39xc-vjpf
 fix available via `npm audit fix`
 node_modules/picomatch
 node_modules/tinyglobby/node_modules/picomatch
