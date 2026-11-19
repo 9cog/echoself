@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-11-18 02:03:28 UTC
+# Dependency Audit Report - 2026-11-19 02:03:23 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-11-18T02:03:27.424Z",
+  "timestamp": "2026-11-19T02:03:21.473Z",
   "summary": {
     "totalDependencies": 29,
     "totalDevDependencies": 27,
@@ -207,7 +207,7 @@ fix available via `npm audit fix`
 node_modules/compression
 
 dompurify  <=3.4.16
-Severity: high
+Severity: moderate
 DOMPurify contains a Cross-site Scripting vulnerability - https://github.com/advisories/GHSA-v8jm-5vwx-cfxm
 DOMPurify contains a Cross-site Scripting vulnerability - https://github.com/advisories/GHSA-v2wj-7wpq-c8vv
 DOMPurify: FORBID_TAGS bypassed by function-based ADD_TAGS predicate (asymmetry with FORBID_ATTR fix) - https://github.com/advisories/GHSA-h7mw-gpvr-xq4m
@@ -228,8 +228,8 @@ DOMPurify is vulnerable to mutation-XSS via Re-Contextualization  - https://gith
 DOMPurify: IN_PLACE hook removal leaves a detached subtree executable, causing XSS - https://github.com/advisories/GHSA-55q2-fjhq-7xh7
 DOMPurify: `CUSTOM_ELEMENT_HANDLING` bypasses `afterSanitizeElements` for allowed custom elements. - https://github.com/advisories/GHSA-c2j3-45gr-mqc4
 DOMPurify: IN_PLACE returns a force-removed rawtext root whose text carries attacker markup — pure HTML reparse executes - https://github.com/advisories/GHSA-6688-9rhm-gjv2
-DOMPurify IN_PLACE: hook that removes a parent or sibling leaves the detached subtree's event handlers armed (incomplete fix for GHSA-p98j-92pf-mc4p) - https://github.com/advisories/GHSA-mrv2-3pqr-j5jr
 DOMPurify: SMIL attributeName=href guard is skipped when PARSER_MEDIA_TYPE is application/xhtml+xml - https://github.com/advisories/GHSA-c6gr-qvv4-5v3f
+DOMPurify IN_PLACE: hook that removes a parent or sibling leaves the detached subtree's event handlers armed (incomplete fix for GHSA-p98j-92pf-mc4p) - https://github.com/advisories/GHSA-mrv2-3pqr-j5jr
 fix available via `npm audit fix`
 node_modules/dompurify
 
@@ -385,13 +385,12 @@ path-to-regexp vulnerable to Regular Expression Denial of Service via multiple r
 fix available via `npm audit fix`
 node_modules/path-to-regexp
 
-picomatch  *
+picomatch  <=2.3.1 || 4.0.0 - 4.0.3
 Severity: high
 Picomatch: Method Injection in POSIX Character Classes causes incorrect Glob Matching - https://github.com/advisories/GHSA-3v7f-55p6-f55p
 Picomatch: Method Injection in POSIX Character Classes causes incorrect Glob Matching - https://github.com/advisories/GHSA-3v7f-55p6-f55p
 Picomatch has a ReDoS vulnerability via extglob quantifiers - https://github.com/advisories/GHSA-c2c7-rcm5-vvqj
 Picomatch has a ReDoS vulnerability via extglob quantifiers - https://github.com/advisories/GHSA-c2c7-rcm5-vvqj
-picomatch vulnerable to ReDoS through single-branch repeated extglobs - https://github.com/advisories/GHSA-fc5q-39xc-vjpf
 fix available via `npm audit fix`
 node_modules/picomatch
 node_modules/tinyglobby/node_modules/picomatch
@@ -524,7 +523,7 @@ yaml is vulnerable to Stack Overflow via deeply nested YAML collections - https:
 fix available via `npm audit fix`
 node_modules/yaml
 
-60 vulnerabilities (4 low, 16 moderate, 38 high, 2 critical)
+60 vulnerabilities (4 low, 17 moderate, 37 high, 2 critical)
 
 To address issues that do not require attention, run:
   npm audit fix
