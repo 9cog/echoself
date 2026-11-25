@@ -1,9 +1,9 @@
-# Dependency Audit Report - 2026-11-24 02:03:37 UTC
+# Dependency Audit Report - 2026-11-25 02:04:14 UTC
 
 ## Dependency Analysis Summary
 ```json
 {
-  "timestamp": "2026-11-24T02:03:35.915Z",
+  "timestamp": "2026-11-25T02:04:12.694Z",
   "summary": {
     "totalDependencies": 29,
     "totalDevDependencies": 27,
@@ -237,7 +237,7 @@ esbuild  <=0.24.2
 Severity: moderate
 esbuild enables any website to send any requests to the development server and read the response - https://github.com/advisories/GHSA-67mh-4wv8-2f99
 fix available via `npm audit fix --force`
-Will install vite@8.3.8, which is a breaking change
+Will install @remix-run/dev@1.15.0, which is a breaking change
 node_modules/esbuild
 node_modules/vite/node_modules/esbuild
   @vanilla-extract/integration  *
@@ -355,13 +355,13 @@ node_modules/minimatch
     Depends on vulnerable versions of @typescript-eslint/typescript-estree
     Depends on vulnerable versions of @typescript-eslint/utils
     node_modules/@typescript-eslint/type-utils
-    @typescript-eslint/utils  6.16.0 - 7.5.0
-    Depends on vulnerable versions of @typescript-eslint/typescript-estree
-    node_modules/@typescript-eslint/utils
       @typescript-eslint/eslint-plugin  6.16.0 - 7.5.0
       Depends on vulnerable versions of @typescript-eslint/type-utils
       Depends on vulnerable versions of @typescript-eslint/utils
       node_modules/@typescript-eslint/eslint-plugin
+    @typescript-eslint/utils  6.16.0 - 7.5.0
+    Depends on vulnerable versions of @typescript-eslint/typescript-estree
+    node_modules/@typescript-eslint/utils
 
 morgan  <=1.12.0
 Severity: moderate
